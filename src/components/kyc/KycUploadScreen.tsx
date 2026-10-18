@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import imageCompression from 'browser-image-compression';
 import { useAuthStore } from '../../store/authStore';
 import { kycApi } from '../../services/api';
 import { 
@@ -74,34 +75,69 @@ export const KycUploadScreen: React.FC<KycUploadScreenProps> = ({ user }) => {
     cheque_url: ''
   });
 
+  const [compressing, setCompressing] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleFileUpload = (key: keyof typeof docs, file: File) => {
+  const handleFileUpload = async (key: keyof typeof docs, file: File) => {
     if (!file) return;
 
-    if (file.size > 10 * 1024 * 1024) {
-      alert('File size exceeds 10MB limit. Please upload a smaller image.');
+    if (file.size > 25 * 1024 * 1024) {
+      alert('File size exceeds 25MB limit. Please upload a smaller image.');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64 = reader.result as string;
-      setDocs(prev => ({ ...prev, [key]: base64 }));
-    };
-    reader.readAsDataURL(file);
+    setCompressing(prev => ({ ...prev, [key]: true }));
+
+    try {
+      let fileToProcess: File | Blob = file;
+
+      // Automatically compress image to ~300KB-400KB so that uploads are fast and 100% reliable
+      if (file.type.startsWith('image/')) {
+        try {
+          const options = {
+            maxSizeMB: 0.4,
+            maxWidthOrHeight: 1280,
+            useWebWorker: true,
+            fileType: 'image/jpeg'
+          };
+          fileToProcess = await imageCompression(file, options);
+        } catch (compErr) {
+          console.warn('Image compression fallback:', compErr);
+          fileToProcess = file;
+        }
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        setDocs(prev => ({ ...prev, [key]: base64 }));
+        setCompressing(prev => ({ ...prev, [key]: false }));
+      };
+      reader.onerror = () => {
+        setCompressing(prev => ({ ...prev, [key]: false }));
+      };
+      reader.readAsDataURL(fileToProcess);
+    } catch (err) {
+      console.error('File upload error:', err);
+      setCompressing(prev => ({ ...prev, [key]: false }));
+    }
   };
 
   const removeDoc = (key: keyof typeof docs) => {
     setDocs(prev => ({ ...prev, [key]: '' }));
   };
 
+  const isCompressingAny = Object.values(compressing).some(Boolean);
   const uploadedCount = Object.values(docs).filter(Boolean).length;
   const isComplete = uploadedCount === 5;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isCompressingAny) {
+      alert('Images are still being optimized. Please wait a moment.');
+      return;
+    }
     if (!isComplete) {
       setErrorMessage('Please upload all 5 required documents before submitting.');
       return;
@@ -263,7 +299,13 @@ export const KycUploadScreen: React.FC<KycUploadScreenProps> = ({ user }) => {
                   </div>
 
                   {/* PREVIEW OR DROPZONE */}
-                  {fileData ? (
+                  {compressing[slot.key] ? (
+                    <div className="border-2 border-dashed border-indigo-500/50 rounded-xl p-4 flex flex-col items-center justify-center text-center bg-indigo-500/10 aspect-[4/3]">
+                      <Loader2 className="w-7 h-7 animate-spin text-indigo-400 mb-2" />
+                      <span className="text-xs font-bold text-indigo-300">Optimizing Image...</span>
+                      <span className="text-[10px] text-slate-400 mt-1">Compressing for instant upload</span>
+                    </div>
+                  ) : fileData ? (
                     <div className="relative rounded-xl overflow-hidden border border-slate-700 bg-black/40 group aspect-[4/3] flex items-center justify-center">
                       <img 
                         src={fileData} 
@@ -296,7 +338,7 @@ export const KycUploadScreen: React.FC<KycUploadScreenProps> = ({ user }) => {
                         Click to Upload
                       </span>
                       <span className="text-[10px] text-slate-400 mt-1">
-                        PNG, JPG, JPEG up to 10MB
+                        PNG, JPG, JPEG up to 25MB (Auto-compressed)
                       </span>
                     </label>
                   )}
@@ -325,9 +367,9 @@ export const KycUploadScreen: React.FC<KycUploadScreenProps> = ({ user }) => {
 
             <button
               type="submit"
-              disabled={!isComplete || loading}
+              disabled={!isComplete || loading || isCompressingAny}
               className={`w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition shadow-xl ${
-                isComplete && !loading
+                isComplete && !loading && !isCompressingAny
                   ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white shadow-indigo-500/25 cursor-pointer'
                   : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
               }`}
@@ -336,6 +378,11 @@ export const KycUploadScreen: React.FC<KycUploadScreenProps> = ({ user }) => {
                 <>
                   <Loader2 className="w-4 h-4 animate-spin text-white" />
                   <span>Submitting Documents...</span>
+                </>
+              ) : isCompressingAny ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
+                  <span>Optimizing Images...</span>
                 </>
               ) : (
                 <>

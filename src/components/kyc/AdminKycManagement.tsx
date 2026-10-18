@@ -514,9 +514,17 @@ export const AdminKycManagement: React.FC = () => {
                   </a>
                 </div>
               ) : (
-                <div className="text-center p-8 text-slate-500">
-                  <AlertCircle className="w-8 h-8 mx-auto mb-2 text-slate-600" />
-                  <p className="text-sm">No image available for this document.</p>
+                <div className="text-center p-8 max-w-md mx-auto">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mx-auto mb-3">
+                    <AlertCircle className="w-6 h-6" />
+                  </div>
+                  <p className="text-sm font-bold text-white mb-1">Document File Not Found On Server</p>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    User submitted a KYC request, but image files were not stored on the database due to large file size before auto-compression was enabled.
+                  </p>
+                  <p className="text-[11px] text-indigo-400 mt-3 font-medium bg-indigo-500/10 p-2.5 rounded-xl border border-indigo-500/20 text-left">
+                    💡 <strong>Admin Action:</strong> You can click <strong>Approve</strong> to unlock the user dashboard directly, or click <strong>Reject</strong> with reason (e.g. <em>"Please re-upload photos"</em>) so the user can re-upload with the new compressed uploader.
+                  </p>
                 </div>
               )}
             </div>
