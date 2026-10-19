@@ -471,6 +471,7 @@ router.post('/settings', verifyToken, requireRoles(['admin']), async (req, res) 
 });
 
 // -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // POST /api/qr/request/submit (User Payment Submission)
 // -----------------------------------------------------------------------------
 router.post('/request/submit', verifyToken, async (req, res) => {
@@ -499,12 +500,44 @@ router.post('/request/submit', verifyToken, async (req, res) => {
       return res.status(400).json({ success: false, message: 'UTR Number must be exactly 12 numeric digits.' });
     }
 
-    // Check for duplicate UTR number in non-rejected requests
-    const isDuplicateUtr = db.qr_payment_requests.some(
+    // Sanitize mobile number strictly to 10 digits to prevent VARCHAR(10) database error
+    const rawMobile = (mobile_number || user.mobile_number || '').toString();
+    const cleanMobile = rawMobile.replace(/\D/g, '').slice(-10);
+    if (!cleanMobile || cleanMobile.length !== 10) {
+      return res.status(400).json({ success: false, message: 'Please provide a valid 10-digit mobile number.' });
+    }
+
+    // Check for duplicate UTR number in in-memory store
+    const isDuplicateUtr = (db.qr_payment_requests || []).some(
       r => r.utr_number === cleanUtr && r.status !== 'rejected'
     );
     if (isDuplicateUtr) {
       return res.status(400).json({ success: false, message: 'This 12-digit UTR number has already been submitted or processed.' });
+    }
+
+    // Check duplicate UTR in Supabase database & handle rejected cleanup
+    if (supabase) {
+      try {
+        const { data: existingUtr } = await supabase
+          .from('qr_payment_requests')
+          .select('id, status')
+          .eq('utr_number', cleanUtr)
+          .maybeSingle();
+
+        if (existingUtr) {
+          if (existingUtr.status !== 'rejected') {
+            return res.status(400).json({
+              success: false,
+              message: 'This 12-digit UTR number has already been submitted or processed.'
+            });
+          } else {
+            // Delete old rejected record so PostgreSQL unique constraint doesn't block re-submission
+            await supabase.from('qr_payment_requests').delete().eq('id', existingUtr.id);
+          }
+        }
+      } catch (checkErr) {
+        console.error('Supabase UTR Check Warning:', checkErr);
+      }
     }
 
     const activeQr = db.qr_masters.find(q => q.id === qr_master_id) ||
@@ -532,17 +565,59 @@ router.post('/request/submit', verifyToken, async (req, res) => {
     const msComm = superDistUser ? Math.round((numericAmount * (msMargin / 100)) * 100) / 100 : 0;
     const adminComm = Math.round(Math.max(0, chargeAmt - (dsComm + msComm)) * 100) / 100;
 
+    // Validate foreign keys to avoid PostgreSQL constraint errors
+    let validQrMasterId = activeQr ? activeQr.id : null;
+    if (supabase && validQrMasterId) {
+      try {
+        const { data: qmExists } = await supabase
+          .from('qr_masters')
+          .select('id')
+          .eq('id', validQrMasterId)
+          .maybeSingle();
+        if (!qmExists) {
+          validQrMasterId = null;
+        }
+      } catch {
+        validQrMasterId = null;
+      }
+    }
+
+    // Ensure user profile exists in Supabase users_profiles for FK integrity
+    if (supabase) {
+      try {
+        const { data: uExists } = await supabase
+          .from('users_profiles')
+          .select('id')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (!uExists) {
+          await supabase.from('users_profiles').upsert([{
+            id: user.id,
+            name: user.name || 'User',
+            firm_name: user.firm_name || '',
+            mobile_number: cleanMobile,
+            role: user.role || 'retailer',
+            wallet_balance: user.wallet_balance || 0,
+            created_at: new Date().toISOString()
+          }], { onConflict: 'id' }).catch(() => {});
+        }
+      } catch (uErr) {
+        console.error('Supabase users_profiles check warning:', uErr);
+      }
+    }
+
     const newRequest = {
       id: 'qr_req_' + Date.now(),
       user_id: user.id,
       user_name: user.name,
       firm_name: user.firm_name,
-      qr_master_id: activeQr ? activeQr.id : null,
+      qr_master_id: validQrMasterId,
       qr_name: activeQr ? activeQr.name : 'System QR',
       upi_id: activeQr ? activeQr.upi_id : '',
       amount: numericAmount,
       utr_number: cleanUtr,
-      mobile_number: mobile_number || user.mobile_number,
+      mobile_number: cleanMobile,
       screenshot_url: screenshot_url || '',
       status: 'pending',
       charge_percent: userChargePct,
@@ -554,8 +629,7 @@ router.post('/request/submit', verifyToken, async (req, res) => {
       created_at: new Date().toISOString()
     };
 
-    db.qr_payment_requests.unshift(newRequest);
-
+    // Insert to Supabase first with strict error verification
     if (supabase) {
       try {
         const supabasePayload = {
@@ -564,7 +638,7 @@ router.post('/request/submit', verifyToken, async (req, res) => {
           qr_master_id: newRequest.qr_master_id,
           amount: newRequest.amount,
           utr_number: newRequest.utr_number,
-          mobile_number: newRequest.mobile_number,
+          mobile_number: cleanMobile,
           screenshot_url: newRequest.screenshot_url,
           status: newRequest.status,
           charge_percent: newRequest.charge_percent,
@@ -572,13 +646,35 @@ router.post('/request/submit', verifyToken, async (req, res) => {
           net_amount: newRequest.net_amount,
           distributor_commission: newRequest.distributor_commission,
           super_distributor_commission: newRequest.super_distributor_commission,
+          admin_commission: newRequest.admin_commission,
           created_at: newRequest.created_at
         };
-        await supabase.from('qr_payment_requests').insert([supabasePayload]);
+
+        const { error: sbErr } = await supabase.from('qr_payment_requests').insert([supabasePayload]);
+        if (sbErr) {
+          console.error('Supabase Insert QR Request Error:', sbErr);
+          if (sbErr.code === '23505') {
+            return res.status(400).json({
+              success: false,
+              message: 'This 12-digit UTR number has already been recorded in the database.'
+            });
+          }
+          return res.status(500).json({
+            success: false,
+            message: 'Database error: Could not save payment request. ' + (sbErr.message || 'Please try again.')
+          });
+        }
       } catch (sbErr) {
-        console.error('Supabase Insert QR Request Error:', sbErr);
+        console.error('Supabase Insert QR Request Exception:', sbErr);
+        return res.status(500).json({
+          success: false,
+          message: 'Server error saving payment request to database. Please try again.'
+        });
       }
     }
+
+    // Only unshift after database persistence is guaranteed
+    db.qr_payment_requests.unshift(newRequest);
 
     return res.status(201).json({
       success: true,
@@ -591,80 +687,10 @@ router.post('/request/submit', verifyToken, async (req, res) => {
   }
 });
 
-// Alias /submit-payment-utr for backwards compatibility
+// Alias /submit-payment-utr for backwards compatibility (delegates to the main logic)
 router.post('/submit-payment-utr', verifyToken, async (req, res) => {
-  const { amount, utr_number, mobile_number, screenshot_url, qr_id } = req.body;
-  const user = db.users.find(u => u.id === req.user.id);
-  if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
-
-  const cleanUtr = (utr_number || '').toString().trim();
-  const numericAmount = parseFloat(amount);
-
-  let distUser = user.distributor_id ? db.users.find(u => u.id === user.distributor_id) : null;
-  let superDistUser = (user.super_distributor_id || (distUser && distUser.super_distributor_id))
-    ? db.users.find(u => u.id === (user.super_distributor_id || (distUser && distUser.super_distributor_id)))
-    : null;
-  const distRate = distUser ? (parseFloat(distUser.qr_charge_percent) || 0) : 0;
-  const superDistRate = superDistUser ? (parseFloat(superDistUser.qr_charge_percent) || 0) : 0;
-  const dsMargin = distUser ? Math.max(0, userChargePct - distRate) : 0;
-  const msMargin = superDistUser ? Math.max(0, distRate - superDistRate) : 0;
-  const dsComm = distUser ? Math.round((numericAmount * (dsMargin / 100)) * 100) / 100 : 0;
-  const msComm = superDistUser ? Math.round((numericAmount * (msMargin / 100)) * 100) / 100 : 0;
-  const adminComm = Math.round(Math.max(0, chargeAmt - (dsComm + msComm)) * 100) / 100;
-
-  const newRequest = {
-    id: 'qr_req_' + Date.now(),
-    user_id: user.id,
-    user_name: user.name,
-    firm_name: user.firm_name,
-    qr_master_id: activeQr ? activeQr.id : null,
-    qr_name: activeQr ? activeQr.name : 'System QR',
-    upi_id: activeQr ? activeQr.upi_id : '',
-    amount: numericAmount,
-    utr_number: cleanUtr,
-    mobile_number: mobile_number || user.mobile_number,
-    screenshot_url: screenshot_url || '',
-    status: 'pending',
-    charge_percent: userChargePct,
-    charge_amount: chargeAmt,
-    net_amount: netAmt,
-    distributor_commission: dsComm,
-    super_distributor_commission: msComm,
-    admin_commission: adminComm,
-    created_at: new Date().toISOString()
-  };
-
-  db.qr_payment_requests.unshift(newRequest);
-
-  if (supabase) {
-    try {
-      const supabasePayload = {
-        id: newRequest.id,
-        user_id: newRequest.user_id,
-        qr_master_id: newRequest.qr_master_id,
-        amount: newRequest.amount,
-        utr_number: newRequest.utr_number,
-        mobile_number: newRequest.mobile_number,
-        screenshot_url: newRequest.screenshot_url,
-        status: newRequest.status,
-        charge_percent: newRequest.charge_percent,
-        charge_amount: newRequest.charge_amount,
-        net_amount: newRequest.net_amount,
-        distributor_commission: newRequest.distributor_commission,
-        super_distributor_commission: newRequest.super_distributor_commission,
-        created_at: newRequest.created_at
-      };
-      await supabase.from('qr_payment_requests').insert([supabasePayload]);
-    } catch (sbErr) {
-      console.error('Supabase Insert QR Request Error:', sbErr);
-    }
-  }
-
-  return res.status(200).json({
-    success: true,
-    message: `Payment request of ₹${numericAmount} submitted successfully. Pending Admin Approval.`,
-    payment_request: newRequest
-  });
+  req.url = '/request/submit';
+  return router.handle(req, res);
 });
 
 // -----------------------------------------------------------------------------
@@ -689,7 +715,10 @@ router.get('/request/list', verifyToken, async (req, res) => {
           .order('created_at', { ascending: false });
 
         if (!error && data) {
-          db.qr_payment_requests = data.map(r => {
+          const fetchedIds = new Set(data.map(r => r.id));
+          const localPending = (db.qr_payment_requests || []).filter(r => !fetchedIds.has(r.id) && r.status === 'pending');
+
+          const mappedFromDb = data.map(r => {
             const u = (db.users || []).find(u => u.id === r.user_id);
             const q = (db.qr_masters || []).find(qm => qm.id === r.qr_master_id);
             return {
@@ -703,6 +732,8 @@ router.get('/request/list', verifyToken, async (req, res) => {
               upi_id: q ? q.upi_id : (r.upi_id || '')
             };
           });
+
+          db.qr_payment_requests = [...localPending, ...mappedFromDb];
         }
       } catch (err) {
         console.error('Supabase QR Request list fetch error:', err);

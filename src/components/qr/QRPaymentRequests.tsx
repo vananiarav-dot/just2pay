@@ -29,9 +29,12 @@ export const QRPaymentRequests: React.FC = () => {
   // Retailer Payment Form State
   const [amount, setAmount] = useState('');
   const [utrNumber, setUtrNumber] = useState('');
-  const [mobileNumber, setMobileNumber] = useState(user?.mobile_number || '');
+  const [mobileNumber, setMobileNumber] = useState(
+    user?.mobile_number ? user.mobile_number.replace(/\D/g, '').slice(-10) : ''
+  );
   const [screenshotUrl, setScreenshotUrl] = useState('');
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -183,16 +186,69 @@ export const QRPaymentRequests: React.FC = () => {
     setTimeout(() => setCopiedUpi(false), 2000);
   };
 
-  const handleScreenshotUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // High-performance Canvas Image Compressor: converts heavy screenshots (3-8MB) to ~150-250KB Web-optimized JPEG
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const maxDimension = 1200;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height && width > maxDimension) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else if (height > maxDimension) {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(event.target?.result as string);
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL('image/jpeg', 0.72);
+          resolve(compressed);
+        };
+        img.onerror = () => resolve(event.target?.result as string);
+        img.src = event.target?.result as string;
+      };
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleScreenshotUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        setScreenshotPreview(result);
-        setScreenshotUrl(result);
-      };
-      reader.readAsDataURL(file);
+      if (!file.type.startsWith('image/')) {
+        setErrorMessage('Please select a valid image file (PNG, JPG, JPEG).');
+        return;
+      }
+      setIsCompressing(true);
+      try {
+        const compressedBase64 = await compressImage(file);
+        setScreenshotPreview(compressedBase64);
+        setScreenshotUrl(compressedBase64);
+      } catch (err) {
+        console.error('Image compression error:', err);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          setScreenshotPreview(result);
+          setScreenshotUrl(result);
+        };
+        reader.readAsDataURL(file);
+      } finally {
+        setIsCompressing(false);
+      }
     }
   };
 
@@ -200,6 +256,11 @@ export const QRPaymentRequests: React.FC = () => {
     e.preventDefault();
     setErrorMessage(null);
     setSuccessMessage(null);
+
+    if (isCompressing) {
+      setErrorMessage('Please wait a moment while the screenshot is optimizing...');
+      return;
+    }
 
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) {
@@ -213,6 +274,12 @@ export const QRPaymentRequests: React.FC = () => {
       return;
     }
 
+    const cleanMobile = mobileNumber.replace(/\D/g, '').slice(-10);
+    if (cleanMobile.length !== 10) {
+      setErrorMessage('Please enter a valid 10-digit mobile number.');
+      return;
+    }
+
     if (!screenshotUrl && !screenshotPreview) {
       setErrorMessage('Payment receipt screenshot is required. Please upload screenshot.');
       return;
@@ -223,7 +290,7 @@ export const QRPaymentRequests: React.FC = () => {
       const res = await qrApi.submitPaymentRequest({
         amount: numAmount,
         utr_number: cleanUtr,
-        mobile_number: mobileNumber,
+        mobile_number: cleanMobile,
         screenshot_url: screenshotUrl,
         qr_master_id: activeQr?.id
       });
@@ -234,7 +301,7 @@ export const QRPaymentRequests: React.FC = () => {
         setUtrNumber('');
         setScreenshotUrl('');
         setScreenshotPreview(null);
-        fetchData();
+        await fetchData();
       } else {
         setErrorMessage(res.message || 'Submission failed.');
       }
@@ -602,21 +669,24 @@ export const QRPaymentRequests: React.FC = () => {
                   <label className={`flex flex-col items-center justify-center gap-2 p-5 rounded-2xl bg-slate-950/90 border-2 border-dashed ${
                     screenshotPreview ? 'border-emerald-500/60 bg-emerald-500/10' : 'border-slate-800 hover:border-purple-500/70 hover:bg-purple-500/5'
                   } cursor-pointer transition-all duration-200 shadow-inner group text-center`}>
-                    {screenshotPreview ? (
+                    {isCompressing ? (
+                      <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+                    ) : screenshotPreview ? (
                       <CheckCircle2 className="w-8 h-8 text-emerald-400 shrink-0 animate-bounce" />
                     ) : (
                       <Upload className="w-8 h-8 text-purple-400 group-hover:scale-110 transition-transform shrink-0" />
                     )}
                     <div className="space-y-0.5">
                       <span className={`text-xs font-extrabold block ${screenshotPreview ? 'text-emerald-300' : 'text-slate-200'}`}>
-                        {screenshotPreview ? 'Receipt Screenshot Uploaded ✓' : 'Click to Upload Payment Screenshot *'}
+                        {isCompressing ? 'Optimizing Screenshot...' : screenshotPreview ? 'Receipt Screenshot Ready ✓' : 'Click to Upload Payment Screenshot *'}
                       </span>
-                      <p className="text-[10px] text-slate-400 font-medium">PNG, JPG, JPEG receipts up to 5MB</p>
+                      <p className="text-[10px] text-slate-400 font-medium">PNG, JPG, JPEG (Auto-compressed for fast, error-free upload)</p>
                     </div>
                     <input
                       type="file"
                       accept="image/*"
                       required
+                      disabled={isCompressing}
                       onChange={handleScreenshotUpload}
                       className="hidden"
                     />
@@ -626,10 +696,10 @@ export const QRPaymentRequests: React.FC = () => {
 
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || isCompressing}
                 className="w-full py-3.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold text-xs shadow-xl shadow-purple-950/50 transition transform hover:-translate-y-0.5 active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2 mt-2"
               >
-                {submitting ? 'Submitting Request...' : 'Submit Payment Request'}
+                {submitting ? 'Submitting Request...' : isCompressing ? 'Optimizing Image...' : 'Submit Payment Request'}
                 <ArrowRight className="w-4 h-4" />
               </button>
 
