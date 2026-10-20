@@ -4,7 +4,11 @@ import type { UserProfile } from '../../types/auth';
 import type { QrPaymentRequest } from '../../types/qr';
 import { useAuthStore } from '../../store/authStore';
 import { AddUserModal } from '../common/AddUserModal';
-import { Users, Wallet, RefreshCw, Store, UserPlus, QrCode, Coins, ArrowUpRight, Lock } from 'lucide-react';
+import { 
+  Users, Wallet, RefreshCw, Store, UserPlus, QrCode, 
+  Coins, ArrowUpRight, Lock, Edit3, Percent, CheckCircle2, 
+  AlertCircle, X, Loader2 
+} from 'lucide-react';
 
 export const DistributorDashboard: React.FC = () => {
   const { user } = useAuthStore();
@@ -12,6 +16,13 @@ export const DistributorDashboard: React.FC = () => {
   const [qrRequests, setQrRequests] = useState<QrPaymentRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+
+  // Rate Editing State
+  const [editingRateUser, setEditingRateUser] = useState<UserProfile | null>(null);
+  const [rateInput, setRateInput] = useState<string>('');
+  const [updatingRate, setUpdatingRate] = useState<boolean>(false);
+  const [rateError, setRateError] = useState<string | null>(null);
+  const [rateSuccess, setRateSuccess] = useState<string | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -37,6 +48,51 @@ export const DistributorDashboard: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const handleOpenRateModal = (retailer: UserProfile) => {
+    setEditingRateUser(retailer);
+    const currentRate = retailer.qr_charge_percent !== undefined && retailer.qr_charge_percent !== null 
+      ? retailer.qr_charge_percent 
+      : (retailer.charge_percentage || 0);
+    setRateInput(String(currentRate));
+    setRateError(null);
+    setRateSuccess(null);
+  };
+
+  const handleSaveRate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingRateUser) return;
+    const num = parseFloat(rateInput);
+    if (isNaN(num) || num < 0 || num > 100) {
+      setRateError('Please enter a valid rate between 0% and 100%.');
+      return;
+    }
+    const myDistRate = parseFloat(String(user?.qr_charge_percent || 0));
+    if (num < myDistRate) {
+      setRateError(`Retailer rate cannot be less than your distributor base rate (${myDistRate.toFixed(2)}%).`);
+      return;
+    }
+    setUpdatingRate(true);
+    setRateError(null);
+    setRateSuccess(null);
+    try {
+      const res = await userApi.updateUserRate(editingRateUser.id, num);
+      if (res.success) {
+        setRateSuccess(res.message || 'Retailer rate updated successfully!');
+        setRetailers(prev => prev.map(r => r.id === editingRateUser.id ? { ...r, qr_charge_percent: num, charge_percentage: num } : r));
+        setTimeout(() => {
+          setEditingRateUser(null);
+          fetchData();
+        }, 1200);
+      } else {
+        setRateError(res.message || 'Failed to update rate.');
+      }
+    } catch (err: any) {
+      setRateError(err.response?.data?.message || err.message || 'Error occurred while saving rate.');
+    } finally {
+      setUpdatingRate(false);
+    }
+  };
 
   const approvedQr = qrRequests.filter(r => r.status === 'approved');
   const totalApprovedQrVolume = approvedQr.reduce((acc, r) => acc + Number(r.amount || 0), 0);
@@ -203,18 +259,19 @@ export const DistributorDashboard: React.FC = () => {
                 <th className="p-3">Wallet Balance</th>
                 <th className="p-3 text-amber-400">Commission Earning</th>
                 <th className="p-3">Status</th>
+                <th className="p-3 text-center">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="p-6 text-center text-slate-500">
+                  <td colSpan={7} className="p-6 text-center text-slate-500">
                     Loading mapped retailers...
                   </td>
                 </tr>
               ) : retailers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-6 text-center text-slate-500">
+                  <td colSpan={7} className="p-6 text-center text-slate-500">
                     No mapped retailers found under your network. Click '+ Create New Retailer' to register one.
                   </td>
                 </tr>
@@ -247,6 +304,16 @@ export const DistributorDashboard: React.FC = () => {
                         {r.status}
                       </span>
                     </td>
+                    <td className="p-3 text-center">
+                      <button
+                        onClick={() => handleOpenRateModal(r)}
+                        className="px-2.5 py-1.5 rounded-xl bg-blue-500/15 hover:bg-blue-500/25 text-blue-300 hover:text-blue-200 border border-blue-500/30 text-[11px] font-bold transition flex items-center justify-center gap-1.5 mx-auto cursor-pointer shadow-sm"
+                        title="Change Retailer QR Rate %"
+                      >
+                        <Edit3 className="w-3.5 h-3.5 text-blue-400" />
+                        <span>Edit Rate</span>
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -262,6 +329,167 @@ export const DistributorDashboard: React.FC = () => {
         onUserAdded={fetchData}
         defaultRole="user"
       />
+
+      {/* QUICK RATE EDIT MODAL */}
+      {editingRateUser && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => !updatingRate && setEditingRateUser(null)}
+        >
+          <div 
+            className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-5 shadow-2xl relative overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between gap-4 border-b border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-2xl bg-blue-500/15 border border-blue-500/30 text-blue-400">
+                  <Percent className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-white">
+                    Update Retailer Service Rate
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Set QR charge rate for <strong className="text-white">{editingRateUser.name}</strong>
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingRateUser(null)}
+                disabled={updatingRate}
+                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Retailer Meta Card */}
+            <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 space-y-2 text-xs">
+              <div className="flex justify-between">
+                <span className="text-slate-400 uppercase text-[10px] font-bold">Outlet / Firm</span>
+                <span className="font-bold text-white">{editingRateUser.firm_name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400 uppercase text-[10px] font-bold">Mobile Number</span>
+                <span className="font-mono text-blue-300 font-bold">{editingRateUser.mobile_number}</span>
+              </div>
+            </div>
+
+            {/* Rate Margin Analysis */}
+            {(() => {
+              const myDistRate = Number(user?.qr_charge_percent || 0);
+              const targetVal = parseFloat(rateInput) || 0;
+              const margin = Math.max(0, targetVal - myDistRate);
+              const isBelow = targetVal < myDistRate;
+              return (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 text-center">
+                      <p className="text-[10px] text-slate-400 uppercase font-bold">Your Base Rate (DS)</p>
+                      <p className="text-sm font-black font-mono text-blue-300 mt-1">{myDistRate.toFixed(2)}%</p>
+                    </div>
+                    <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 text-center">
+                      <p className="text-[10px] text-slate-400 uppercase font-bold">Your Profit Margin</p>
+                      <p className={`text-sm font-black font-mono mt-1 ${margin > 0 && !isBelow ? 'text-emerald-400' : 'text-slate-500'}`}>
+                        +{margin.toFixed(2)}%
+                      </p>
+                    </div>
+                  </div>
+                  {isBelow && (
+                    <p className="text-[11px] text-rose-400 font-bold text-center">
+                      ⚠️ Retailer rate cannot be less than your distributor rate ({myDistRate.toFixed(2)}%).
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Error & Success Alerts */}
+            {rateError && (
+              <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl flex items-center gap-2 text-rose-400 text-xs font-bold">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{rateError}</span>
+              </div>
+            )}
+            {rateSuccess && (
+              <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center gap-2 text-emerald-400 text-xs font-bold">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>{rateSuccess}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveRate} className="space-y-4">
+              <div>
+                <label className="text-[11px] font-bold text-slate-300 uppercase block mb-1.5">
+                  New Retailer Rate (%)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.01"
+                    min={Number(user?.qr_charge_percent || 0)}
+                    max="100"
+                    value={rateInput}
+                    onChange={(e) => setRateInput(e.target.value)}
+                    placeholder="e.g. 1.00"
+                    className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-xl py-3 px-4 font-mono font-bold text-white text-base focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    required
+                    disabled={updatingRate}
+                  />
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">
+                    %
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-[10px] text-slate-500 font-bold uppercase">Quick Set:</span>
+                  {[
+                    Math.round((Number(user?.qr_charge_percent || 0) + 0.1) * 100) / 100,
+                    Math.round((Number(user?.qr_charge_percent || 0) + 0.2) * 100) / 100,
+                    Math.round((Number(user?.qr_charge_percent || 0) + 0.3) * 100) / 100,
+                    Math.round((Number(user?.qr_charge_percent || 0) + 0.5) * 100) / 100,
+                  ].map((pct) => (
+                    <button
+                      key={pct}
+                      type="button"
+                      onClick={() => setRateInput(String(pct))}
+                      className="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-mono font-bold transition border border-slate-700/60 cursor-pointer"
+                    >
+                      {pct}%
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingRateUser(null)}
+                  disabled={updatingRate}
+                  className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={updatingRate}
+                  className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {updatingRate ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <span>Save Rate</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

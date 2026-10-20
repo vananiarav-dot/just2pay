@@ -146,6 +146,11 @@ export const userApi = {
     const response = await apiClient.put(`/user/${id}`, data);
     return response.data;
   },
+
+  updateUserRate: async (userId: string, qrChargePercent: number): Promise<{ success: boolean; message: string; user?: UserProfile }> => {
+    const response = await apiClient.patch(`/user/${encodeURIComponent(userId)}/rate`, { qr_charge_percent: qrChargePercent });
+    return response.data;
+  },
 };
 
 export const qrApi = {

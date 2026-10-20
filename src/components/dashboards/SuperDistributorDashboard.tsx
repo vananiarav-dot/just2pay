@@ -4,7 +4,11 @@ import type { UserProfile } from '../../types/auth';
 import type { QrPaymentRequest } from '../../types/qr';
 import { useAuthStore } from '../../store/authStore';
 import { AddUserModal } from '../common/AddUserModal';
-import { Award, Users, Wallet, ShieldCheck, UserPlus, RefreshCw, QrCode, Coins, ArrowUpRight, Lock } from 'lucide-react';
+import { 
+  Award, Users, Wallet, ShieldCheck, UserPlus, RefreshCw, 
+  QrCode, Coins, ArrowUpRight, Lock, Edit3, Percent, 
+  CheckCircle2, AlertCircle, X, Loader2 
+} from 'lucide-react';
 
 export const SuperDistributorDashboard: React.FC = () => {
   const { user } = useAuthStore();
@@ -12,6 +16,13 @@ export const SuperDistributorDashboard: React.FC = () => {
   const [qrRequests, setQrRequests] = useState<QrPaymentRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+
+  // Rate Editing State
+  const [editingRateUser, setEditingRateUser] = useState<UserProfile | null>(null);
+  const [rateInput, setRateInput] = useState<string>('');
+  const [updatingRate, setUpdatingRate] = useState<boolean>(false);
+  const [rateError, setRateError] = useState<string | null>(null);
+  const [rateSuccess, setRateSuccess] = useState<string | null>(null);
 
   const fetchTeam = async () => {
     setLoading(true);
@@ -37,6 +48,46 @@ export const SuperDistributorDashboard: React.FC = () => {
   useEffect(() => {
     fetchTeam();
   }, []);
+
+  const handleOpenRateModal = (member: UserProfile) => {
+    setEditingRateUser(member);
+    const currentRate = member.qr_charge_percent !== undefined && member.qr_charge_percent !== null 
+      ? member.qr_charge_percent 
+      : (member.charge_percentage || 0);
+    setRateInput(String(currentRate));
+    setRateError(null);
+    setRateSuccess(null);
+  };
+
+  const handleSaveRate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingRateUser) return;
+    const num = parseFloat(rateInput);
+    if (isNaN(num) || num < 0 || num > 100) {
+      setRateError('Please enter a valid rate between 0% and 100%.');
+      return;
+    }
+    setUpdatingRate(true);
+    setRateError(null);
+    setRateSuccess(null);
+    try {
+      const res = await userApi.updateUserRate(editingRateUser.id, num);
+      if (res.success) {
+        setRateSuccess(res.message || 'Rate updated successfully!');
+        setTeamMembers(prev => prev.map(m => m.id === editingRateUser.id ? { ...m, qr_charge_percent: num, charge_percentage: num } : m));
+        setTimeout(() => {
+          setEditingRateUser(null);
+          fetchTeam();
+        }, 1200);
+      } else {
+        setRateError(res.message || 'Failed to update rate.');
+      }
+    } catch (err: any) {
+      setRateError(err.response?.data?.message || err.message || 'Error occurred while saving rate.');
+    } finally {
+      setUpdatingRate(false);
+    }
+  };
 
   const distributors = teamMembers.filter(u => u.role === 'distributor');
   const retailers = teamMembers.filter(u => u.role === 'user');
@@ -185,7 +236,7 @@ export const SuperDistributorDashboard: React.FC = () => {
           </h3>
           <button
             onClick={() => setShowAddModal(true)}
-            className="text-xs font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1"
+            className="text-xs font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1 cursor-pointer"
           >
             <UserPlus className="w-3.5 h-3.5" /> + Onboard User
           </button>
@@ -203,13 +254,14 @@ export const SuperDistributorDashboard: React.FC = () => {
                 <th className="py-3 px-4">Wallet Balance</th>
                 <th className="py-3 px-4 text-amber-400">Commission Earning</th>
                 <th className="py-3 px-4">Status</th>
+                <th className="py-3 px-4 text-center">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 text-xs">
               {loading ? (
-                <tr><td colSpan={8} className="py-6 text-center text-slate-400">Loading network...</td></tr>
+                <tr><td colSpan={9} className="py-6 text-center text-slate-400">Loading network...</td></tr>
               ) : teamMembers.filter(u => u.id !== user?.id).length === 0 ? (
-                <tr><td colSpan={8} className="py-6 text-center text-slate-400">No downstream users mapped yet. Click '+ Add New User / DS' above to register your first distributor.</td></tr>
+                <tr><td colSpan={9} className="py-6 text-center text-slate-400">No downstream users mapped yet. Click '+ Add New User / DS' above to register your first distributor.</td></tr>
               ) : (
                 teamMembers.filter(u => u.id !== user?.id).map((member) => (
                   <tr key={member.id} className="hover:bg-slate-800/40">
@@ -239,6 +291,16 @@ export const SuperDistributorDashboard: React.FC = () => {
                         {member.status}
                       </span>
                     </td>
+                    <td className="py-3 px-4 text-center">
+                      <button
+                        onClick={() => handleOpenRateModal(member)}
+                        className="px-2.5 py-1.5 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 hover:text-purple-200 border border-purple-500/30 text-[11px] font-bold transition flex items-center justify-center gap-1.5 mx-auto cursor-pointer shadow-sm"
+                        title="Change Member QR Rate %"
+                      >
+                        <Edit3 className="w-3.5 h-3.5 text-purple-400" />
+                        <span>Edit Rate</span>
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -255,6 +317,162 @@ export const SuperDistributorDashboard: React.FC = () => {
         distributors={distributors}
         defaultRole="distributor"
       />
+
+      {/* QUICK RATE EDIT MODAL */}
+      {editingRateUser && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => !updatingRate && setEditingRateUser(null)}
+        >
+          <div 
+            className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-5 shadow-2xl relative overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between gap-4 border-b border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-2xl bg-purple-500/15 border border-purple-500/30 text-purple-400">
+                  <Percent className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-white">
+                    Update Service Rate
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Set QR rent / fee for <strong className="text-white">{editingRateUser.name}</strong>
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingRateUser(null)}
+                disabled={updatingRate}
+                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* User Meta Card */}
+            <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 space-y-2 text-xs">
+              <div className="flex justify-between">
+                <span className="text-slate-400 uppercase text-[10px] font-bold">Firm / Member</span>
+                <span className="font-bold text-white">{editingRateUser.firm_name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400 uppercase text-[10px] font-bold">Role</span>
+                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                  editingRateUser.role === 'distributor' ? 'bg-blue-500/20 text-blue-300' : 'bg-emerald-500/20 text-emerald-300'
+                }`}>
+                  {editingRateUser.role === 'distributor' ? 'Distributor' : 'Retailer'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400 uppercase text-[10px] font-bold">Mobile</span>
+                <span className="font-mono text-indigo-300 font-bold">{editingRateUser.mobile_number}</span>
+              </div>
+            </div>
+
+            {/* Rate Margin Analysis */}
+            {(() => {
+              const myBaseRate = Number(user?.qr_charge_percent || 0);
+              const targetVal = parseFloat(rateInput) || 0;
+              const margin = Math.max(0, targetVal - myBaseRate);
+              return (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 text-center">
+                    <p className="text-[10px] text-slate-400 uppercase font-bold">Your Base Rate (MS)</p>
+                    <p className="text-sm font-black font-mono text-purple-300 mt-1">{myBaseRate.toFixed(2)}%</p>
+                  </div>
+                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 text-center">
+                    <p className="text-[10px] text-slate-400 uppercase font-bold">Your Earning Margin</p>
+                    <p className={`text-sm font-black font-mono mt-1 ${margin > 0 ? 'text-amber-400' : 'text-slate-400'}`}>
+                      +{margin.toFixed(2)}%
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Error & Success Alerts */}
+            {rateError && (
+              <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl flex items-center gap-2 text-rose-400 text-xs font-bold">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{rateError}</span>
+              </div>
+            )}
+            {rateSuccess && (
+              <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center gap-2 text-emerald-400 text-xs font-bold">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>{rateSuccess}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveRate} className="space-y-4">
+              <div>
+                <label className="text-[11px] font-bold text-slate-300 uppercase block mb-1.5">
+                  New Rate Percentage (%)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    value={rateInput}
+                    onChange={(e) => setRateInput(e.target.value)}
+                    placeholder="e.g. 0.80"
+                    className="w-full bg-slate-950 border border-slate-700 focus:border-purple-500 rounded-xl py-3 px-4 font-mono font-bold text-white text-base focus:outline-none focus:ring-1 focus:ring-purple-500"
+                    required
+                    disabled={updatingRate}
+                  />
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">
+                    %
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-[10px] text-slate-500 font-bold uppercase">Quick Add:</span>
+                  {[0.5, 0.7, 0.8, 1.0, 1.2].map((pct) => (
+                    <button
+                      key={pct}
+                      type="button"
+                      onClick={() => setRateInput(String(pct))}
+                      className="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-mono font-bold transition border border-slate-700/60 cursor-pointer"
+                    >
+                      {pct}%
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingRateUser(null)}
+                  disabled={updatingRate}
+                  className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={updatingRate}
+                  className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {updatingRate ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <span>Save Rate</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

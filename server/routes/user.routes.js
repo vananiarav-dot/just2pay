@@ -286,6 +286,106 @@ router.patch('/status', verifyToken, requireRoles(['admin']), async (req, res) =
   }
 });
 
+// PATCH /api/user/:id/rate (Admin, Super Distributor, Distributor)
+// Update QR charge percentage with strict hierarchy authorization & validation
+router.patch('/:id/rate', verifyToken, requireRoles(['admin', 'super_distributor', 'distributor']), async (req, res) => {
+  try {
+    const targetUserId = req.params.id;
+    const { qr_charge_percent, charge_percentage } = req.body;
+    const currentUser = req.user;
+
+    const rateVal = qr_charge_percent !== undefined ? qr_charge_percent : charge_percentage;
+    if (rateVal === undefined || rateVal === null || rateVal === '') {
+      return res.status(400).json({ success: false, message: 'Rate percentage is required.' });
+    }
+
+    const parsedRate = parseFloat(rateVal);
+    if (isNaN(parsedRate) || parsedRate < 0 || parsedRate > 100) {
+      return res.status(400).json({ success: false, message: 'Invalid rate. Must be between 0% and 100%.' });
+    }
+
+    let targetUser = db.users.find(u => u.id === targetUserId);
+    if (!targetUser && supabase) {
+      const { data } = await supabase.from('users_profiles').select('*').eq('id', targetUserId).maybeSingle();
+      if (data) {
+        targetUser = data;
+        db.users.push(data);
+      }
+    }
+
+    if (!targetUser) {
+      return res.status(404).json({ success: false, message: 'Target user not found.' });
+    }
+
+    // Strict Role-Based Hierarchy Authorization Checks
+    if (currentUser.role === 'super_distributor') {
+      const isDownline = targetUser.super_distributor_id === currentUser.id;
+      if (!isDownline) {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'Access denied: You can only adjust rates for Distributors or Users under your network.' 
+        });
+      }
+      if (targetUser.role === 'admin' || targetUser.role === 'super_distributor') {
+        return res.status(403).json({ success: false, message: 'Cannot modify rate of admin or super distributors.' });
+      }
+    } else if (currentUser.role === 'distributor') {
+      const isRetailer = targetUser.distributor_id === currentUser.id && targetUser.role === 'user';
+      if (!isRetailer) {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'Access denied: You can only adjust rates for Retailers directly mapped under you.' 
+        });
+      }
+
+      // Distributor self rate safety check to prevent negative margin
+      const callerRate = parseFloat(currentUser.qr_charge_percent) || 0;
+      if (parsedRate < callerRate) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Retailer rate (${parsedRate.toFixed(2)}%) cannot be lower than your Distributor base rate (${callerRate.toFixed(2)}%).` 
+        });
+      }
+    }
+
+    // Apply Rate Update in Memory Store
+    targetUser.qr_charge_percent = parsedRate;
+    targetUser.charge_percentage = parsedRate;
+    targetUser.updated_at = new Date().toISOString();
+
+    // Persist to Supabase Database
+    if (supabase) {
+      try {
+        const targetTable = targetUser.role === 'admin' ? 'admin_profiles' : 'users_profiles';
+        const { error: sbErr } = await supabase
+          .from(targetTable)
+          .update({ 
+            qr_charge_percent: parsedRate,
+            updated_at: targetUser.updated_at 
+          })
+          .eq('id', targetUser.id);
+        
+        if (sbErr) {
+          console.error('[PATCH /:id/rate] Supabase Update Error:', sbErr);
+        } else {
+          console.log(`[PATCH /:id/rate] Rate for user ${targetUser.id} (${targetUser.name}) updated to ${parsedRate}% by ${currentUser.name} (${currentUser.role})`);
+        }
+      } catch (sbErr) {
+        console.error('Supabase Rate Update Exception:', sbErr);
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Rate for ${targetUser.name} successfully updated to ${parsedRate.toFixed(2)}%.`,
+      user: sanitizeUser(targetUser)
+    });
+  } catch (error) {
+    console.error('Update Rate Error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to update rate: ' + error.message });
+  }
+});
+
 // POST /api/user/create-subuser (Admin, Super Distributor, Distributor)
 router.post('/create-subuser', verifyToken, requireRoles(['admin', 'super_distributor', 'distributor']), async (req, res) => {
   try {
@@ -560,14 +660,36 @@ router.delete('/:id', verifyToken, requireRoles(['admin']), async (req, res) => 
   }
 });
 
-// PUT /api/user/:id (Admin Only)
-router.put('/:id', verifyToken, requireRoles(['admin']), async (req, res) => {
+// PUT /api/user/:id (Admin, Super Distributor, Distributor)
+router.put('/:id', verifyToken, requireRoles(['admin', 'super_distributor', 'distributor']), async (req, res) => {
   try {
     const userId = req.params.id;
-    const targetUser = db.users.find(u => u.id === userId);
+    let targetUser = db.users.find(u => u.id === userId);
+    if (!targetUser && supabase) {
+      const { data } = await supabase.from('users_profiles').select('*').eq('id', userId).maybeSingle();
+      if (data) {
+        targetUser = data;
+        db.users.push(data);
+      }
+    }
     if (!targetUser) {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
+
+    const currentUser = req.user;
+    if (currentUser.role === 'super_distributor') {
+      if (targetUser.super_distributor_id !== currentUser.id) {
+        return res.status(403).json({ success: false, message: 'You can only edit users in your downline network.' });
+      }
+      if (targetUser.role === 'admin' || targetUser.role === 'super_distributor') {
+        return res.status(403).json({ success: false, message: 'Unauthorized role modification.' });
+      }
+    } else if (currentUser.role === 'distributor') {
+      if (targetUser.distributor_id !== currentUser.id || targetUser.role !== 'user') {
+        return res.status(403).json({ success: false, message: 'You can only edit retailers directly mapped under you.' });
+      }
+    }
+
     const { 
       name, firstName, middleName, lastName, firm_name, mobile_number, role, 
       email, status, home_address, firm_address, profile_photo_url, target_distributor_id,
@@ -586,13 +708,17 @@ router.put('/:id', verifyToken, requireRoles(['admin']), async (req, res) => {
 
     if (firm_name) targetUser.firm_name = firm_name;
     if (mobile_number) targetUser.mobile_number = mobile_number;
-    if (role) targetUser.role = role;
     if (email !== undefined) targetUser.email = email;
-    if (status) targetUser.status = status;
     if (home_address !== undefined) targetUser.home_address = (home_address || '').trim();
     if (firm_address !== undefined) targetUser.firm_address = (firm_address || '').trim();
     if (profile_photo_url !== undefined) targetUser.profile_photo_url = profile_photo_url;
-    if (target_distributor_id !== undefined) targetUser.distributor_id = target_distributor_id || null;
+
+    // Only Admin can change user role, status or distributor mapping
+    if (currentUser.role === 'admin') {
+      if (role) targetUser.role = role;
+      if (status) targetUser.status = status;
+      if (target_distributor_id !== undefined) targetUser.distributor_id = target_distributor_id || null;
+    }
 
     let newChargeVal = undefined;
     if (qr_charge_percent !== undefined && qr_charge_percent !== null && qr_charge_percent !== '') {
