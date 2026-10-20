@@ -370,9 +370,11 @@ export const UserPayoutTransfer: React.FC = () => {
         setIsAccountVerified(false);
       }
     } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || 'Bank account verification failed. ₹0 deducted.';
+      const isInsufficientWallet = /insufficient/i.test(msg) && /wallet/i.test(msg);
       setVerificationAlert({
         type: 'error',
-        message: err.response?.data?.message || err.message || 'Bank account verification failed. ₹0 deducted.'
+        message: isInsufficientWallet ? 'Verification Failed: Insufficient payout wallet balance' : msg
       });
       setIsAccountVerified(false);
     } finally {
@@ -580,13 +582,26 @@ export const UserPayoutTransfer: React.FC = () => {
         setReceiptTxn(successTxn);
         setShowReceipt(true);
       } else {
-        setConfirmError(res.message || 'Payout transfer failed');
+        const rawMsg = res.message || 'Payout transfer failed';
+        if (/insufficient/i.test(rawMsg) && /wallet/i.test(rawMsg)) {
+          setConfirmError('Payout Failed: Insufficient payout wallet balance');
+          setRefundNotice('');
+        } else {
+          setConfirmError(rawMsg);
+        }
       }
     } catch (err: any) {
       const errMsg = err.response?.data?.message || err.message || 'Payout request failed';
-      setConfirmError(errMsg);
-      if (err.response?.data?.refunded) {
-        setRefundNotice('Funds have been safely refunded back to your wallet.');
+      const isInsufficientWallet = /insufficient/i.test(errMsg) && /wallet/i.test(errMsg);
+
+      if (isInsufficientWallet) {
+        setConfirmError('Payout Failed: Insufficient payout wallet balance');
+        setRefundNotice('');
+      } else {
+        setConfirmError(errMsg);
+        if (err.response?.data?.refunded) {
+          setRefundNotice('Funds have been safely refunded back to your wallet.');
+        }
       }
 
       // Refresh balance in case of auto-refund

@@ -690,7 +690,7 @@ router.post('/transfer', verifyToken, async (req, res) => {
       }
 
       // Handle Immediate Success Response
-      if (resData.status === 'success' || response.status === 200) {
+      if ((resData.status === 'success' || resData.status === true) || (response.status === 200 && resData.status !== false && resData.status !== 'failed')) {
         const finalUtr = utr || `UTR${Date.now()}`.slice(-12);
         const finalOrderId = apiOrderId || `B2BPO${Date.now()}`;
 
@@ -772,7 +772,13 @@ router.post('/transfer', verifyToken, async (req, res) => {
       console.error('[UsePay Payout Transfer API Error]:', apiErr.response?.data || apiErr.message);
 
       const errorPayload = apiErr.response?.data || {};
-      const failureReason = errorPayload.message || apiErr.message || 'Upstream bank payout transfer failed';
+      let failureReason = errorPayload.message || apiErr.message || 'Upstream bank payout transfer failed';
+
+      // Check if upstream gateway failed due to insufficient payout wallet balance
+      const isInsufficientPayoutWallet = /insufficient/i.test(failureReason) && /wallet/i.test(failureReason);
+      if (isInsufficientPayoutWallet) {
+        failureReason = 'Insufficient payout wallet balance';
+      }
 
       // STRICT GUARD: CHECK IF THIS IS AN IN-PROGRESS / PENDING STATE OR GATEWAY TIMEOUT
       const isPending = 
@@ -886,10 +892,14 @@ router.post('/transfer', verifyToken, async (req, res) => {
         }
       }
 
+      const clientMessage = isInsufficientPayoutWallet
+        ? 'Payout Failed: Insufficient payout wallet balance'
+        : `Payout Failed: ${failureReason}. ₹${total_deducted.toFixed(2)} has been refunded to your wallet.`;
+
       return res.status(400).json({
         success: false,
         refunded: true,
-        message: `Payout Failed: ${failureReason}. ₹${total_deducted.toFixed(2)} has been refunded to your wallet.`,
+        message: clientMessage,
         data: {
           client_order_id: clientOrderId,
           amount: numAmount,
@@ -921,9 +931,10 @@ router.post('/transfer', verifyToken, async (req, res) => {
       }
     }
 
+    const isInsufficient = /insufficient/i.test(outerErr.message || '') && /wallet/i.test(outerErr.message || '');
     return res.status(500).json({
       success: false,
-      message: 'Internal server error while processing payout transfer: ' + outerErr.message
+      message: isInsufficient ? 'Payout Failed: Insufficient payout wallet balance' : ('Internal server error while processing payout transfer: ' + outerErr.message)
     });
   } finally {
     // Release the user's active payout lock
@@ -1184,7 +1195,10 @@ router.post('/verify-account', verifyToken, async (req, res) => {
         }
       } catch (apiErr) {
         const errPayload = apiErr.response?.data || {};
-        const failMsg = errPayload.message || apiErr.message || 'Bank account verification failed. Invalid account number or inactive bank account.';
+        let failMsg = errPayload.message || apiErr.message || 'Bank account verification failed. Invalid account number or inactive bank account.';
+        if (/insufficient/i.test(failMsg) && /wallet/i.test(failMsg)) {
+          failMsg = 'Insufficient payout wallet balance';
+        }
 
         // Record failed attempt in history with 0 charge
         const failedRecord = {
@@ -1649,7 +1663,11 @@ router.post('/webhook', async (req, res) => {
       }
 
       txn.status = 'failed';
-      txn.failure_reason = msg || 'Bank payout transfer failed';
+      let webhookFailMsg = msg || 'Bank payout transfer failed';
+      if (/insufficient/i.test(webhookFailMsg) && /wallet/i.test(webhookFailMsg)) {
+        webhookFailMsg = 'Insufficient payout wallet balance';
+      }
+      txn.failure_reason = webhookFailMsg;
       txn.updated_at = new Date().toISOString();
 
       if (supabase) {
