@@ -20,6 +20,7 @@ export interface CreditCardBillRequest {
   mobile_number: string;
   status: 'pending' | 'approved' | 'rejected';
   rejection_reason?: string;
+  admin_note?: string;
   processed_at?: string;
   processed_by?: string;
   created_at: string;

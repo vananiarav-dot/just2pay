@@ -325,6 +325,11 @@ export const billRequestApi = {
     return response.data;
   },
 
+  updateNote: async (id: string, admin_note: string) => {
+    const response = await apiClient.patch(`/bill-request/${encodeURIComponent(id)}/note`, { admin_note });
+    return response.data;
+  },
+
   getSettings: async () => {
     const response = await apiClient.get('/bill-request/settings');
     return response.data;

@@ -514,6 +514,69 @@ router.post('/:id/process', verifyToken, requireRoles(['admin']), async (req, re
 });
 
 // -----------------------------------------------------------------------------
+// PATCH /api/bill-request/:id/note - Update Admin Internal Note (Admin Only)
+// -----------------------------------------------------------------------------
+router.patch('/:id/note', verifyToken, requireRoles(['admin']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { admin_note } = req.body;
+    const noteText = typeof admin_note === 'string' ? admin_note.trim() : '';
+
+    let reqIndex = (db.bill_requests || []).findIndex(r => r.id === id);
+    let targetRequest = reqIndex !== -1 ? db.bill_requests[reqIndex] : null;
+
+    if (supabase) {
+      const { data } = await supabase.from('credit_card_bill_requests').select('*').eq('id', id).maybeSingle();
+      if (data) targetRequest = data;
+    }
+
+    if (!targetRequest) {
+      return res.status(404).json({ success: false, message: 'Bill payment request not found' });
+    }
+
+    // Update in-memory
+    if (reqIndex !== -1) {
+      db.bill_requests[reqIndex].admin_note = noteText;
+    } else {
+      targetRequest.admin_note = noteText;
+      if (!db.bill_requests) db.bill_requests = [];
+      db.bill_requests.push(targetRequest);
+    }
+
+    // Persist to Supabase
+    if (supabase) {
+      try {
+        const { error: sbErr } = await supabase
+          .from('credit_card_bill_requests')
+          .update({ admin_note: noteText })
+          .eq('id', id);
+
+        if (sbErr) {
+          console.warn('[PATCH /:id/note] Supabase Note Update Notice:', sbErr.message);
+        } else {
+          console.log(`[PATCH /:id/note] Admin note updated for request ${id}`);
+        }
+      } catch (e) {
+        console.warn('[PATCH /:id/note] Supabase update exception:', e.message);
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Admin note updated successfully.',
+      admin_note: noteText,
+      request: {
+        ...targetRequest,
+        admin_note: noteText
+      }
+    });
+  } catch (err) {
+    console.error('Update Bill Request Note Error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to update admin note: ' + err.message });
+  }
+});
+
+// -----------------------------------------------------------------------------
 // GET /api/bill-request/settings (Fetch CC Bill Pay Control Setting)
 // -----------------------------------------------------------------------------
 router.get('/settings', verifyToken, async (req, res) => {

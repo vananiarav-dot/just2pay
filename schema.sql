@@ -202,6 +202,8 @@ CREATE TABLE IF NOT EXISTS public.credit_card_bill_requests (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+ALTER TABLE public.credit_card_bill_requests ADD COLUMN IF NOT EXISTS admin_note TEXT DEFAULT '';
+
 CREATE INDEX IF NOT EXISTS idx_bill_requests_user ON public.credit_card_bill_requests(user_id);
 CREATE INDEX IF NOT EXISTS idx_bill_requests_status ON public.credit_card_bill_requests(status);
 

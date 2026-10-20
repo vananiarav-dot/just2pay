@@ -21,7 +21,9 @@ import {
   Calendar,
   RotateCcw,
   Filter,
-  Phone
+  Phone,
+  FileText,
+  StickyNote
 } from 'lucide-react';
 import { useSettingsStore } from '../../store/settingsStore';
 
@@ -41,6 +43,11 @@ export const AdminBillRequestsManagement: React.FC = () => {
   // Rejection Modal
   const [rejectingReq, setRejectingReq] = useState<CreditCardBillRequest | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
+
+  // Edit Note Modal
+  const [editingNoteReq, setEditingNoteReq] = useState<CreditCardBillRequest | null>(null);
+  const [noteInput, setNoteInput] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
 
   // Add Slab Modal
   const [isSlabModalOpen, setIsSlabModalOpen] = useState(false);
@@ -180,6 +187,31 @@ export const AdminBillRequestsManagement: React.FC = () => {
     navigator.clipboard.writeText(mobile);
     setCopiedId(`mob_${id}`);
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const openNoteModal = (req: CreditCardBillRequest) => {
+    setEditingNoteReq(req);
+    setNoteInput(req.admin_note || '');
+  };
+
+  const handleSaveNote = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingNoteReq) return;
+    setSavingNote(true);
+    try {
+      const res = await billRequestApi.updateNote(editingNoteReq.id, noteInput);
+      if (res.success) {
+        showNotice('success', 'Admin note saved successfully!');
+        setRequests(prev => prev.map(r => r.id === editingNoteReq.id ? { ...r, admin_note: noteInput.trim() } : r));
+        setEditingNoteReq(null);
+      } else {
+        showNotice('error', res.message || 'Failed to save note');
+      }
+    } catch (err: any) {
+      showNotice('error', err.response?.data?.message || err.message || 'Error saving note');
+    } finally {
+      setSavingNote(false);
+    }
   };
 
   const handleToggleCc = async () => {
@@ -636,12 +668,22 @@ export const AdminBillRequestsManagement: React.FC = () => {
                         <span>{req.card_number.replace(/(.{4})/g, '$1 ').trim()}</span>
                         <button
                           onClick={() => copyCard(req.card_number, req.id)}
-                          className="text-slate-500 hover:text-indigo-300 transition"
+                          className="text-slate-500 hover:text-indigo-300 transition cursor-pointer"
                           title="Copy Full Card Number"
                         >
                           {copiedId === `card_${req.id}` ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                         </button>
                       </div>
+                      {req.admin_note && (
+                        <div 
+                          onClick={() => openNoteModal(req)}
+                          className="mt-1.5 flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/25 text-amber-300 rounded-lg px-2 py-0.5 text-[10px] font-mono cursor-pointer hover:bg-amber-500/20 transition w-fit max-w-[220px]"
+                          title={`Admin Note: ${req.admin_note} (Click to edit)`}
+                        >
+                          <StickyNote className="w-3 h-3 text-amber-400 shrink-0" />
+                          <span className="truncate">{req.admin_note}</span>
+                        </div>
+                      )}
                     </td>
 
                     {/* Customer Mobile */}
@@ -713,20 +755,46 @@ export const AdminBillRequestsManagement: React.FC = () => {
                           <button
                             onClick={() => handleProcess(req, 'approved')}
                             disabled={submitting}
-                            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition shadow-md shadow-emerald-950/40"
+                            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition shadow-md shadow-emerald-950/40 cursor-pointer"
                           >
                             Approve
                           </button>
                           <button
                             onClick={() => handleProcess(req, 'rejected')}
                             disabled={submitting}
-                            className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition shadow-md shadow-rose-950/40"
+                            className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition shadow-md shadow-rose-950/40 cursor-pointer"
                           >
                             Reject
                           </button>
+                          <button
+                            onClick={() => openNoteModal(req)}
+                            className={`p-1.5 rounded-xl border transition cursor-pointer flex items-center gap-1 text-xs font-bold ${
+                              req.admin_note 
+                                ? 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/30' 
+                                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border-slate-700'
+                            }`}
+                            title={req.admin_note ? 'Edit Admin Note' : 'Add Admin Note'}
+                          >
+                            <FileText className="w-3.5 h-3.5 text-amber-400" />
+                            <span className="hidden xl:inline text-[10px]">{req.admin_note ? 'Edit Note' : 'Note'}</span>
+                          </button>
                         </div>
                       ) : (
-                        <span className="text-[10px] text-slate-500 font-medium">Processed</span>
+                        <div className="flex items-center justify-end gap-2">
+                          <span className="text-[10px] text-slate-500 font-medium">Processed</span>
+                          <button
+                            onClick={() => openNoteModal(req)}
+                            className={`px-2.5 py-1 rounded-xl border text-[11px] font-bold transition flex items-center gap-1 shadow-sm cursor-pointer ${
+                              req.admin_note
+                                ? 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/30'
+                                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border-slate-700'
+                            }`}
+                            title={req.admin_note ? 'Edit Admin Note' : 'Add Admin Note'}
+                          >
+                            <FileText className="w-3 h-3 text-amber-400" />
+                            <span>{req.admin_note ? 'Edit Note' : '+ Note'}</span>
+                          </button>
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -867,6 +935,164 @@ export const AdminBillRequestsManagement: React.FC = () => {
                   className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition"
                 >
                   <Plus className="w-4 h-4" /> Add Charge Slab
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT INTERNAL ADMIN NOTE MODAL */}
+      {editingNoteReq && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200"
+          onClick={() => !savingNote && setEditingNoteReq(null)}
+        >
+          <div 
+            className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-7 shadow-2xl space-y-5 animate-in zoom-in-95 duration-200 relative overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between gap-4 border-b border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400">
+                  <FileText className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base sm:text-lg font-black text-white">
+                      Admin Internal Note
+                    </h3>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-300 border border-amber-500/30">
+                      Confidential
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Private reference for <strong className="text-white">{editingNoteReq.customer_name}</strong>'s bill request
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingNoteReq(null)}
+                disabled={savingNote}
+                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Request Summary Badge */}
+            <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 space-y-2 text-xs">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400 uppercase text-[10px] font-bold">Request ID</span>
+                <span className="font-mono text-slate-300 font-bold">{editingNoteReq.id}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400 uppercase text-[10px] font-bold">Bank & Card</span>
+                <span className="font-bold text-white">{editingNoteReq.bank_name} •••• {editingNoteReq.card_number.slice(-4)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400 uppercase text-[10px] font-bold">Bill Amount</span>
+                <span className="font-black text-emerald-400 font-mono">₹{Number(editingNoteReq.amount).toLocaleString('en-IN')}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400 uppercase text-[10px] font-bold">Status</span>
+                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                  editingNoteReq.status === 'approved'
+                    ? 'bg-emerald-500/20 text-emerald-300'
+                    : editingNoteReq.status === 'rejected'
+                    ? 'bg-rose-500/20 text-rose-300'
+                    : 'bg-amber-500/20 text-amber-300'
+                }`}>
+                  {editingNoteReq.status}
+                </span>
+              </div>
+            </div>
+
+            {/* Confidential Notice */}
+            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center gap-2.5 text-xs text-amber-300/90">
+              <StickyNote className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>આ નોંધ ફક્ત Admin ની જાણકારી માટે છે. User કે Retailer ને દેખાશે નહીં.</span>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSaveNote} className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-[11px] font-bold text-slate-300 uppercase">
+                    Admin Note / Remarks
+                  </label>
+                  {noteInput.trim() && (
+                    <button
+                      type="button"
+                      onClick={() => setNoteInput('')}
+                      className="text-[10px] text-slate-400 hover:text-rose-400 transition cursor-pointer"
+                    >
+                      Clear Note
+                    </button>
+                  )}
+                </div>
+                <textarea
+                  rows={4}
+                  value={noteInput}
+                  onChange={(e) => setNoteInput(e.target.value)}
+                  placeholder="દા.ત. Netbanking UTR: 48921849, Verified on ICICI portal, customer confirmed on call..."
+                  className="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 rounded-2xl p-3.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-amber-500 font-sans resize-none"
+                  disabled={savingNote}
+                />
+              </div>
+
+              {/* Quick Tags / Chips */}
+              <div>
+                <span className="text-[10px] text-slate-400 uppercase font-bold block mb-1.5">Quick Tags:</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    'Paid via Netbanking',
+                    'UTR Generated',
+                    'Waiting Bank Confirmation',
+                    'Customer Verified',
+                    'Card Payment Hold',
+                    'Refund Initiated'
+                  ].map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => setNoteInput(prev => prev ? `${prev} | ${tag}` : tag)}
+                      className="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[10px] font-semibold transition border border-slate-700/60 cursor-pointer"
+                    >
+                      + {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingNoteReq(null)}
+                  disabled={savingNote}
+                  className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingNote}
+                  className="flex-1 py-3 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {savingNote ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4 text-slate-950 stroke-[3]" />
+                      <span>Save Note</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
