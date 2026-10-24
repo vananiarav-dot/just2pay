@@ -1,26 +1,35 @@
 import React, { useState } from 'react';
 import {
-  Fingerprint,
-  Send,
-  Smartphone,
-  Banknote,
-  ShieldCheck,
-  Shield,
+  QrCode,
+  CreditCard,
   Zap,
-  Headphones,
-  LayoutGrid,
-  Phone,
-  Mail,
-  Globe,
-  MapPin,
+  ShieldCheck,
   ArrowRight,
   LogIn,
-  Check,
   CheckCircle2,
-  FileText,
-  Umbrella,
+  TrendingUp,
+  Building2,
+  Users,
+  Clock,
+  Sparkles,
+  ChevronDown,
+  ChevronRight,
+  PhoneCall,
+  Mail,
+  MapPin,
+  Lock,
+  RefreshCw,
+  Wallet,
+  Receipt,
+  Headphones,
+  Check,
+  ChevronUp,
   Menu,
-  X
+  X,
+  ExternalLink,
+  Percent,
+  Sliders,
+  DollarSign
 } from 'lucide-react';
 
 interface LandingPageProps {
@@ -29,19 +38,12 @@ interface LandingPageProps {
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [newsletterEmail, setNewsletterEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [monthlyVolume, setMonthlyVolume] = useState<number>(500000); // 5 Lakh default
 
-  const handleSubscribe = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newsletterEmail) {
-      setSubscribed(true);
-      setTimeout(() => {
-        setNewsletterEmail('');
-        setSubscribed(false);
-      }, 4000);
-    }
-  };
+  // Calculate estimated commission (approx 0.35% - 0.5% average)
+  const estimatedCommission = Math.round(monthlyVolume * 0.0035);
+  const annualEarnings = estimatedCommission * 12;
 
   const scrollToSection = (id: string) => {
     setMobileMenuOpen(false);
@@ -51,129 +53,186 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin }) =
     }
   };
 
-  return (
-    <div className="min-h-screen bg-white text-slate-800 font-sans antialiased selection:bg-blue-600 selection:text-white">
-      {/* ========================================================
-          1. HEADER / NAVBAR
-          ======================================================== */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-sm transition">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+  const faqs = [
+    {
+      q: 'How fast are QR payments credited into the retailer wallet?',
+      a: 'All Dynamic QR collections are verified with automated and admin controls, instantly crediting the retailer wallet with full statement transparency and real-time commission split.'
+    },
+    {
+      q: 'Which banks are supported for Instant Credit Card Bill Payments?',
+      a: 'Just2Pay supports all major Indian banks including HDFC, SBI, ICICI, Axis, Kotak, RBL, IndusInd, and Bank of Baroda with instant status verification.'
+    },
+    {
+      q: 'How does the multi-tier Distributor and Super Distributor commission work?',
+      a: 'Whenever a retailer completes a transaction, the platform automatically calculates and credits commissions in real-time to the respective Distributor and Super Distributor wallets.'
+    },
+    {
+      q: 'What is the Payout settlement timing to bank accounts?',
+      a: 'Our IMPS Payout gateway operates 24x7x365, ensuring fund settlements hit any verified beneficiary bank account within 2 to 5 seconds.'
+    },
+    {
+      q: 'What security measures are implemented to protect accounts?',
+      a: 'Just2Pay enforces mandatory 6-digit MPIN authorization, TPIN for sensitive transactions, session timeouts, and bank-grade 256-bit AES encryption.'
+    }
+  ];
 
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-cyan-500 selection:text-slate-950">
+      
+      {/* ========================================================
+          1. TOP ANNOUNCEMENT BAR
+          ======================================================== */}
+      <div className="bg-gradient-to-r from-blue-700 via-indigo-600 to-cyan-600 text-white text-xs font-semibold py-2 px-4 text-center flex items-center justify-center gap-2 relative z-50">
+        <span className="flex h-2 w-2 relative">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-200 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+        </span>
+        <span>Just2Pay 2.0 Live: Ultra-Fast Dynamic QR Collections & 24x7 Instant IMPS Settlements Activated!</span>
+        <button 
+          onClick={onNavigateToLogin}
+          className="ml-2 underline font-bold hover:text-cyan-200 transition hidden sm:inline-flex items-center gap-1"
+        >
+          Access Portal <ArrowRight className="w-3 h-3" />
+        </button>
+      </div>
+
+      {/* ========================================================
+          2. NAVBAR
+          ======================================================== */}
+      <header className="sticky top-0 z-40 bg-slate-950/85 backdrop-blur-xl border-b border-slate-800/80 transition shadow-2xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+          
           {/* Logo */}
-          <div
+          <div 
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             className="flex items-center gap-3 cursor-pointer group"
           >
-            <div className="flex items-center gap-2">
-              <div className="relative w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-700 via-indigo-600 to-cyan-500 p-0.5 shadow-md shadow-blue-500/20 group-hover:scale-105 transition">
-                <div className="w-full h-full bg-white rounded-[14px] flex items-center justify-center font-black text-blue-700 text-xl tracking-tighter">
-                  AS
-                </div>
+            <div className="relative w-11 h-11 rounded-2xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 p-[2px] shadow-lg shadow-cyan-500/25 group-hover:shadow-cyan-500/40 transition-all duration-300">
+              <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
+                <Zap className="w-6 h-6 text-cyan-400 fill-cyan-400/20 group-hover:scale-110 transition duration-300" />
               </div>
-              <div className="flex flex-col">
-                <span className="text-xl font-black text-blue-900 tracking-tight leading-tight">
-                  AS <span className="text-cyan-600">EasySwipe</span>
-                </span>
-                <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">
-                  Pvt Ltd • Fintech
-                </span>
+            </div>
+            <div className="flex flex-col">
+              <div className="flex items-center tracking-tight">
+                <span className="text-2xl font-black text-white">Just</span>
+                <span className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">2Pay</span>
               </div>
+              <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">
+                Next-Gen Fintech Portal
+              </span>
             </div>
           </div>
 
           {/* Desktop Nav Links */}
-          <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-600">
-            <button
-              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="text-blue-600 font-bold hover:text-blue-700 transition"
+          <nav className="hidden lg:flex items-center gap-8 text-sm font-semibold text-slate-300">
+            <button 
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} 
+              className="text-cyan-400 hover:text-cyan-300 transition"
             >
               Home
             </button>
-            <button
-              onClick={() => scrollToSection('services')}
-              className="hover:text-blue-600 transition"
+            <button 
+              onClick={() => scrollToSection('services')} 
+              className="hover:text-cyan-400 transition"
             >
               Services
             </button>
-            <button
-              onClick={() => scrollToSection('why-choose-us')}
-              className="hover:text-blue-600 transition"
+            <button 
+              onClick={() => scrollToSection('calculator')} 
+              className="hover:text-cyan-400 transition"
             >
-              About Us
+              Commission Calculator
             </button>
-            <button
-              onClick={() => scrollToSection('features')}
-              className="hover:text-blue-600 transition"
+            <button 
+              onClick={() => scrollToSection('security')} 
+              className="hover:text-cyan-400 transition"
             >
-              Features
+              Security
             </button>
-            <button
-              onClick={() => scrollToSection('contact')}
-              className="hover:text-blue-600 transition"
+            <button 
+              onClick={() => scrollToSection('faq')} 
+              className="hover:text-cyan-400 transition"
+            >
+              FAQ
+            </button>
+            <button 
+              onClick={() => scrollToSection('contact')} 
+              className="hover:text-cyan-400 transition"
             >
               Contact
             </button>
           </nav>
 
-          {/* Login Button */}
-          <div className="hidden md:flex items-center gap-4">
+          {/* Action Button */}
+          <div className="hidden sm:flex items-center gap-4">
             <button
               onClick={onNavigateToLogin}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-full border-2 border-slate-300 hover:border-blue-600 hover:text-blue-600 text-slate-700 font-bold text-sm transition shadow-sm hover:shadow"
+              className="group relative inline-flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm text-white overflow-hidden shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 transition duration-300"
             >
-              <LogIn className="w-4 h-4" />
-              <span>Login</span>
+              <span className="absolute inset-0 bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 group-hover:from-blue-500 group-hover:to-cyan-400 transition duration-300"></span>
+              <span className="relative flex items-center gap-2">
+                <LogIn className="w-4 h-4 text-cyan-200" />
+                <span>Merchant Login</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition duration-200" />
+              </span>
             </button>
           </div>
 
           {/* Mobile Menu Toggle */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100"
+            className="lg:hidden p-2 rounded-xl text-slate-300 hover:bg-slate-900 border border-slate-800"
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
 
-        {/* Mobile Dropdown Menu */}
+        {/* Mobile Dropdown */}
         {mobileMenuOpen && (
-          <div className="md:hidden bg-white border-b border-slate-200 px-6 py-5 space-y-4 shadow-xl animate-in slide-in-from-top-2">
+          <div className="lg:hidden bg-slate-950/95 backdrop-blur-xl border-b border-slate-800 px-6 py-5 space-y-4">
             <button
               onClick={() => { setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-              className="block w-full text-left font-bold text-blue-600 py-2"
+              className="block w-full text-left font-bold text-cyan-400 py-1"
             >
               Home
             </button>
             <button
               onClick={() => scrollToSection('services')}
-              className="block w-full text-left font-semibold text-slate-700 py-2"
+              className="block w-full text-left font-semibold text-slate-300 py-1 hover:text-cyan-400"
             >
               Services
             </button>
             <button
-              onClick={() => scrollToSection('why-choose-us')}
-              className="block w-full text-left font-semibold text-slate-700 py-2"
+              onClick={() => scrollToSection('calculator')}
+              className="block w-full text-left font-semibold text-slate-300 py-1 hover:text-cyan-400"
             >
-              About Us
+              Commission Calculator
             </button>
             <button
-              onClick={() => scrollToSection('features')}
-              className="block w-full text-left font-semibold text-slate-700 py-2"
+              onClick={() => scrollToSection('security')}
+              className="block w-full text-left font-semibold text-slate-300 py-1 hover:text-cyan-400"
             >
-              Features
+              Security
+            </button>
+            <button
+              onClick={() => scrollToSection('faq')}
+              className="block w-full text-left font-semibold text-slate-300 py-1 hover:text-cyan-400"
+            >
+              FAQ
             </button>
             <button
               onClick={() => scrollToSection('contact')}
-              className="block w-full text-left font-semibold text-slate-700 py-2"
+              className="block w-full text-left font-semibold text-slate-300 py-1 hover:text-cyan-400"
             >
               Contact
             </button>
-            <div className="pt-2 border-t border-slate-100">
+            <div className="pt-2">
               <button
                 onClick={onNavigateToLogin}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-blue-600 text-white font-bold text-sm shadow-md"
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 font-bold text-white shadow-lg shadow-cyan-500/25"
               >
-                <LogIn className="w-4 h-4" /> Login
+                <LogIn className="w-4 h-4" />
+                <span>Merchant Login</span>
               </button>
             </div>
           </div>
@@ -181,256 +240,183 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin }) =
       </header>
 
       {/* ========================================================
-          2. HERO SECTION
+          3. HERO SECTION (ULTRA MODERN GLASSMORPHISM)
           ======================================================== */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#0a1f3a] via-[#0c284c] to-[#08182d] text-white py-16 lg:py-24">
-        {/* Subtle Background Glows */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-10 right-10 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+      <section className="relative pt-12 pb-24 lg:pt-20 lg:pb-32 overflow-hidden">
+        {/* Glow Background Gradients */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[450px] bg-gradient-to-tr from-cyan-600/20 via-blue-600/20 to-indigo-600/10 rounded-full blur-[130px] pointer-events-none"></div>
+        <div className="absolute top-10 right-10 w-72 h-72 bg-blue-500/10 rounded-full blur-[90px] pointer-events-none"></div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-
-            {/* Left Column: Heading & CTAs */}
+            
+            {/* Left Content Column */}
             <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-tight tracking-tight">
-                Your Trusted <br />
-                <span className="text-emerald-400">Financial</span> Partner
-              </h1>
-
-              {/* Tagline Pills */}
-              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2.5 pt-1">
-                <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-xs font-semibold backdrop-blur-sm">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Simple
-                </span>
-                <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-xs font-semibold backdrop-blur-sm">
-                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> Fast
-                </span>
-                <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-xs font-semibold backdrop-blur-sm">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span> Secure
-                </span>
+              
+              {/* Badge */}
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/90 border border-cyan-500/30 text-cyan-400 text-xs font-semibold shadow-inner">
+                <Sparkles className="w-3.5 h-3.5 animate-spin" style={{ animationDuration: '6s' }} />
+                <span>India's Most Advanced B2B Fintech Network</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
               </div>
 
-              <p className="text-base sm:text-lg text-slate-300 max-w-xl mx-auto lg:mx-0 leading-relaxed font-normal">
-                AS EasySwipe Pvt Ltd provides all your banking, payment, loan and insurance services at one place with complete security and reliability.
+              {/* Main Headline */}
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.12]">
+                Powering Fast, Secure & Automated{' '}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-300">
+                  Digital Payments
+                </span>
+              </h1>
+
+              {/* Description */}
+              <p className="text-slate-300 text-base sm:text-lg max-w-2xl mx-auto lg:mx-0 leading-relaxed font-normal">
+                Equip your retail and distribution business with Dynamic QR collections, 
+                instant Credit Card bill clearance, real-time 24x7 IMPS bank payouts, and automated multi-tier commission settlements.
               </p>
 
               {/* CTA Buttons */}
-              <div className="pt-4 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
                 <button
-                  onClick={() => scrollToSection('services')}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-xl shadow-blue-600/30 transition transform hover:-translate-y-0.5"
+                  onClick={onNavigateToLogin}
+                  className="w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-4 rounded-xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 text-white font-bold text-base shadow-xl shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:scale-[1.02] active:scale-[0.98] transition duration-200"
                 >
-                  <span>Our Services</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <LogIn className="w-5 h-5" />
+                  <span>Enter Just2Pay Portal</span>
+                  <ArrowRight className="w-5 h-5" />
                 </button>
 
                 <button
-                  onClick={() => scrollToSection('contact')}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl border-2 border-white/40 hover:border-white text-white font-bold text-sm transition hover:bg-white/10"
+                  onClick={() => scrollToSection('calculator')}
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-7 py-4 rounded-xl bg-slate-900 hover:bg-slate-800/90 border border-slate-700/80 text-slate-200 font-semibold text-base transition hover:border-cyan-500/40"
                 >
-                  <span>Contact Us</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <Percent className="w-5 h-5 text-cyan-400" />
+                  <span>Calculate Commission</span>
                 </button>
               </div>
+
+              {/* Trust Micro-Badges */}
+              <div className="pt-6 border-t border-slate-800/70 grid grid-cols-2 sm:grid-cols-4 gap-4 text-left">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span className="text-xs font-semibold text-slate-300">Instant Settlements</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span className="text-xs font-semibold text-slate-300">99.99% Uptime</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span className="text-xs font-semibold text-slate-300">Bank-Grade 256-Bit</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span className="text-xs font-semibold text-slate-300">24x7 IMPS Active</span>
+                </div>
+              </div>
+
             </div>
 
-            {/* Right Column: Visual Elements (App Phone Mockup + RuPay Card + 3D Shield) */}
-            <div className="lg:col-span-5 relative flex items-center justify-center">
-
-              {/* Phone Mockup Card */}
-              <div className="relative w-64 sm:w-72 bg-[#0d223f] border-4 border-slate-700/80 rounded-[38px] p-5 shadow-2xl shadow-black/60 text-white z-10 transform hover:scale-[1.02] transition duration-300">
-                {/* Phone Speaker Notch */}
-                <div className="w-20 h-3 bg-slate-800 rounded-full mx-auto mb-4"></div>
-
-                <div className="text-center space-y-1 mb-6">
-                  <h3 className="text-sm font-black tracking-wide text-white">AS EasySwipe</h3>
-                  <p className="text-[11px] font-bold text-slate-300">Your Trusted Financial Partner</p>
-                  <p className="text-[9px] text-slate-400 font-medium">Simple • Fast • Secure</p>
-                </div>
-
-                {/* 5 Service Icons in Phone Grid */}
-                <div className="grid grid-cols-3 gap-3 mb-6">
-                  <div className="flex flex-col items-center">
-                    <div className="w-11 h-11 rounded-xl bg-blue-600 flex items-center justify-center shadow-md shadow-blue-600/40">
-                      <Fingerprint className="w-5 h-5 text-white" />
+            {/* Right Visual Column (Interactive Live Fintech Mockup) */}
+            <div className="lg:col-span-5 relative">
+              
+              {/* Main Glassmorphic Showcase Box */}
+              <div className="relative mx-auto max-w-md rounded-3xl bg-gradient-to-b from-slate-900/90 to-slate-950/90 border border-slate-800/90 p-6 shadow-2xl backdrop-blur-2xl">
+                
+                {/* Header inside mockup */}
+                <div className="flex items-center justify-between pb-5 border-b border-slate-800">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center">
+                      <QrCode className="w-4 h-4 text-cyan-400" />
                     </div>
-                    <span className="text-[10px] font-bold mt-1.5 text-slate-300">AEPS</span>
-                  </div>
-
-                  <div className="flex flex-col items-center">
-                    <div className="w-11 h-11 rounded-xl bg-indigo-600 flex items-center justify-center shadow-md shadow-indigo-600/40">
-                      <Send className="w-5 h-5 text-white" />
+                    <div>
+                      <h4 className="text-xs font-bold text-white">Dynamic Merchant QR</h4>
+                      <p className="text-[10px] text-slate-400">Limit: ₹10,00,000 / Day</p>
                     </div>
-                    <span className="text-[10px] font-bold mt-1.5 text-slate-300">DMT</span>
                   </div>
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    ACTIVE
+                  </span>
+                </div>
 
-                  <div className="flex flex-col items-center">
-                    <div className="w-11 h-11 rounded-xl bg-cyan-600 flex items-center justify-center shadow-md shadow-cyan-600/40">
-                      <Smartphone className="w-5 h-5 text-white" />
+                {/* Simulated QR Code Graphic */}
+                <div className="my-6 p-4 rounded-2xl bg-white flex flex-col items-center justify-center shadow-lg relative group">
+                  <div className="w-44 h-44 rounded-xl bg-slate-50 border-2 border-dashed border-slate-300 p-2 flex flex-col items-center justify-center relative overflow-hidden">
+                    {/* QR Matrix Mockup */}
+                    <div className="grid grid-cols-6 gap-1 w-full h-full p-2 opacity-85">
+                      {Array.from({ length: 36 }).map((_, i) => (
+                        <div 
+                          key={i} 
+                          className={`rounded-[2px] ${
+                            i % 2 === 0 || i % 5 === 0 ? 'bg-slate-900' : 'bg-transparent'
+                          } ${i === 0 || i === 5 || i === 30 ? 'bg-blue-600' : ''}`}
+                        />
+                      ))}
                     </div>
-                    <span className="text-[10px] font-bold mt-1.5 text-slate-300">BBPS</span>
-                  </div>
 
-                  <div className="flex flex-col items-center col-start-1 col-end-2 ml-4">
-                    <div className="w-11 h-11 rounded-xl bg-emerald-500 flex items-center justify-center shadow-md shadow-emerald-500/40">
-                      <Banknote className="w-5 h-5 text-white" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-xl bg-slate-950 border border-cyan-400/50 flex items-center justify-center shadow-md">
+                        <Zap className="w-5 h-5 text-cyan-400" />
+                      </div>
                     </div>
-                    <span className="text-[10px] font-bold mt-1.5 text-slate-300">Loans</span>
                   </div>
 
-                  <div className="flex flex-col items-center col-start-3 col-end-4 mr-4">
-                    <div className="w-11 h-11 rounded-xl bg-teal-600 flex items-center justify-center shadow-md shadow-teal-600/40">
-                      <Shield className="w-5 h-5 text-white" />
+                  <p className="mt-3 text-[11px] font-black text-slate-900 tracking-wide">
+                    SCAN TO PAY WITH ANY UPI APP
+                  </p>
+                  <p className="text-[10px] font-semibold text-slate-500">
+                    GPay • PhonePe • Paytm • BHIM
+                  </p>
+                </div>
+
+                {/* Real-time Transaction Notifications Stack */}
+                <div className="space-y-2.5">
+                  <div className="p-3 rounded-xl bg-slate-900/90 border border-emerald-500/30 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                        <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-white">QR Payment Approved</p>
+                        <p className="text-[10px] text-slate-400">Commission Credited: +₹17.50</p>
+                      </div>
                     </div>
-                    <span className="text-[10px] font-bold mt-1.5 text-slate-300">Insurance</span>
+                    <span className="text-xs font-black text-emerald-400">+₹5,000.00</span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-slate-900/90 border border-blue-500/30 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                        <CreditCard className="w-3.5 h-3.5 text-blue-400" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-white">Credit Card Bill Cleared</p>
+                        <p className="text-[10px] text-slate-400">HDFC Bank • Ending in 4108</p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-black text-cyan-300">₹25,000.00</span>
                   </div>
                 </div>
 
-                {/* Bottom Secure Pill */}
-                <div className="py-2.5 px-4 rounded-xl bg-emerald-600 text-center font-bold text-xs text-white shadow-lg shadow-emerald-600/40 flex items-center justify-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4" />
-                  <span>Secure & Reliable</span>
+              </div>
+
+              {/* Floating Accent Card 1: Instant Payout */}
+              <div className="absolute -bottom-6 -left-6 bg-slate-900/95 border border-cyan-500/30 rounded-2xl p-4 shadow-2xl backdrop-blur-md hidden sm:flex items-center gap-3 animate-bounce" style={{ animationDuration: '4s' }}>
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-md">
+                  <Zap className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-white">24x7 Instant IMPS</p>
+                  <p className="text-[11px] font-semibold text-emerald-400">Bank Settlement: 1.4s</p>
                 </div>
               </div>
 
-              {/* Floating RuPay Card (Top-Right) */}
-              <div className="hidden sm:block absolute -top-4 -right-12 sm:-right-8 w-60 h-36 rounded-2xl bg-gradient-to-br from-[#12396b] via-[#0f2c52] to-[#0a1c35] border border-blue-400/30 p-4 shadow-2xl shadow-blue-950/80 z-20 transform rotate-6 hover:rotate-0 transition duration-300">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-[11px] font-black tracking-wide text-white">AS EasySwipe</span>
-                  <div className="w-7 h-5 rounded bg-amber-400/80 border border-amber-300 flex items-center justify-center">
-                    <div className="w-4 h-3 border border-amber-600 rounded-sm"></div>
-                  </div>
-                </div>
-                <p className="text-xs font-mono font-bold tracking-widest text-slate-200 mt-2">
-                  1234 5678 9012 3456
-                </p>
-                <div className="flex items-end justify-between mt-3 text-[9px] text-slate-300 font-medium">
-                  <div>
-                    <span className="text-[7px] text-slate-400 block">VALID THRU</span>
-                    <span>12/28</span>
-                  </div>
-                  <span className="font-black italic text-sm text-cyan-300 tracking-wider">RuPay</span>
-                </div>
+              {/* Floating Accent Card 2: Security Badge */}
+              <div className="absolute -top-4 -right-4 bg-slate-900/95 border border-slate-700 rounded-2xl px-4 py-2.5 shadow-2xl backdrop-blur-md hidden sm:flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-cyan-400" />
+                <span className="text-xs font-bold text-slate-200">ISO & NPCI Standard</span>
               </div>
 
-              {/* Floating Shield Keyhole (Bottom-Right) */}
-              <div className="hidden sm:flex absolute -bottom-4 right-2 sm:right-6 w-14 h-16 rounded-2xl bg-gradient-to-b from-blue-500 to-indigo-700 border-2 border-white/30 items-center justify-center shadow-xl shadow-blue-900/60 z-20 transform -rotate-12 animate-bounce">
-                <div className="w-7 h-9 rounded-full bg-white/20 flex items-center justify-center">
-                  <ShieldCheck className="w-6 h-6 text-white" />
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================================
-          3. OUR SERVICES SECTION
-          ======================================================== */}
-      <section id="services" className="py-20 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-
-          <span className="text-xs font-extrabold uppercase tracking-widest text-blue-600 block mb-2">
-            OUR SERVICES
-          </span>
-          <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-            All Financial Services Under One Roof
-          </h2>
-          <div className="h-1.5 w-20 mx-auto rounded-full bg-gradient-to-r from-blue-600 to-emerald-400 mt-3 mb-14" />
-
-          {/* 5 Cards Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-
-            {/* 1. AEPS */}
-            <div className="bg-white rounded-3xl p-7 border border-slate-200/80 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition duration-300 flex flex-col items-center text-center group">
-              <div className="w-16 h-16 rounded-full bg-[#0c2340] text-blue-400 flex items-center justify-center mb-5 group-hover:scale-110 transition shadow-lg shadow-slate-900/10">
-                <Fingerprint className="w-8 h-8" />
-              </div>
-              <h3 className="text-lg font-black text-slate-900 mb-1">AEPS</h3>
-              <p className="text-xs text-slate-500 font-medium mb-6 flex-1">
-                Aadhaar Enabled Payment System
-              </p>
-              <button
-                onClick={onNavigateToLogin}
-                className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 group-hover:gap-2 transition-all"
-              >
-                <span>Know More</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {/* 2. DMT */}
-            <div className="bg-white rounded-3xl p-7 border border-slate-200/80 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition duration-300 flex flex-col items-center text-center group">
-              <div className="w-16 h-16 rounded-full bg-[#0c2340] text-indigo-400 flex items-center justify-center mb-5 group-hover:scale-110 transition shadow-lg shadow-slate-900/10">
-                <Send className="w-8 h-8" />
-              </div>
-              <h3 className="text-lg font-black text-slate-900 mb-1">DMT</h3>
-              <p className="text-xs text-slate-500 font-medium mb-6 flex-1">
-                Domestic Money Transfer
-              </p>
-              <button
-                onClick={onNavigateToLogin}
-                className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 group-hover:gap-2 transition-all"
-              >
-                <span>Know More</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {/* 3. BBPS */}
-            <div className="bg-white rounded-3xl p-7 border border-slate-200/80 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition duration-300 flex flex-col items-center text-center group">
-              <div className="w-16 h-16 rounded-full bg-[#0c2340] text-cyan-400 flex items-center justify-center mb-5 group-hover:scale-110 transition shadow-lg shadow-slate-900/10">
-                <Smartphone className="w-8 h-8" />
-              </div>
-              <h3 className="text-lg font-black text-slate-900 mb-1">BBPS</h3>
-              <p className="text-xs text-slate-500 font-medium mb-6 flex-1">
-                Bharat Bill Payment System
-              </p>
-              <button
-                onClick={onNavigateToLogin}
-                className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 group-hover:gap-2 transition-all"
-              >
-                <span>Know More</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {/* 4. Loans */}
-            <div className="bg-white rounded-3xl p-7 border border-slate-200/80 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition duration-300 flex flex-col items-center text-center group">
-              <div className="w-16 h-16 rounded-full bg-emerald-500 text-white flex items-center justify-center mb-5 group-hover:scale-110 transition shadow-lg shadow-emerald-500/20">
-                <Banknote className="w-8 h-8" />
-              </div>
-              <h3 className="text-lg font-black text-slate-900 mb-1">Loans</h3>
-              <p className="text-xs text-slate-500 font-medium mb-6 flex-1">
-                Instant & Easy Loans
-              </p>
-              <button
-                onClick={onNavigateToLogin}
-                className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 group-hover:gap-2 transition-all"
-              >
-                <span>Know More</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {/* 5. Insurance */}
-            <div className="bg-white rounded-3xl p-7 border border-slate-200/80 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition duration-300 flex flex-col items-center text-center group">
-              <div className="w-16 h-16 rounded-full bg-emerald-500 text-white flex items-center justify-center mb-5 group-hover:scale-110 transition shadow-lg shadow-emerald-500/20">
-                <ShieldCheck className="w-8 h-8" />
-              </div>
-              <h3 className="text-lg font-black text-slate-900 mb-1">Insurance</h3>
-              <p className="text-xs text-slate-500 font-medium mb-6 flex-1">
-                Secure Your Future with Insurance
-              </p>
-              <button
-                onClick={onNavigateToLogin}
-                className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 group-hover:gap-2 transition-all"
-              >
-                <span>Know More</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
             </div>
 
           </div>
@@ -438,284 +424,314 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin }) =
       </section>
 
       {/* ========================================================
-          4. WHY CHOOSE US SECTION
+          4. STATS PROOF BAR
           ======================================================== */}
-      <section id="why-choose-us" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="border-y border-slate-800 bg-slate-900/50 relative z-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center divide-y lg:divide-y-0 lg:divide-x divide-slate-800">
+            
+            <div className="pt-4 lg:pt-0">
+              <p className="text-3xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">
+                ₹50+ Cr
+              </p>
+              <p className="text-xs font-semibold text-slate-400 mt-1 uppercase tracking-wider">
+                Monthly Processing Volume
+              </p>
+            </div>
 
-          <div className="text-center mb-14">
-            <span className="text-xs font-extrabold uppercase tracking-widest text-blue-600 block mb-2">
-              WHY CHOOSE US
+            <div className="pt-4 lg:pt-0">
+              <p className="text-3xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">
+                12,000+
+              </p>
+              <p className="text-xs font-semibold text-slate-400 mt-1 uppercase tracking-wider">
+                Active Retailers & Distributors
+              </p>
+            </div>
+
+            <div className="pt-4 lg:pt-0">
+              <p className="text-3xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400">
+                &lt; 2 Sec
+              </p>
+              <p className="text-xs font-semibold text-slate-400 mt-1 uppercase tracking-wider">
+                Average IMPS Payout Speed
+              </p>
+            </div>
+
+            <div className="pt-4 lg:pt-0">
+              <p className="text-3xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
+                99.99%
+              </p>
+              <p className="text-xs font-semibold text-slate-400 mt-1 uppercase tracking-wider">
+                Platform High Availability
+              </p>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================
+          5. CORE SERVICES GRID
+          ======================================================== */}
+      <section id="services" className="py-24 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          
+          <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
+            <span className="text-xs font-bold text-cyan-400 tracking-wider uppercase bg-cyan-500/10 border border-cyan-500/20 px-3 py-1 rounded-full">
+              Full-Stack Fintech Suite
             </span>
-            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-              Trusted Service, Every Time
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-white">
+              Every Service Your Business Needs Under One Roof
             </h2>
+            <p className="text-slate-400 text-sm sm:text-base">
+              Engineered with speed, high success rates, and transparent automated commission tracking.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-
-            {/* Left: Big Glossy 3D Shield Check Illustration */}
-            <div className="lg:col-span-5 flex items-center justify-center">
-              <div className="relative w-64 h-72 sm:w-72 sm:h-80 bg-gradient-to-tr from-blue-700 via-blue-600 to-cyan-500 rounded-3xl shadow-2xl shadow-blue-500/30 flex items-center justify-center transform hover:scale-105 transition duration-500">
-                {/* Shield Contour Shape */}
-                <div className="w-48 h-56 rounded-2xl bg-blue-600/60 border-2 border-white/30 backdrop-blur-sm flex items-center justify-center shadow-inner">
-                  <div className="w-24 h-24 rounded-full bg-white/20 border-4 border-white flex items-center justify-center shadow-2xl">
-                    <Check className="w-14 h-14 text-white stroke-[3.5]" />
-                  </div>
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            
+            {/* Service 1: Dynamic QR */}
+            <div className="group rounded-2xl bg-slate-900/60 border border-slate-800 p-8 hover:border-cyan-500/40 hover:bg-slate-900/90 transition duration-300 relative">
+              <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 mb-6 group-hover:scale-110 transition">
+                <QrCode className="w-6 h-6" />
               </div>
-            </div>
-
-            {/* Right: 2x2 Feature Grid */}
-            <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-8">
-
-              {/* Feature 1 */}
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-full bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <ShieldCheck className="w-6 h-6" />
-                </div>
-                <div>
-                  <h4 className="text-base font-black text-slate-900 mb-1">Secure Transactions</h4>
-                  <p className="text-xs text-slate-500 leading-relaxed font-medium">
-                    Your security is our top priority with 100% safe transactions.
-                  </p>
-                </div>
-              </div>
-
-              {/* Feature 2 */}
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-full bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <Zap className="w-6 h-6" />
-                </div>
-                <div>
-                  <h4 className="text-base font-black text-slate-900 mb-1">Fast Service</h4>
-                  <p className="text-xs text-slate-500 leading-relaxed font-medium">
-                    Quick and instant services to save your valuable time.
-                  </p>
-                </div>
-              </div>
-
-              {/* Feature 3 */}
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-full bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <Headphones className="w-6 h-6" />
-                </div>
-                <div>
-                  <h4 className="text-base font-black text-slate-900 mb-1">Trusted Support</h4>
-                  <p className="text-xs text-slate-500 leading-relaxed font-medium">
-                    Dedicated customer support always ready to help you.
-                  </p>
-                </div>
-              </div>
-
-              {/* Feature 4 */}
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-full bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <LayoutGrid className="w-6 h-6" />
-                </div>
-                <div>
-                  <h4 className="text-base font-black text-slate-900 mb-1">All-In-One Solution</h4>
-                  <p className="text-xs text-slate-500 leading-relaxed font-medium">
-                    All banking, payment, loan & insurance services at one place.
-                  </p>
-                </div>
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
-      </section>
-
-      {/* ========================================================
-          5. OUR FEATURES (DARK NAVY SECTION WITH STATS)
-          ======================================================== */}
-      <section id="features" className="py-20 bg-[#08172e] text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-
-            {/* Left: 4 Features with Green Line Icons */}
-            <div className="lg:col-span-8 space-y-8">
-              <div>
-                <span className="text-xs font-extrabold uppercase tracking-widest text-cyan-400 block mb-2">
-                  OUR FEATURES
-                </span>
-                <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-                  Smart Solutions For Your Financial Needs
-                </h2>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 pt-4">
-
-                {/* 1 */}
-                <div className="space-y-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
-                    <Send className="w-5 h-5" />
-                  </div>
-                  <h4 className="text-base font-black text-white">Easy Money Transfer</h4>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    Send money instantly anywhere in India with secure transfer.
-                  </p>
-                </div>
-
-                {/* 2 */}
-                <div className="space-y-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
-                    <FileText className="w-5 h-5" />
-                  </div>
-                  <h4 className="text-base font-black text-white">Instant Bill Payment</h4>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    Pay electricity, mobile, DTH, water & more bills in just a few clicks.
-                  </p>
-                </div>
-
-                {/* 3 */}
-                <div className="space-y-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
-                    <Banknote className="w-5 h-5" />
-                  </div>
-                  <h4 className="text-base font-black text-white">Loan Assistance</h4>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    Get personal, business & other loans easily with minimal documents.
-                  </p>
-                </div>
-
-                {/* 4 */}
-                <div className="space-y-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
-                    <Umbrella className="w-5 h-5" />
-                  </div>
-                  <h4 className="text-base font-black text-white">Insurance Support</h4>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    Life, health, vehicle & other insurance plans to secure your future.
-                  </p>
-                </div>
-
-              </div>
-            </div>
-
-            {/* Right: Stats Counter Box */}
-            <div className="lg:col-span-4 bg-[#0d223f] border border-slate-700/60 rounded-3xl p-8 space-y-8 shadow-2xl">
-              <div>
-                <span className="text-4xl sm:text-5xl font-black text-white tracking-tight">1000+</span>
-                <p className="text-xs font-semibold text-slate-300 mt-1 uppercase tracking-wider">Happy Customers</p>
-              </div>
-
-              <div className="border-t border-slate-700/60 pt-6">
-                <span className="text-4xl sm:text-5xl font-black text-white tracking-tight">50+</span>
-                <p className="text-xs font-semibold text-slate-300 mt-1 uppercase tracking-wider">Services Available</p>
-              </div>
-
-              <div className="border-t border-slate-700/60 pt-6">
-                <span className="text-4xl sm:text-5xl font-black text-emerald-400 tracking-tight">100%</span>
-                <p className="text-xs font-semibold text-slate-300 mt-1 uppercase tracking-wider">Secure & Reliable</p>
-              </div>
-            </div>
-
-          </div>
-
-        </div>
-      </section>
-
-      {/* ========================================================
-          6. CONTACT US SECTION
-          ======================================================== */}
-      <section id="contact" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-          <div className="text-center mb-14">
-            <span className="text-xs font-extrabold uppercase tracking-widest text-blue-600 block mb-2">
-              CONTACT US
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-              We Are Here To Help You
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-
-            {/* Box 1: Contact Details List */}
-            <div className="lg:col-span-4 bg-slate-50 border border-slate-200/80 rounded-3xl p-6 sm:p-8 space-y-6 flex flex-col justify-center">
-
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <Phone className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Phone</p>
-                  <a href="tel:8469525602" className="text-sm font-black text-slate-900 hover:text-blue-600 transition">
-                    8469525602
-                  </a>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <Mail className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Email</p>
-                  <a href="mailto:asupport@aseasyswipe.com" className="text-sm font-bold text-slate-900 hover:text-blue-600 transition break-all">
-                    support@aseasyswipe.com
-                  </a>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <Globe className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Website</p>
-                  <a href="https://www.aseasyswipe.com" target="_blank" rel="noreferrer" className="text-sm font-bold text-slate-900 hover:text-blue-600 transition">
-                    www.aseasyswipe.com
-                  </a>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm mt-0.5">
-                  <MapPin className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Office Address</p>
-                  <p className="text-xs font-semibold text-slate-700 leading-relaxed">
-                    Above Yakinshahpir Dargah Gate, Taxi Stand, Panjarapol Bus Station Road, Mundra, Kutch – 370421
-                  </p>
-                </div>
-              </div>
-
-            </div>
-
-            {/* Box 2: Need Help Card */}
-            <div className="lg:col-span-4 bg-white border border-slate-200 rounded-3xl p-8 flex flex-col items-center justify-center text-center shadow-lg shadow-slate-200/50">
-              <div className="w-20 h-20 rounded-full bg-blue-600 text-white flex items-center justify-center mb-6 shadow-xl shadow-blue-600/30">
-                <Headphones className="w-10 h-10" />
-              </div>
-              <h3 className="text-2xl font-black text-slate-900 mb-2">Need Help?</h3>
-              <p className="text-xs text-slate-500 font-medium max-w-xs mb-8">
-                Our support team is always ready to assist you.
+              <h3 className="text-xl font-bold text-white mb-2">Dynamic QR Engine</h3>
+              <p className="text-slate-400 text-sm leading-relaxed mb-6">
+                Generate high-limit Dynamic QR codes with daily collection caps, automatic midnight limit rotation, and safety undo controls.
               </p>
-              <a
-                href="tel:8469525602"
-                className="w-full py-3.5 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 transition transform hover:-translate-y-0.5"
-              >
-                <Phone className="w-4 h-4" />
-                <span>Call Now</span>
-              </a>
+              <ul className="space-y-2.5 text-xs text-slate-300">
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-cyan-400 shrink-0" />
+                  <span>Instant wallet credit with proof upload</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-cyan-400 shrink-0" />
+                  <span>Configurable daily merchant limit caps</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-cyan-400 shrink-0" />
+                  <span>Automated multi-tier commission split</span>
+                </li>
+              </ul>
             </div>
 
-            {/* Box 3: Embedded Google Maps */}
-            <div className="lg:col-span-4 rounded-3xl overflow-hidden border border-slate-200 shadow-md min-h-[300px]">
-              <iframe
-                title="Office Location Mundra Kutch"
-                src="https://maps.google.com/maps?q=Mundra%2C%20Gujarat%2C%20India&t=&z=14&ie=UTF8&iwloc=&output=embed"
-                className="w-full h-full min-h-[320px] border-0"
-                allowFullScreen={false}
-                loading="lazy"
+            {/* Service 2: Credit Card Bill Payment */}
+            <div className="group rounded-2xl bg-slate-900/60 border border-slate-800 p-8 hover:border-blue-500/40 hover:bg-slate-900/90 transition duration-300 relative">
+              <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-6 group-hover:scale-110 transition">
+                <CreditCard className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">Credit Card Bill Pay</h3>
+              <p className="text-slate-400 text-sm leading-relaxed mb-6">
+                Pay credit card bills across all banks instantly with live biller fetch, automated clearance confirmation, and custom internal notes.
+              </p>
+              <ul className="space-y-2.5 text-xs text-slate-300">
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-blue-400 shrink-0" />
+                  <span>Supports Visa, MasterCard, RuPay & Diners</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-blue-400 shrink-0" />
+                  <span>Instant clearance receipts & reference tracking</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-blue-400 shrink-0" />
+                  <span>Real-time bill fetch via B2B API gateways</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Service 3: Instant IMPS Payouts */}
+            <div className="group rounded-2xl bg-slate-900/60 border border-slate-800 p-8 hover:border-emerald-500/40 hover:bg-slate-900/90 transition duration-300 relative">
+              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-6 group-hover:scale-110 transition">
+                <Zap className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">24x7 Instant Bank Payouts</h3>
+              <p className="text-slate-400 text-sm leading-relaxed mb-6">
+                Direct-to-bank account settlement with sub-second turnaround times. Settle funds anytime, including bank holidays and Sundays.
+              </p>
+              <ul className="space-y-2.5 text-xs text-slate-300">
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>24x7 IMPS / NEFT settlement routing</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>Beneficiary account & IFSC verification</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>Low transaction charges & instant UTR</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Service 4: Multi-Role Distribution */}
+            <div className="group rounded-2xl bg-slate-900/60 border border-slate-800 p-8 hover:border-indigo-500/40 hover:bg-slate-900/90 transition duration-300 relative">
+              <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-6 group-hover:scale-110 transition">
+                <Users className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">Multi-Tier Distribution</h3>
+              <p className="text-slate-400 text-sm leading-relaxed mb-6">
+                Specialized role architecture for Retailers, Distributors, and Super Distributors. Scale your partner network effortlessly.
+              </p>
+              <ul className="space-y-2.5 text-xs text-slate-300">
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-indigo-400 shrink-0" />
+                  <span>Downline retailer performance tracking</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-indigo-400 shrink-0" />
+                  <span>Automated commission distribution engine</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-indigo-400 shrink-0" />
+                  <span>Detailed multi-user wallet logs</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Service 5: Account Statement & Passbook */}
+            <div className="group rounded-2xl bg-slate-900/60 border border-slate-800 p-8 hover:border-purple-500/40 hover:bg-slate-900/90 transition duration-300 relative">
+              <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 mb-6 group-hover:scale-110 transition">
+                <Receipt className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">Digital Passbook & Ledger</h3>
+              <p className="text-slate-400 text-sm leading-relaxed mb-6">
+                Complete transparency for every rupee. Filter, search, and export account statements with detailed debit/credit audit trails.
+              </p>
+              <ul className="space-y-2.5 text-xs text-slate-300">
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-purple-400 shrink-0" />
+                  <span>Real-time running wallet balance</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-purple-400 shrink-0" />
+                  <span>Exportable CSV / PDF financial ledgers</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-purple-400 shrink-0" />
+                  <span>Comprehensive reversal & adjustment logs</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Service 6: Security & MPIN Protection */}
+            <div className="group rounded-2xl bg-slate-900/60 border border-slate-800 p-8 hover:border-amber-500/40 hover:bg-slate-900/90 transition duration-300 relative">
+              <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-6 group-hover:scale-110 transition">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">Zero-Trust Security</h3>
+              <p className="text-slate-400 text-sm leading-relaxed mb-6">
+                Hardened authentication with mandatory 6-digit MPIN, TPIN security, encrypted JWT tokens, and automated session invalidation.
+              </p>
+              <ul className="space-y-2.5 text-xs text-slate-300">
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>Mandatory MPIN for all financial actions</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>256-bit SSL encrypted data transport</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>Comprehensive KYC compliance verification</span>
+                </li>
+              </ul>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      {/* ========================================================
+          6. INTERACTIVE COMMISSION CALCULATOR
+          ======================================================== */}
+      <section id="calculator" className="py-20 bg-gradient-to-b from-slate-950 via-slate-900/70 to-slate-950 border-y border-slate-800 relative">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider bg-cyan-500/10 border border-cyan-500/20 px-3 py-1 rounded-full">
+              Earnings Estimator
+            </span>
+            <h2 className="text-3xl font-extrabold text-white mt-3">
+              Calculate Your Monthly Just2Pay Earnings
+            </h2>
+            <p className="text-slate-400 text-sm mt-2">
+              Drag the slider to preview your estimated commission and net earnings.
+            </p>
+          </div>
+
+          <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-10 shadow-2xl backdrop-blur-xl">
+            
+            <div className="space-y-6">
+              
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <label className="text-sm font-bold text-slate-300">
+                  Monthly Payment Collection Volume:
+                </label>
+                <div className="text-2xl font-black text-cyan-400">
+                  ₹{monthlyVolume.toLocaleString('en-IN')}
+                </div>
+              </div>
+
+              {/* Volume Range Slider */}
+              <input
+                type="range"
+                min="50000"
+                max="5000000"
+                step="50000"
+                value={monthlyVolume}
+                onChange={(e) => setMonthlyVolume(Number(e.target.value))}
+                className="w-full h-2.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400 focus:outline-none"
               />
+
+              <div className="flex justify-between text-[11px] font-semibold text-slate-400">
+                <span>₹50,000 / mo</span>
+                <span>₹25,00,000 / mo</span>
+                <span>₹50,00,000 / mo</span>
+              </div>
+
+              {/* Results Grid */}
+              <div className="pt-6 border-t border-slate-800 grid grid-cols-1 sm:grid-cols-3 gap-6">
+                
+                <div className="p-5 rounded-2xl bg-slate-950/80 border border-slate-800 text-center">
+                  <span className="text-xs text-slate-400 font-medium">Estimated Monthly Earnings</span>
+                  <div className="text-2xl font-black text-emerald-400 mt-1">
+                    ₹{estimatedCommission.toLocaleString('en-IN')}
+                  </div>
+                  <span className="text-[10px] text-slate-500">Credited instantly to wallet</span>
+                </div>
+
+                <div className="p-5 rounded-2xl bg-slate-950/80 border border-slate-800 text-center">
+                  <span className="text-xs text-slate-400 font-medium">Projected Annual Earnings</span>
+                  <div className="text-2xl font-black text-cyan-400 mt-1">
+                    ₹{annualEarnings.toLocaleString('en-IN')}
+                  </div>
+                  <span className="text-[10px] text-slate-500">Yearly payout compounding</span>
+                </div>
+
+                <div className="p-5 rounded-2xl bg-slate-950/80 border border-slate-800 text-center">
+                  <span className="text-xs text-slate-400 font-medium">Settlement Turnaround</span>
+                  <div className="text-2xl font-black text-blue-400 mt-1">
+                    Real-Time
+                  </div>
+                  <span className="text-[10px] text-slate-500">Zero waiting period</span>
+                </div>
+
+              </div>
+
+              <div className="pt-2 text-center">
+                <button
+                  onClick={onNavigateToLogin}
+                  className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 font-bold text-white text-sm shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 transition"
+                >
+                  <span>Start Earning with Just2Pay Today</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+
             </div>
 
           </div>
@@ -724,121 +740,308 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin }) =
       </section>
 
       {/* ========================================================
-          7. FOOTER
+          7. HOW IT WORKS (3 SIMPLE STEPS)
           ======================================================== */}
-      <footer className="bg-[#050e1d] text-slate-300 pt-16 pb-8 border-t border-slate-800">
+      <section className="py-24 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider bg-cyan-500/10 border border-cyan-500/20 px-3 py-1 rounded-full">
+              Fast Onboarding
+            </span>
+            <h2 className="text-3xl font-extrabold text-white mt-3">
+              Start Accepting Payments in 3 Simple Steps
+            </h2>
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 pb-14 border-b border-slate-800/80">
-
-            {/* Col 1: Brand & About */}
-            <div className="lg:col-span-4 space-y-4">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center font-black text-white text-base">
-                  AS
-                </div>
-                <span className="text-lg font-black text-white tracking-tight">
-                  AS <span className="text-cyan-400">EasySwipe</span>
-                </span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+            
+            {/* Step 1 */}
+            <div className="p-8 rounded-2xl bg-slate-900/50 border border-slate-800 text-center relative group hover:border-cyan-500/30 transition">
+              <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-black text-xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition">
+                01
               </div>
-              <p className="text-xs text-slate-400 leading-relaxed max-w-sm">
-                Your one-stop platform for banking, payments, loans and insurance — simple, fast and secure.
+              <h3 className="text-lg font-bold text-white mb-2">Login & KYC Check</h3>
+              <p className="text-slate-400 text-sm leading-relaxed">
+                Log into the Just2Pay secure portal and verify your merchant details in less than 2 minutes.
+              </p>
+            </div>
+
+            {/* Step 2 */}
+            <div className="p-8 rounded-2xl bg-slate-900/50 border border-slate-800 text-center relative group hover:border-blue-500/30 transition">
+              <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-400 font-black text-xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition">
+                02
+              </div>
+              <h3 className="text-lg font-bold text-white mb-2">Generate Dynamic QR</h3>
+              <p className="text-slate-400 text-sm leading-relaxed">
+                Activate your daily dynamic QR code or load your business wallet for live bill payments.
+              </p>
+            </div>
+
+            {/* Step 3 */}
+            <div className="p-8 rounded-2xl bg-slate-900/50 border border-slate-800 text-center relative group hover:border-emerald-500/30 transition">
+              <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-black text-xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition">
+                03
+              </div>
+              <h3 className="text-lg font-bold text-white mb-2">Instant Payouts & Commission</h3>
+              <p className="text-slate-400 text-sm leading-relaxed">
+                Collect payments, earn instant commissions, and trigger 24x7 IMPS bank payouts anytime.
+              </p>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      {/* ========================================================
+          8. SECURITY & COMPLIANCE SECTION
+          ======================================================== */}
+      <section id="security" className="py-20 bg-slate-900/40 border-y border-slate-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            
+            <div className="space-y-6">
+              <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider bg-cyan-500/10 border border-cyan-500/20 px-3 py-1 rounded-full">
+                Enterprise-Grade Defense
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-white leading-tight">
+                Your Funds & Data Protected by Multi-Layered Security
+              </h2>
+              <p className="text-slate-400 text-base leading-relaxed">
+                Just2Pay is built with fintech security at its foundation. We employ strict cryptographic standards, role segregation, and live audit telemetry to ensure complete safety.
               </p>
 
-              {/* Social Icons */}
-              <div className="flex items-center gap-3 pt-2">
-                <a href="#" className="w-8 h-8 rounded-full bg-slate-800 hover:bg-blue-600 flex items-center justify-center text-white transition text-xs font-bold">
-                  f
-                </a>
-                <a href="https://wa.me/918469525602" target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-slate-800 hover:bg-emerald-600 flex items-center justify-center text-white transition text-xs font-bold">
-                  W
-                </a>
-                <a href="#" className="w-8 h-8 rounded-full bg-slate-800 hover:bg-pink-600 flex items-center justify-center text-white transition text-xs font-bold">
-                  in
-                </a>
-                <a href="#" className="w-8 h-8 rounded-full bg-slate-800 hover:bg-red-600 flex items-center justify-center text-white transition text-xs font-bold">
-                  Y
-                </a>
+              <div className="space-y-4 pt-2">
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-lg bg-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0 mt-0.5">
+                    <Check className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white">6-Digit Mandatory MPIN</h4>
+                    <p className="text-xs text-slate-400 mt-0.5">All transactions require custom MPIN authorization, preventing unauthorized transfers.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-lg bg-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0 mt-0.5">
+                    <Check className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white">256-Bit SSL End-to-End Encryption</h4>
+                    <p className="text-xs text-slate-400 mt-0.5">All communications between client and server are fully encrypted with modern TLS cipher suites.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-lg bg-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0 mt-0.5">
+                    <Check className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white">Method 2 Undo Reversal Guard</h4>
+                    <p className="text-xs text-slate-400 mt-0.5">Automated wallet balance verification ensures zero negative wallet balance vulnerabilities.</p>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Col 2: Quick Links */}
-            <div className="lg:col-span-2 space-y-3">
-              <h4 className="text-xs font-black uppercase tracking-wider text-white">Quick Links</h4>
-              <ul className="space-y-2 text-xs">
-                <li><button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="hover:text-blue-400 transition">Home</button></li>
-                <li><button onClick={() => scrollToSection('services')} className="hover:text-blue-400 transition">Services</button></li>
-                <li><button onClick={() => scrollToSection('why-choose-us')} className="hover:text-blue-400 transition">About Us</button></li>
-                <li><button onClick={() => scrollToSection('contact')} className="hover:text-blue-400 transition">Contact Us</button></li>
-                <li><button onClick={onNavigateToLogin} className="text-blue-400 font-bold hover:underline">Login</button></li>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-6 rounded-2xl bg-slate-950 border border-slate-800 text-center">
+                <ShieldCheck className="w-10 h-10 text-cyan-400 mx-auto mb-3" />
+                <h4 className="text-sm font-bold text-white">ISO 27001</h4>
+                <p className="text-xs text-slate-400 mt-1">Information Security Standard</p>
+              </div>
+
+              <div className="p-6 rounded-2xl bg-slate-950 border border-slate-800 text-center">
+                <Lock className="w-10 h-10 text-emerald-400 mx-auto mb-3" />
+                <h4 className="text-sm font-bold text-white">256-Bit AES</h4>
+                <p className="text-xs text-slate-400 mt-1">Military Grade Cryptography</p>
+              </div>
+
+              <div className="p-6 rounded-2xl bg-slate-950 border border-slate-800 text-center">
+                <RefreshCw className="w-10 h-10 text-blue-400 mx-auto mb-3" />
+                <h4 className="text-sm font-bold text-white">NPCI Compliant</h4>
+                <p className="text-xs text-slate-400 mt-1">UPI & IMPS Guidelines</p>
+              </div>
+
+              <div className="p-6 rounded-2xl bg-slate-950 border border-slate-800 text-center">
+                <Headphones className="w-10 h-10 text-indigo-400 mx-auto mb-3" />
+                <h4 className="text-sm font-bold text-white">24x7 Monitoring</h4>
+                <p className="text-xs text-slate-400 mt-1">Proactive Fraud Prevention</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================
+          9. FREQUENTLY ASKED QUESTIONS (FAQ ACCORDION)
+          ======================================================== */}
+      <section id="faq" className="py-24">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          
+          <div className="text-center mb-16">
+            <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider bg-cyan-500/10 border border-cyan-500/20 px-3 py-1 rounded-full">
+              Got Questions?
+            </span>
+            <h2 className="text-3xl font-extrabold text-white mt-3">
+              Frequently Asked Questions
+            </h2>
+          </div>
+
+          <div className="space-y-4">
+            {faqs.map((faq, index) => {
+              const isOpen = openFaq === index;
+              return (
+                <div 
+                  key={index}
+                  className="rounded-2xl bg-slate-900/60 border border-slate-800 overflow-hidden transition"
+                >
+                  <button
+                    onClick={() => setOpenFaq(isOpen ? null : index)}
+                    className="w-full p-6 text-left flex items-center justify-between gap-4 font-bold text-white hover:text-cyan-400 transition"
+                  >
+                    <span className="text-base">{faq.q}</span>
+                    {isOpen ? (
+                      <ChevronUp className="w-5 h-5 text-cyan-400 shrink-0" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-slate-400 shrink-0" />
+                    )}
+                  </button>
+                  {isOpen && (
+                    <div className="px-6 pb-6 text-slate-300 text-sm leading-relaxed border-t border-slate-800/80 pt-4">
+                      {faq.a}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+        </div>
+      </section>
+
+      {/* ========================================================
+          10. BOTTOM CALL TO ACTION
+          ======================================================== */}
+      <section className="py-20 relative overflow-hidden">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="rounded-3xl bg-gradient-to-r from-blue-900/90 via-indigo-900/90 to-cyan-900/90 border border-cyan-500/30 p-10 sm:p-14 text-center shadow-2xl relative overflow-hidden">
+            
+            {/* Glow Orbs */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-400/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div className="relative z-10 space-y-6 max-w-2xl mx-auto">
+              <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight">
+                Ready to Accelerate Your Payments with Just2Pay?
+              </h2>
+              <p className="text-slate-300 text-sm sm:text-base">
+                Join thousands of merchants, distributors, and partners who trust Just2Pay for their daily financial operations.
+              </p>
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-4">
+                <button
+                  onClick={onNavigateToLogin}
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-black text-base shadow-xl shadow-cyan-400/25 transition duration-200"
+                >
+                  <LogIn className="w-5 h-5" />
+                  <span>Access Merchant Portal</span>
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================
+          11. FOOTER
+          ======================================================== */}
+      <footer id="contact" className="border-t border-slate-800 bg-slate-950 pt-16 pb-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-slate-800">
+            
+            {/* Col 1: Brand */}
+            <div className="lg:col-span-2 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 p-[2px]">
+                  <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+                    <Zap className="w-5 h-5 text-cyan-400" />
+                  </div>
+                </div>
+                <div className="flex items-center tracking-tight">
+                  <span className="text-2xl font-black text-white">Just</span>
+                  <span className="text-2xl font-black text-cyan-400">2Pay</span>
+                </div>
+              </div>
+              <p className="text-slate-400 text-sm leading-relaxed max-w-sm">
+                Next-generation B2B fintech platform providing high-speed Dynamic QR collections, Credit Card bill payments, instant 24x7 IMPS payouts, and multi-tier commission settlements.
+              </p>
+              <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>All Payment Gateways & API Engines Operational</span>
+              </div>
+            </div>
+
+            {/* Col 2: Services */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold text-white uppercase tracking-wider">Services</h4>
+              <ul className="space-y-2 text-xs text-slate-400">
+                <li><button onClick={() => scrollToSection('services')} className="hover:text-cyan-400 transition">Dynamic QR Collection</button></li>
+                <li><button onClick={() => scrollToSection('services')} className="hover:text-cyan-400 transition">Credit Card Bill Pay</button></li>
+                <li><button onClick={() => scrollToSection('services')} className="hover:text-cyan-400 transition">24x7 IMPS Payouts</button></li>
+                <li><button onClick={() => scrollToSection('services')} className="hover:text-cyan-400 transition">Distribution Management</button></li>
+                <li><button onClick={() => scrollToSection('services')} className="hover:text-cyan-400 transition">Digital Account Passbook</button></li>
               </ul>
             </div>
 
-            {/* Col 3: Our Services */}
-            <div className="lg:col-span-2 space-y-3">
-              <h4 className="text-xs font-black uppercase tracking-wider text-white">Our Services</h4>
-              <ul className="space-y-2 text-xs">
-                <li><button onClick={() => scrollToSection('services')} className="hover:text-blue-400 transition">AEPS</button></li>
-                <li><button onClick={() => scrollToSection('services')} className="hover:text-blue-400 transition">DMT</button></li>
-                <li><button onClick={() => scrollToSection('services')} className="hover:text-blue-400 transition">BBPS</button></li>
-                <li><button onClick={() => scrollToSection('services')} className="hover:text-blue-400 transition">Loans</button></li>
-                <li><button onClick={() => scrollToSection('services')} className="hover:text-blue-400 transition">Insurance</button></li>
+            {/* Col 3: Portal Links */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold text-white uppercase tracking-wider">Quick Links</h4>
+              <ul className="space-y-2 text-xs text-slate-400">
+                <li><button onClick={onNavigateToLogin} className="hover:text-cyan-400 transition">Merchant Login</button></li>
+                <li><button onClick={onNavigateToLogin} className="hover:text-cyan-400 transition">Admin Console</button></li>
+                <li><button onClick={() => scrollToSection('calculator')} className="hover:text-cyan-400 transition">Commission Calculator</button></li>
+                <li><button onClick={() => scrollToSection('security')} className="hover:text-cyan-400 transition">Security Standards</button></li>
+                <li><button onClick={() => scrollToSection('faq')} className="hover:text-cyan-400 transition">Help & FAQ</button></li>
               </ul>
             </div>
 
-            {/* Col 4: Contact Info */}
-            <div className="lg:col-span-2 space-y-3">
-              <h4 className="text-xs font-black uppercase tracking-wider text-white">Contact Info</h4>
+            {/* Col 4: Support */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold text-white uppercase tracking-wider">Support Desk</h4>
               <ul className="space-y-2 text-xs text-slate-400">
                 <li className="flex items-center gap-2">
-                  <Phone className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
-                  <span>8469525602</span>
+                  <Mail className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>support@just2pay.in</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Mail className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
-                  <span className="truncate">asupport@aseasyswipe.com</span>
+                  <PhoneCall className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>+91 99999 99999</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Globe className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
-                  <span>www.aseasyswipe.com</span>
+                  <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>24x7 Dedicated Assistance</span>
                 </li>
               </ul>
             </div>
 
-            {/* Col 5: Newsletter */}
-            <div className="lg:col-span-2 space-y-3">
-              <h4 className="text-xs font-black uppercase tracking-wider text-white">Newsletter</h4>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
-                Subscribe to get updates and offers.
-              </p>
-              <form onSubmit={handleSubscribe} className="space-y-2">
-                <input
-                  type="email"
-                  required
-                  placeholder="Enter your email"
-                  value={newsletterEmail}
-                  onChange={(e) => setNewsletterEmail(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
-                />
-                <button
-                  type="submit"
-                  className="w-full py-2 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition"
-                >
-                  {subscribed ? 'Subscribed! ✓' : 'Subscribe'}
-                </button>
-              </form>
-            </div>
-
           </div>
 
-          {/* Bottom Copyright */}
-          <div className="pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-3">
-            <p>© 2026 AS EasySwipe Pvt Ltd. All Rights Reserved.</p>
-            <p className="text-slate-400 font-medium">Your Trusted Financial Partner</p>
+          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+            <p>© {new Date().getFullYear()} Just2Pay Technologies Pvt Ltd. All rights reserved.</p>
+            <div className="flex items-center gap-6">
+              <span className="hover:text-slate-400 transition cursor-pointer">Privacy Policy</span>
+              <span className="hover:text-slate-400 transition cursor-pointer">Terms of Service</span>
+              <span className="hover:text-slate-400 transition cursor-pointer">Security Compliance</span>
+            </div>
           </div>
 
         </div>
       </footer>
+
     </div>
   );
 };
