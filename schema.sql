@@ -115,6 +115,12 @@ CREATE TABLE IF NOT EXISTS public.qr_payment_requests (
 
 ALTER TABLE public.qr_payment_requests ADD COLUMN IF NOT EXISTS admin_commission NUMERIC(15,2) DEFAULT 0.00;
 ALTER TABLE IF EXISTS public.qr_payment_requests ALTER COLUMN charge_percent SET DEFAULT 0.00;
+ALTER TABLE public.qr_payment_requests ADD COLUMN IF NOT EXISTS reverted_at TIMESTAMPTZ;
+ALTER TABLE public.qr_payment_requests ADD COLUMN IF NOT EXISTS reverted_by TEXT;
+ALTER TABLE public.qr_payment_requests ADD COLUMN IF NOT EXISTS revert_reason TEXT;
+ALTER TABLE public.qr_payment_requests ADD COLUMN IF NOT EXISTS admin_note TEXT DEFAULT '';
+ALTER TABLE public.qr_payment_requests DROP CONSTRAINT IF EXISTS qr_payment_requests_status_check;
+ALTER TABLE public.qr_payment_requests ADD CONSTRAINT qr_payment_requests_status_check CHECK (status IN ('pending', 'approved', 'rejected', 'reverted'));
 
 -- 4. SYSTEM SETTINGS TABLE (System Controls & User Panel Toggles)
 CREATE TABLE IF NOT EXISTS public.system_settings (

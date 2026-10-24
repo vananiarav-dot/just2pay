@@ -219,6 +219,16 @@ export const qrApi = {
     return response.data;
   },
 
+  revertPaymentRequest: async (id: string, reason: string) => {
+    const response = await apiClient.post(`/qr/request/${id}/revert`, { reason });
+    return response.data;
+  },
+
+  updateNote: async (id: string, admin_note: string) => {
+    const response = await apiClient.patch(`/qr/request/${encodeURIComponent(id)}/note`, { admin_note });
+    return response.data;
+  },
+
   getGallerySummary: async () => {
     const response = await apiClient.get('/qr/gallery/summary');
     return response.data;

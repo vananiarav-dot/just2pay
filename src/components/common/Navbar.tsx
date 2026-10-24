@@ -28,11 +28,11 @@ export const Navbar: React.FC<NavbarProps> = () => {
 
   const getRoleBadgeStyle = (role?: UserRole) => {
     switch (role) {
-      case 'admin': return 'bg-purple-500/20 text-purple-300 border-purple-500/40';
-      case 'super_distributor': return 'bg-amber-500/20 text-amber-300 border-amber-500/40';
-      case 'distributor': return 'bg-blue-500/20 text-blue-300 border-blue-500/40';
-      case 'user': return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
-      default: return 'bg-gray-500/20 text-gray-300 border-gray-500/40';
+      case 'admin': return 'bg-purple-50 text-purple-700 border-purple-200';
+      case 'super_distributor': return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'distributor': return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'user': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      default: return 'bg-slate-100 text-slate-700 border-slate-200';
     }
   };
 
@@ -47,92 +47,78 @@ export const Navbar: React.FC<NavbarProps> = () => {
   };
 
   return (
-    <header className="w-full bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-4 lg:px-8 py-3">
+    <header className="w-full bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 px-4 lg:px-8 py-3 shadow-2xs">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-            <ShieldCheck className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <div className="flex items-center space-x-2">
-              <span className="font-bold text-xl tracking-tight text-white font-sans">
-                AsEasy<span className="text-indigo-400">Swipe</span>
-              </span>
-              <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                Fintech V2.4
-              </span>
-            </div>
-            <p className="text-xs text-slate-400 flex items-center gap-1">
-              <Lock className="w-3 h-3 text-emerald-400 inline" /> 256-bit Encrypted Session
-            </p>
-          </div>
+          <img src="/logo.png?v=2" alt="Just2Pay" className="h-10 w-auto object-contain" />
+          <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs">
+            {getRoleLabel(user?.role)}
+          </span>
         </div>
 
         {user && (
           <div className="flex items-center space-x-3 lg:space-x-6">
 
             {user.role !== 'admin' && (
-              <div className="hidden sm:flex items-center space-x-2 px-3.5 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700/80">
-                <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400">
+              <div className="hidden sm:flex items-center space-x-2 px-3.5 py-1.5 rounded-xl bg-white border border-slate-200 shadow-2xs">
+                <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100">
                   <Wallet className="w-4 h-4" />
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase font-semibold text-slate-400">Main Wallet</p>
-                  <p className="text-sm font-bold text-emerald-400">
+                  <p className="text-[10px] uppercase font-bold text-slate-500">Main Wallet</p>
+                  <p className="text-sm font-black text-emerald-600">
                     ₹{Number(user.wallet_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
               </div>
             )}
 
-            <div className="hidden md:flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-800/60 border border-slate-700/50">
-              <Clock className="w-4 h-4 text-amber-400 animate-pulse" />
+            <div className="hidden md:flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200">
+              <Clock className="w-4 h-4 text-amber-500 animate-pulse" />
               <div>
-                <p className="text-[10px] uppercase font-semibold text-slate-400">Session Auto-Logout</p>
-                <p className="text-xs font-mono font-semibold text-amber-300">
+                <p className="text-[10px] uppercase font-bold text-slate-500">Session Auto-Logout</p>
+                <p className="text-xs font-mono font-bold text-amber-700">
                   {formatTimer(sessionRemainingSeconds)}
                 </p>
               </div>
             </div>
 
-            <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${getRoleBadgeStyle(user.role)}`}>
+            <span className={`text-xs font-bold px-2.5 py-1 rounded-full border shadow-2xs ${getRoleBadgeStyle(user.role)}`}>
               {getRoleLabel(user.role)}
             </span>
 
             <div className="relative">
               <button
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className="flex items-center space-x-2 p-1.5 rounded-xl hover:bg-slate-800 transition border border-transparent hover:border-slate-700 focus:outline-none"
+                className="flex items-center space-x-2 p-1.5 rounded-xl hover:bg-slate-50 transition border border-transparent hover:border-slate-200 focus:outline-none cursor-pointer"
               >
                 {user.profile_photo_url ? (
                   <img src={user.profile_photo_url} alt={user.name} className="w-8 h-8 rounded-lg object-cover ring-2 ring-indigo-500/40" />
                 ) : (
-                  <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-sm">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-2xs">
                     {user.name.charAt(0)}
                   </div>
                 )}
-                <span className="hidden lg:inline-block text-xs font-medium text-slate-200">{user.name}</span>
+                <span className="hidden lg:inline-block text-xs font-bold text-slate-800">{user.name}</span>
                 <ChevronDown className="w-4 h-4 text-slate-400" />
               </button>
 
               {showProfileMenu && (
-                <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl py-2 z-50">
-                  <div className="px-4 py-3 border-b border-slate-800">
-                    <p className="text-sm font-semibold text-white">{user.name}</p>
-                    <p className="text-xs text-slate-400">{user.firm_name}</p>
-                    <p className="text-xs text-indigo-400 mt-1 font-mono">+91 {user.mobile_number}</p>
+                <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white border border-slate-200 shadow-xl py-2 z-50">
+                  <div className="px-4 py-3 border-b border-slate-100">
+                    <p className="text-sm font-bold text-slate-900">{user.name}</p>
+                    <p className="text-xs text-slate-500">{user.firm_name}</p>
+                    <p className="text-xs text-indigo-600 mt-1 font-mono font-semibold">+91 {user.mobile_number}</p>
                   </div>
 
-
-
-                  <div className="border-t border-slate-800 py-1">
+                  <div className="border-t border-slate-100 py-1">
                     <button
                       onClick={() => {
                         setShowProfileMenu(false);
                         logout();
                       }}
-                      className="w-full text-left px-4 py-2 text-xs text-red-400 hover:bg-red-500/10 flex items-center space-x-2"
+                      className="w-full text-left px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 flex items-center space-x-2 cursor-pointer"
                     >
                       <LogOut className="w-4 h-4" />
                       <span>Log Out Session</span>

@@ -141,29 +141,29 @@ export const PrintStatementModal: React.FC<PrintStatementModalProps> = ({
   const { account_details, summary, entries } = statement;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl space-y-4 max-h-[95vh] flex flex-col">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      <div className="relative w-full max-w-4xl bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-2xl space-y-4 max-h-[95vh] flex flex-col">
         
         {/* Top Header & Actions */}
-        <div className="flex items-center justify-between p-5 bg-slate-950 border-b border-slate-800 shrink-0">
+        <div className="flex items-center justify-between p-5 bg-white border-b border-slate-100 shrink-0">
           <div className="flex items-center gap-2">
-            <div className="p-2 bg-indigo-500/20 text-indigo-400 rounded-xl">
+            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
               <Printer className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-extrabold text-white">Print Account Statement / Passbook</h2>
-              <p className="text-xs text-slate-400">
+              <h2 className="text-base font-extrabold text-slate-900">Print Account Statement / Passbook</h2>
+              <p className="text-xs text-slate-500">
                 Official Bank-Grade Account Ledger Slip
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="flex items-center bg-slate-900 border border-slate-800 rounded-xl p-0.5 text-xs">
+            <div className="flex items-center bg-slate-100 border border-slate-200 rounded-xl p-0.5 text-xs">
               <button
                 onClick={() => setPrintLayout('a4')}
                 className={`px-3 py-1 rounded-lg font-bold transition-all ${
-                  printLayout === 'a4' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                  printLayout === 'a4' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 A4 Statement
@@ -171,7 +171,7 @@ export const PrintStatementModal: React.FC<PrintStatementModalProps> = ({
               <button
                 onClick={() => setPrintLayout('thermal')}
                 className={`px-3 py-1 rounded-lg font-bold transition-all ${
-                  printLayout === 'thermal' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                  printLayout === 'thermal' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 Thermal (80mm)
@@ -180,14 +180,14 @@ export const PrintStatementModal: React.FC<PrintStatementModalProps> = ({
 
             <button
               onClick={handlePrint}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-indigo-600/30 transition-all cursor-pointer"
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
             >
               <Printer className="w-4 h-4" /> Print Now
             </button>
 
             <button
               onClick={onClose}
-              className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+              className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -195,73 +195,73 @@ export const PrintStatementModal: React.FC<PrintStatementModalProps> = ({
         </div>
 
         {/* Printable Passbook Body Container */}
-        <div className="p-6 overflow-y-auto flex-1">
-          <div id="printable-bank-statement" className="bg-slate-950 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6 text-slate-200">
+        <div className="p-6 overflow-y-auto flex-1 bg-slate-50">
+          <div id="printable-bank-statement" className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-6 text-slate-900 shadow-sm">
             
             {/* Bank Statement Header */}
-            <div className="header-bar border-b-2 border-indigo-500/40 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="header-bar border-b-2 border-indigo-600/30 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div className="space-y-1">
-                <div className="flex items-center gap-1.5 text-emerald-400 font-black text-sm tracking-wide">
+                <div className="flex items-center gap-1.5 text-indigo-700 font-black text-sm tracking-wide">
                   <ShieldCheck className="w-4 h-4" /> ASEASY SWIPE FINTECH PORTAL
                 </div>
-                <h1 className="text-xl font-black text-white">OFFICIAL ACCOUNT STATEMENT</h1>
-                <p className="text-xs text-slate-400">NPCI / B2B Instant Settlement Wallet Ledger</p>
+                <h1 className="text-xl font-black text-slate-900">OFFICIAL ACCOUNT STATEMENT</h1>
+                <p className="text-xs text-slate-500">NPCI / B2B Instant Settlement Wallet Ledger</p>
               </div>
 
               <div className="text-right text-xs space-y-1">
-                <span className="bank-stamp border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-md font-bold uppercase inline-block">
+                <span className="bank-stamp border border-emerald-300 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-md font-bold uppercase inline-block">
                   Verified Passbook
                 </span>
-                <p className="text-[11px] text-slate-400 font-mono">
+                <p className="text-[11px] text-slate-500 font-mono">
                   Generated: {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </p>
               </div>
             </div>
 
             {/* Account Details & Statement Period Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs bg-slate-900/80 p-4 rounded-xl border border-slate-800">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs bg-slate-50 p-4 rounded-xl border border-slate-200">
               <div className="space-y-1">
-                <p className="text-slate-400">Account Holder:</p>
-                <p className="text-sm font-black text-white">{account_details.name}</p>
-                <p className="text-slate-300 font-semibold">{account_details.firm_name}</p>
-                <p className="text-slate-400 font-mono">Mobile: {account_details.mobile_number}</p>
+                <p className="text-slate-500">Account Holder:</p>
+                <p className="text-sm font-black text-slate-900">{account_details.name}</p>
+                <p className="text-slate-700 font-semibold">{account_details.firm_name}</p>
+                <p className="text-slate-500 font-mono">Mobile: {account_details.mobile_number}</p>
               </div>
 
               <div className="space-y-1 sm:text-right">
-                <p className="text-slate-400">Statement Period:</p>
-                <p className="text-xs font-bold text-white font-mono">
+                <p className="text-slate-500">Statement Period:</p>
+                <p className="text-xs font-bold text-slate-900 font-mono">
                   {startDate ? new Date(startDate).toLocaleDateString('en-IN') : 'All Time'} to {endDate ? new Date(endDate).toLocaleDateString('en-IN') : 'Present'}
                 </p>
-                <p className="text-slate-400">Currency: <strong className="text-slate-200">INR (₹)</strong></p>
-                <p className="text-slate-400">Account Type: <strong className="text-indigo-400 uppercase">{account_details.role || 'Merchant'}</strong></p>
+                <p className="text-slate-500">Currency: <strong className="text-slate-800">INR (₹)</strong></p>
+                <p className="text-slate-500">Account Type: <strong className="text-indigo-700 uppercase">{account_details.role || 'Merchant'}</strong></p>
               </div>
             </div>
 
             {/* Summary Highlights (Passbook Balances) */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 p-4 bg-slate-900 border border-slate-800 rounded-xl text-center text-xs">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 p-4 bg-slate-50 border border-slate-200 rounded-xl text-center text-xs">
               <div className="space-y-0.5">
-                <p className="text-[10px] uppercase font-bold text-slate-400">Opening Balance</p>
-                <p className="text-sm font-black text-white">₹{summary.opening_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
+                <p className="text-[10px] uppercase font-bold text-slate-500">Opening Balance</p>
+                <p className="text-sm font-black text-slate-900">₹{summary.opening_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
               </div>
               <div className="space-y-0.5">
-                <p className="text-[10px] uppercase font-bold text-emerald-400 flex items-center justify-center gap-0.5">
+                <p className="text-[10px] uppercase font-bold text-emerald-700 flex items-center justify-center gap-0.5">
                   <ArrowDownLeft className="w-3 h-3" /> Total Credits
                 </p>
-                <p className="text-sm font-black text-emerald-400">+₹{summary.total_credits.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
+                <p className="text-sm font-black text-emerald-700">+₹{summary.total_credits.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
               </div>
               <div className="space-y-0.5">
-                <p className="text-[10px] uppercase font-bold text-rose-400 flex items-center justify-center gap-0.5">
+                <p className="text-[10px] uppercase font-bold text-rose-700 flex items-center justify-center gap-0.5">
                   <ArrowUpRight className="w-3 h-3" /> Total Debits
                 </p>
-                <p className="text-sm font-black text-rose-400">-₹{summary.total_debits.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
+                <p className="text-sm font-black text-rose-700">-₹{summary.total_debits.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
               </div>
               <div className="space-y-0.5">
-                <p className="text-[10px] uppercase font-bold text-amber-400">Total Commission</p>
-                <p className="text-sm font-black text-amber-400">₹{summary.total_commission.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
+                <p className="text-[10px] uppercase font-bold text-amber-700">Total Commission</p>
+                <p className="text-sm font-black text-amber-700">₹{summary.total_commission.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
               </div>
               <div className="space-y-0.5 col-span-2 sm:col-span-1">
-                <p className="text-[10px] uppercase font-bold text-indigo-400">Closing Balance</p>
-                <p className="text-sm font-black text-indigo-300">₹{summary.closing_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
+                <p className="text-[10px] uppercase font-bold text-indigo-700">Closing Balance</p>
+                <p className="text-sm font-black text-indigo-700">₹{summary.closing_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
               </div>
             </div>
 
@@ -269,7 +269,7 @@ export const PrintStatementModal: React.FC<PrintStatementModalProps> = ({
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-slate-900 text-slate-300 uppercase text-[10px] font-bold border-b border-slate-700">
+                  <tr className="bg-slate-50 text-slate-600 uppercase text-[10px] font-bold border-b border-slate-200">
                     <th className="p-2.5">Date & Time</th>
                     <th className="p-2.5">Reference / UTR</th>
                     <th className="p-2.5">Narration & Math Breakdown</th>
@@ -278,33 +278,33 @@ export const PrintStatementModal: React.FC<PrintStatementModalProps> = ({
                     <th className="p-2.5 text-right">Balance</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800">
+                <tbody className="divide-y divide-slate-100">
                   {entries.map((entry) => (
-                    <tr key={entry.id} className="hover:bg-slate-900/50">
-                      <td className="p-2.5 whitespace-nowrap text-slate-400 font-mono text-[10px]">
+                    <tr key={entry.id} className="hover:bg-slate-50/50">
+                      <td className="p-2.5 whitespace-nowrap text-slate-500 font-mono text-[10px]">
                         {new Date(entry.created_at).toLocaleString('en-IN', {
                           day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
                         })}
                       </td>
-                      <td className="p-2.5 whitespace-nowrap font-mono text-slate-300 text-[11px]">
+                      <td className="p-2.5 whitespace-nowrap font-mono text-slate-700 text-[11px]">
                         {entry.reference_id || '—'}
                       </td>
                       <td className="p-2.5">
-                        <div className="font-bold text-white text-[11px]">{entry.title}</div>
-                        <div className="text-[10px] text-slate-400">{entry.narration}</div>
+                        <div className="font-bold text-slate-900 text-[11px]">{entry.title}</div>
+                        <div className="text-[10px] text-slate-500">{entry.narration}</div>
                         {entry.math_breakdown && (
-                          <div className="text-[10px] text-indigo-300 font-mono mt-0.5 bg-slate-900/80 px-1.5 py-0.5 rounded border border-slate-800 inline-block">
+                          <div className="text-[10px] text-indigo-700 font-mono mt-0.5 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 inline-block font-bold">
                             {entry.math_breakdown}
                           </div>
                         )}
                       </td>
-                      <td className="p-2.5 whitespace-nowrap text-right font-black text-rose-400 text-xs">
+                      <td className="p-2.5 whitespace-nowrap text-right font-black text-rose-600 text-xs">
                         {entry.type === 'DEBIT' ? `-₹${entry.net_amount.toFixed(2)}` : '—'}
                       </td>
-                      <td className="p-2.5 whitespace-nowrap text-right font-black text-emerald-400 text-xs">
+                      <td className="p-2.5 whitespace-nowrap text-right font-black text-emerald-600 text-xs">
                         {entry.type === 'CREDIT' ? `+₹${entry.net_amount.toFixed(2)}` : '—'}
                       </td>
-                      <td className="p-2.5 whitespace-nowrap text-right font-mono font-black text-white text-xs">
+                      <td className="p-2.5 whitespace-nowrap text-right font-mono font-black text-slate-900 text-xs">
                         ₹{entry.running_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </td>
                     </tr>
@@ -314,7 +314,7 @@ export const PrintStatementModal: React.FC<PrintStatementModalProps> = ({
             </div>
 
             {/* Footer Disclaimer */}
-            <div className="footer-note border-t border-slate-800 pt-3 text-[10px] text-slate-500 text-center space-y-1">
+            <div className="footer-note border-t border-slate-200 pt-3 text-[10px] text-slate-500 text-center space-y-1">
               <p>This is a computer-generated bank account statement and does not require a physical signature.</p>
               <p>For any queries or transaction dispute, please quote the Reference ID.</p>
             </div>
@@ -323,16 +323,16 @@ export const PrintStatementModal: React.FC<PrintStatementModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 bg-slate-950 border-t border-slate-800 flex justify-end gap-3 shrink-0">
+        <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 shrink-0">
           <button
             onClick={handlePrint}
-            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/30 transition-all cursor-pointer"
+            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition-all cursor-pointer"
           >
             <Printer className="w-4 h-4" /> Print Statement
           </button>
           <button
             onClick={onClose}
-            className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer"
+            className="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition-all cursor-pointer"
           >
             Close
           </button>

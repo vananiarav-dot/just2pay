@@ -152,7 +152,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onTabChange }) =
       <div className="flex items-center justify-end">
         <button
           onClick={() => setShowCreateModal(true)}
-          className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg flex items-center space-x-2 transition"
+          className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 flex items-center space-x-2 transition cursor-pointer"
         >
           <UserPlus className="w-4 h-4" />
           <span>Onboard New User</span>
@@ -162,47 +162,47 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onTabChange }) =
       {/* STATS OVERVIEW */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
-        <div className="bg-slate-900 rounded-2xl p-4 border border-slate-800 flex items-center justify-between">
+        <div className="bg-white rounded-2xl p-4 border border-purple-200 shadow-2xs flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-slate-400">Total User Live Wallet Balance</p>
-            <p className="text-xl font-bold text-purple-300 mt-1">
+            <p className="text-xs font-semibold text-slate-500">Total User Live Wallet Balance</p>
+            <p className="text-xl font-bold text-purple-700 mt-1">
               ₹{totalPlatformBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
             </p>
           </div>
-          <div className="p-3 rounded-2xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+          <div className="p-3 rounded-2xl bg-purple-50 text-purple-600 border border-purple-100">
             <Wallet className="w-6 h-6" />
           </div>
         </div>
 
-        <div className="bg-slate-900 rounded-2xl p-4 border border-slate-800 flex items-center justify-between">
+        <div className="bg-white rounded-2xl p-4 border border-emerald-200 shadow-2xs flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-slate-400">Active Accounts</p>
-            <p className="text-xl font-bold text-emerald-400 mt-1">{activeCount} / {nonAdminUsers.length}</p>
+            <p className="text-xs font-semibold text-slate-500">Active Accounts</p>
+            <p className="text-xl font-bold text-emerald-700 mt-1">{activeCount} / {nonAdminUsers.length}</p>
           </div>
-          <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <div className="p-3 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100">
             <CheckCircle className="w-6 h-6" />
           </div>
         </div>
 
-        <div className="bg-slate-900 rounded-2xl p-4 border border-slate-800 flex items-center justify-between">
+        <div className="bg-white rounded-2xl p-4 border border-red-200 shadow-2xs flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-slate-400">Blocked Security Lockouts</p>
-            <p className="text-xl font-bold text-red-400 mt-1">{blockedCount}</p>
+            <p className="text-xs font-semibold text-slate-500">Blocked Security Lockouts</p>
+            <p className="text-xl font-bold text-red-700 mt-1">{blockedCount}</p>
           </div>
-          <div className="p-3 rounded-2xl bg-red-500/10 text-red-400 border border-red-500/20">
+          <div className="p-3 rounded-2xl bg-red-50 text-red-600 border border-red-100">
             <ShieldAlert className="w-6 h-6" />
           </div>
         </div>
 
         <div 
           onClick={() => onTabChange?.('admin_kyc')}
-          className="bg-slate-900 rounded-2xl p-4 border border-slate-800 hover:border-amber-500/40 cursor-pointer transition flex items-center justify-between group shadow-sm"
+          className="bg-white rounded-2xl p-4 border border-amber-200 hover:border-amber-400 cursor-pointer transition flex items-center justify-between group shadow-2xs hover:shadow-md"
         >
           <div>
-            <p className="text-xs font-semibold text-slate-400 group-hover:text-amber-400 transition">Pending KYC Submissions</p>
-            <p className="text-xl font-bold text-amber-400 mt-1">{pendingKycCount}</p>
+            <p className="text-xs font-semibold text-slate-500 group-hover:text-amber-700 transition">Pending KYC Submissions</p>
+            <p className="text-xl font-bold text-amber-700 mt-1">{pendingKycCount}</p>
           </div>
-          <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 group-hover:scale-105 transition">
+          <div className="p-3 rounded-2xl bg-amber-50 text-amber-600 border border-amber-100 group-hover:scale-105 transition">
             <Activity className="w-6 h-6" />
           </div>
         </div>
@@ -213,26 +213,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onTabChange }) =
       <div className="space-y-4">
         
         {/* FILTER SEARCH BAR */}
-        <div className="bg-slate-900 rounded-2xl p-4 border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center space-x-3">
-            <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+            <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100">
               <Users className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-extrabold text-white">Merchant Accounts</h3>
-              <p className="text-[11px] text-slate-400">Super Distributors (MS), Distributors (DS) & Retailers</p>
+              <h3 className="text-base font-extrabold text-slate-900">Merchant Accounts</h3>
+              <p className="text-[11px] text-slate-500">Super Distributors (MS), Distributors (DS) & Retailers</p>
             </div>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
             <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-3 w-4 h-4 text-slate-500" />
+              <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
               <input
                 type="text"
                 placeholder="Search by name, firm, or mobile..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                className="w-full pl-9 pr-4 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-600 shadow-2xs"
               />
             </div>
 
@@ -241,7 +241,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onTabChange }) =
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
-                className="bg-slate-950 border border-slate-800 text-slate-300 text-xs rounded-xl p-2 focus:outline-none"
+                className="bg-white border border-slate-300 text-slate-800 text-xs rounded-xl p-2 focus:outline-none shadow-2xs"
               >
                 <option value="ALL">All Hierarchy Roles</option>
                 <option value="super_distributor">Super Distributor</option>
@@ -252,7 +252,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onTabChange }) =
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-slate-950 border border-slate-800 text-slate-300 text-xs rounded-xl p-2 focus:outline-none"
+                className="bg-white border border-slate-300 text-slate-800 text-xs rounded-xl p-2 focus:outline-none shadow-2xs"
               >
                 <option value="ALL">All Statuses</option>
                 <option value="Active">Active</option>
@@ -264,23 +264,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onTabChange }) =
         </div>
 
         {/* USERS TABLE */}
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
+        <div className="bg-white border border-slate-200/90 rounded-3xl overflow-hidden shadow-2xs">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-slate-950 text-slate-400 uppercase font-bold text-[10px] border-b border-slate-800">
+            <table className="w-full text-left text-xs text-slate-700">
+              <thead className="bg-slate-50 text-slate-500 uppercase font-bold text-[10px] border-b border-slate-200">
                 <tr>
                   <th className="p-4">User Details</th>
                   <th className="p-4">Firm Name</th>
                   <th className="p-4">Role</th>
                   <th className="p-4">Mobile</th>
                   <th className="p-4">Wallet Balance</th>
-                  <th className="p-4 text-amber-400">Commission Earning</th>
+                  <th className="p-4 text-amber-700">Commission Earning</th>
                   <th className="p-4">Joining Date</th>
                   <th className="p-4">Status</th>
                   <th className="p-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className="divide-y divide-slate-100">
                 {loading ? (
                   <tr>
                     <td colSpan={9} className="p-8 text-center text-slate-500">
@@ -295,26 +295,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onTabChange }) =
                   </tr>
                 ) : (
                   filteredUsers.map((u) => (
-                    <tr key={u.id} className="hover:bg-slate-800/40 transition">
+                    <tr key={u.id} className="hover:bg-slate-50/80 transition">
                       {/* USER DETAILS */}
                       <td className="p-4">
                         <div className="flex items-center gap-3">
                           <img 
                             src={u.profile_photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=6366f1&color=fff`} 
                             alt={u.name} 
-                            className="w-9 h-9 rounded-xl object-cover border border-slate-700 shrink-0"
+                            className="w-9 h-9 rounded-xl object-cover border border-slate-200 shrink-0"
                           />
                           <div>
-                            <p className="font-bold text-white">{u.name}</p>
-                            <p className="text-[10px] text-slate-400">{u.email || u.id}</p>
+                            <p className="font-bold text-slate-900">{u.name}</p>
+                            <p className="text-[10px] text-slate-500">{u.email || u.id}</p>
                           </div>
                         </div>
                       </td>
 
                       {/* FIRM NAME */}
                       <td className="p-4">
-                        <div className="flex items-center gap-1.5 font-medium text-slate-200">
-                          <Building2 className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                        <div className="flex items-center gap-1.5 font-medium text-slate-800">
+                          <Building2 className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
                           <span>{u.firm_name}</span>
                         </div>
                       </td>
@@ -322,31 +322,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onTabChange }) =
                       {/* ROLE */}
                       <td className="p-4">
                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
-                          u.role === 'super_distributor' ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' :
-                          u.role === 'distributor' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' :
-                          'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                          u.role === 'super_distributor' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                          u.role === 'distributor' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                          'bg-emerald-50 text-emerald-700 border-emerald-200'
                         }`}>
                           {u.role === 'super_distributor' ? 'Super Distributor' : u.role === 'distributor' ? 'Distributor' : 'Retailer'}
                         </span>
                       </td>
 
                       {/* MOBILE */}
-                      <td className="p-4 font-mono">{u.mobile_number}</td>
+                      <td className="p-4 font-mono font-medium">{u.mobile_number}</td>
 
                       {/* WALLET BALANCE */}
-                      <td className="p-4 font-bold text-white font-mono">
+                      <td className="p-4 font-bold text-slate-900 font-mono">
                         ₹{Number(u.wallet_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </td>
 
                       {/* COMMISSION BALANCE */}
-                      <td className="p-4 font-bold text-amber-400 font-mono">
+                      <td className="p-4 font-bold text-amber-700 font-mono">
                         ₹{Number(u.commission_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </td>
 
                       {/* JOINING DATE */}
-                      <td className="p-4 font-mono text-slate-400">
+                      <td className="p-4 font-mono text-slate-500">
                         <div className="flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                          <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                           <span>{formatJoiningDate(u.created_at)}</span>
                         </div>
                       </td>
@@ -355,20 +355,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onTabChange }) =
                       <td className="p-4">
                         <div className="flex flex-col gap-1 items-start">
                           <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            u.status === 'Active' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
-                            u.status === 'Blocked' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
-                            'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                            u.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                            u.status === 'Blocked' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
+                            'bg-amber-50 text-amber-700 border border-amber-200'
                           }`}>
                             {u.status}
                           </span>
                           <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
                             u.kyc_status === 'verified'
-                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                               : (u.kyc_status === 'under_review' || u.kyc_status === 'pending')
-                              ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20 animate-pulse'
+                              ? 'bg-amber-50 text-amber-700 border border-amber-200 animate-pulse'
                               : u.kyc_status === 'rejected'
-                              ? 'bg-rose-500/10 text-rose-300 border border-rose-500/20'
-                              : 'bg-slate-800 text-slate-400 border border-slate-700'
+                              ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                              : 'bg-slate-100 text-slate-600 border border-slate-200'
                           }`}>
                             {u.kyc_status === 'verified' ? '✓ KYC Verified' : (u.kyc_status === 'under_review' || u.kyc_status === 'pending') ? '⏳ KYC Review' : u.kyc_status === 'rejected' ? '✕ KYC Rejected' : 'KYC Pending'}
                           </span>
@@ -404,7 +404,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onTabChange }) =
                               setCopiedField(null);
                             }}
                             title="View Credentials (Password, MPIN, TPIN)"
-                            className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-purple-400 hover:text-purple-300 border border-slate-700/60 transition cursor-pointer"
+                            className="p-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-purple-700 hover:text-purple-900 border border-slate-200 transition cursor-pointer"
                           >
                             <Key className="w-4 h-4" />
                           </button>
@@ -413,7 +413,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onTabChange }) =
                           <button
                             onClick={() => setEditingUser(u)}
                             title="Edit User Details"
-                            className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-blue-400 border border-slate-700/60 transition"
+                            className="p-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-blue-700 hover:text-blue-900 border border-slate-200 transition cursor-pointer"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
@@ -422,7 +422,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onTabChange }) =
                           <button
                             onClick={() => handleDeleteUser(u.id, u.name)}
                             title="Delete User"
-                            className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-rose-400 border border-slate-700/60 transition"
+                            className="p-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-rose-600 hover:text-rose-800 border border-slate-200 transition cursor-pointer"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -450,14 +450,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onTabChange }) =
 
       {/* WALLET BALANCE ADJUST MODAL */}
       {selectedUser && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-4">
-            <h3 className="text-base font-extrabold text-white">Adjust User Balance</h3>
-            <p className="text-xs text-slate-400">User: <strong className="text-white">{selectedUser.name}</strong> ({selectedUser.firm_name})</p>
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-xl">
+            <h3 className="text-base font-extrabold text-slate-900">Adjust User Balance</h3>
+            <p className="text-xs text-slate-500">User: <strong className="text-slate-900">{selectedUser.name}</strong> ({selectedUser.firm_name})</p>
 
             <form onSubmit={handleWalletAdjustSubmit} className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Adjustment Amount (₹)</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Adjustment Amount (₹)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -465,7 +465,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onTabChange }) =
                   placeholder="e.g. +5000 or -1000"
                   value={adjustAmount}
                   onChange={(e) => setAdjustAmount(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-white border border-slate-300 rounded-xl p-3 text-xs text-slate-900 focus:outline-none focus:border-indigo-600 shadow-2xs"
                 />
               </div>
 
@@ -473,13 +473,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onTabChange }) =
                 <button
                   type="button"
                   onClick={() => setSelectedUser(null)}
-                  className="w-1/2 py-2.5 bg-slate-800 text-slate-300 font-bold text-xs rounded-xl"
+                  className="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="w-1/2 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl"
+                  className="w-1/2 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-600/20 cursor-pointer"
                 >
                   Confirm Adjustment
                 </button>
@@ -501,35 +501,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onTabChange }) =
       {/* USER SECURITY CREDENTIALS VIEW MODAL (VIEW ONLY FOR ADMIN) */}
       {viewingCredentialsUser && (
         <div 
-          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
           onClick={() => setViewingCredentialsUser(null)}
         >
           <div 
-            className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-7 space-y-6 shadow-2xl relative overflow-hidden"
+            className="bg-white border border-slate-200 rounded-3xl max-w-lg w-full p-6 sm:p-7 space-y-6 shadow-2xl relative overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Background Ambient Glow */}
-            <div className="absolute -top-16 -right-16 w-52 h-52 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
-
             {/* Modal Header */}
-            <div className="flex items-start justify-between gap-4 border-b border-slate-800 pb-4 relative z-10">
+            <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-4 relative z-10">
               <div className="flex items-center gap-3">
-                <div className="p-3 rounded-2xl bg-purple-500/15 border border-purple-500/30 text-purple-400">
+                <div className="p-3 rounded-2xl bg-purple-50 border border-purple-100 text-purple-600">
                   <Key className="w-6 h-6" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-base sm:text-lg font-black text-white">
+                    <h3 className="text-base sm:text-lg font-black text-slate-900">
                       Security Credentials
                     </h3>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200">
                       View Only
                     </span>
                   </div>
-                  <p className="text-xs text-slate-300 mt-0.5">
-                    <strong className="text-white">{viewingCredentialsUser.name}</strong> ({viewingCredentialsUser.firm_name})
+                  <p className="text-xs text-slate-600 mt-0.5">
+                    <strong className="text-slate-900">{viewingCredentialsUser.name}</strong> ({viewingCredentialsUser.firm_name})
                   </p>
-                  <p className="text-[11px] text-slate-400 font-mono">
+                  <p className="text-[11px] text-slate-500 font-mono">
                     Mobile: {viewingCredentialsUser.mobile_number}
                   </p>
                 </div>
@@ -538,7 +535,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onTabChange }) =
               <button
                 type="button"
                 onClick={() => setViewingCredentialsUser(null)}
-                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition cursor-pointer"
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition cursor-pointer"
                 title="Close Modal"
               >
                 <X className="w-4 h-4" />
@@ -546,9 +543,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onTabChange }) =
             </div>
 
             {/* Confidential Access Badge */}
-            <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 flex items-center gap-2.5 text-xs text-slate-300">
-              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span className="text-[11px] text-slate-400">
+            <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center gap-2.5 text-xs text-slate-700">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span className="text-[11px] text-slate-600">
                 Authorized Admin Confidential View. Admin cannot edit credentials from here.
               </span>
             </div>
@@ -557,18 +554,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onTabChange }) =
             <div className="space-y-3.5">
               
               {/* 1. LOGIN PASSWORD */}
-              <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800/90 space-y-2">
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] uppercase font-extrabold tracking-wider text-slate-400 flex items-center gap-1.5">
-                    <Lock className="w-3.5 h-3.5 text-indigo-400" /> Account Login Password
+                  <span className="text-[10px] uppercase font-extrabold tracking-wider text-slate-500 flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-indigo-600" /> Account Login Password
                   </span>
-                  <span className="text-[9px] uppercase font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full border border-indigo-500/20">
+                  <span className="text-[9px] uppercase font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200">
                     Login Secret
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between gap-3 pt-1">
-                  <span className="text-base font-mono font-bold text-white tracking-wider select-all truncate">
+                  <span className="text-base font-mono font-bold text-slate-900 tracking-wider select-all truncate">
                     {showCredentialsPassword ? (viewingCredentialsUser.plain_password || 'Password@123') : '••••••••'}
                   </span>
 
@@ -576,7 +573,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onTabChange }) =
                     <button
                       type="button"
                       onClick={() => setShowCredentialsPassword(!showCredentialsPassword)}
-                      className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition cursor-pointer"
+                      className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-slate-900 transition cursor-pointer shadow-2xs"
                       title={showCredentialsPassword ? 'Hide Password' : 'Show Password'}
                     >
                       {showCredentialsPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -584,28 +581,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onTabChange }) =
                     <button
                       type="button"
                       onClick={() => handleCopyCredential(viewingCredentialsUser.plain_password || 'Password@123', 'password')}
-                      className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition cursor-pointer"
+                      className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-slate-900 transition cursor-pointer shadow-2xs"
                       title="Copy Password"
                     >
-                      {copiedField === 'password' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                      {copiedField === 'password' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
               </div>
 
               {/* 2. 6-DIGIT LOGIN MPIN */}
-              <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800/90 space-y-2">
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] uppercase font-extrabold tracking-wider text-slate-400 flex items-center gap-1.5">
-                    <KeyRound className="w-3.5 h-3.5 text-purple-400" /> 6-Digit Login MPIN
+                  <span className="text-[10px] uppercase font-extrabold tracking-wider text-slate-500 flex items-center gap-1.5">
+                    <KeyRound className="w-3.5 h-3.5 text-purple-600" /> 6-Digit Login MPIN
                   </span>
-                  <span className="text-[9px] uppercase font-bold text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20">
+                  <span className="text-[9px] uppercase font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">
                     2-Step Login PIN
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between gap-3 pt-1">
-                  <span className="text-base font-mono font-bold text-white tracking-widest select-all">
+                  <span className="text-base font-mono font-bold text-slate-900 tracking-widest select-all">
                     {showCredentialsMpin ? (viewingCredentialsUser.mpin || '123456') : '••••••'}
                   </span>
 
@@ -613,7 +610,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onTabChange }) =
                     <button
                       type="button"
                       onClick={() => setShowCredentialsMpin(!showCredentialsMpin)}
-                      className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition cursor-pointer"
+                      className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-slate-900 transition cursor-pointer shadow-2xs"
                       title={showCredentialsMpin ? 'Hide MPIN' : 'Show MPIN'}
                     >
                       {showCredentialsMpin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -621,28 +618,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onTabChange }) =
                     <button
                       type="button"
                       onClick={() => handleCopyCredential(viewingCredentialsUser.mpin || '123456', 'mpin')}
-                      className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition cursor-pointer"
+                      className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-slate-900 transition cursor-pointer shadow-2xs"
                       title="Copy MPIN"
                     >
-                      {copiedField === 'mpin' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                      {copiedField === 'mpin' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
               </div>
 
               {/* 3. 4-DIGIT FINANCIAL TPIN */}
-              <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800/90 space-y-2">
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] uppercase font-extrabold tracking-wider text-slate-400 flex items-center gap-1.5">
-                    <Key className="w-3.5 h-3.5 text-emerald-400" /> 4-Digit Financial TPIN
+                  <span className="text-[10px] uppercase font-extrabold tracking-wider text-slate-500 flex items-center gap-1.5">
+                    <Key className="w-3.5 h-3.5 text-emerald-600" /> 4-Digit Financial TPIN
                   </span>
-                  <span className="text-[9px] uppercase font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                  <span className="text-[9px] uppercase font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                     Bill Pay & Payout PIN
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between gap-3 pt-1">
-                  <span className="text-base font-mono font-bold text-white tracking-widest select-all">
+                  <span className="text-base font-mono font-bold text-slate-900 tracking-widest select-all">
                     {showCredentialsTpin ? (viewingCredentialsUser.tpin || '1234') : '••••'}
                   </span>
 
@@ -650,7 +647,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onTabChange }) =
                     <button
                       type="button"
                       onClick={() => setShowCredentialsTpin(!showCredentialsTpin)}
-                      className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition cursor-pointer"
+                      className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-slate-900 transition cursor-pointer shadow-2xs"
                       title={showCredentialsTpin ? 'Hide TPIN' : 'Show TPIN'}
                     >
                       {showCredentialsTpin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -658,10 +655,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onTabChange }) =
                     <button
                       type="button"
                       onClick={() => handleCopyCredential(viewingCredentialsUser.tpin || '1234', 'tpin')}
-                      className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition cursor-pointer"
+                      className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-slate-900 transition cursor-pointer shadow-2xs"
                       title="Copy TPIN"
                     >
-                      {copiedField === 'tpin' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                      {copiedField === 'tpin' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
@@ -670,11 +667,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onTabChange }) =
             </div>
 
             {/* Modal Footer */}
-            <div className="pt-2 border-t border-slate-800 flex justify-end">
+            <div className="pt-2 border-t border-slate-100 flex justify-end">
               <button
                 type="button"
                 onClick={() => setViewingCredentialsUser(null)}
-                className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl transition cursor-pointer"
+                className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer"
               >
                 Close
               </button>

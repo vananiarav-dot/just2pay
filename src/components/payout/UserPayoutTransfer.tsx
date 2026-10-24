@@ -7,7 +7,7 @@ import {
   Wallet, ArrowRightLeft, ShieldCheck, CheckCircle2,
   Clock, AlertTriangle, Building2, User, Hash, Lock,
   RefreshCw, Check, Copy, ExternalLink, Zap, AlertCircle,
-  Calendar, Search, Filter, RotateCcw, X, BookUser, Trash2, Send
+  Calendar, Search, Filter, RotateCcw, X, BookUser, Trash2, Send, ArrowRight
 } from 'lucide-react';
 import { useSettingsStore } from '../../store/settingsStore';
 
@@ -632,13 +632,13 @@ export const UserPayoutTransfer: React.FC = () => {
 
   if (!instantPayoutEnabled) {
     return (
-      <div className="w-full max-w-xl mx-auto my-12 p-8 bg-slate-900 border border-slate-800 rounded-3xl text-center space-y-4 shadow-2xl animate-in fade-in duration-300">
-        <div className="w-16 h-16 mx-auto rounded-3xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
+      <div className="w-full max-w-xl mx-auto my-12 p-8 bg-white border border-slate-200 rounded-2xl text-center space-y-4 shadow-sm animate-in fade-in duration-300">
+        <div className="w-16 h-16 mx-auto rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600">
           <AlertCircle className="w-8 h-8" />
         </div>
         <div className="space-y-1">
-          <h2 className="text-xl font-black text-white">Instant Payout Service Disabled</h2>
-          <p className="text-xs text-slate-400 max-w-md mx-auto">
+          <h2 className="text-xl font-black text-slate-900">Instant Payout Service Disabled</h2>
+          <p className="text-xs text-slate-600 max-w-md mx-auto">
             Instant Payout service has been temporarily disabled by the administrator. 
             Access to this feature and route is currently restricted.
           </p>
@@ -646,7 +646,7 @@ export const UserPayoutTransfer: React.FC = () => {
         <div className="pt-2">
           <button
             onClick={() => window.location.href = '/users'}
-            className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition border border-slate-700 cursor-pointer"
+            className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition border border-slate-300 cursor-pointer"
           >
             Return to Dashboard
           </button>
@@ -658,130 +658,119 @@ export const UserPayoutTransfer: React.FC = () => {
   return (
     <div className="space-y-6 w-full pb-10">
       
-      {/* HEADER BANNER */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-slate-800 p-6 sm:p-8 rounded-3xl shadow-2xl">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <span className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold uppercase inline-flex items-center gap-1.5">
-              <Zap className="w-3.5 h-3.5 text-indigo-400" /> 24x7 Instant Bank Transfer (Payout)
-            </span>
-            <h1 className="text-2xl sm:text-3xl font-black text-white">
-              Instant Payout to Bank
-            </h1>
-            <p className="text-xs text-slate-400">
-              Transfer funds from your wallet directly to any Indian bank account via IMPS or NEFT.
-            </p>
-          </div>
+      {/* HEADER: Clean & Minimalist */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            Instant Payout
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Send money instantly to any bank account 24x7 via IMPS or NEFT
+          </p>
         </div>
 
-        {/* TAB BUTTONS */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-6 border-t border-slate-800/80 pt-4">
+        {/* Minimal Tab Navigation Pills */}
+        <div className="flex flex-wrap items-center gap-1.5 bg-slate-100/90 p-1.5 rounded-xl border border-slate-200/60 self-start sm:self-auto">
           <button
             onClick={() => setActiveSubTab('transfer')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               activeSubTab === 'transfer'
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                : 'bg-slate-950/60 text-slate-400 hover:text-white hover:bg-slate-800'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <ArrowRightLeft className="w-4 h-4" /> Transfer to Bank
+            Transfer
           </button>
           <button
             onClick={() => setActiveSubTab('beneficiaries')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               activeSubTab === 'beneficiaries'
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                : 'bg-slate-950/60 text-slate-400 hover:text-white hover:bg-slate-800'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <BookUser className="w-4 h-4" /> Saved Beneficiaries ({beneficiaries.length})
+            Beneficiaries ({beneficiaries.length})
           </button>
           <button
             onClick={() => setActiveSubTab('verifications')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               activeSubTab === 'verifications'
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                : 'bg-slate-950/60 text-slate-400 hover:text-white hover:bg-slate-800'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <ShieldCheck className="w-4 h-4 text-emerald-400" /> Verification History ({userVerifications.length})
+            Verifications ({userVerifications.length})
           </button>
           <button
             onClick={() => setActiveSubTab('history')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               activeSubTab === 'history'
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                : 'bg-slate-950/60 text-slate-400 hover:text-white hover:bg-slate-800'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Clock className="w-4 h-4" /> Payout History ({history.length})
+            History ({history.length})
           </button>
         </div>
       </div>
 
       {/* SUB-TAB 1: TRANSFER FORM */}
       {activeSubTab === 'transfer' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           
-          {/* Main Form (2 Cols) */}
-          <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-              <h2 className="text-lg font-black text-white flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-indigo-400" /> Beneficiary Bank Details
-              </h2>
-              <span className="text-xs text-slate-400">Min ₹100 • Max ₹2,00,000</span>
+          {/* Main Card (2 Cols) */}
+          <div className="lg:col-span-2 bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.04)] border border-slate-200/70 p-6 sm:p-8 space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-900">Beneficiary Bank Details</h2>
             </div>
 
             {formError && (
-              <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center gap-3 text-rose-300 text-xs">
-                <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
+              <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-3 text-rose-700 text-xs font-semibold">
+                <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
                 <span>{formError}</span>
               </div>
             )}
 
             <form onSubmit={handleValidateForm} className="space-y-4">
               
-              {/* Transfer Mode Toggle */}
-              <div>
-                <label className="block text-xs font-bold text-slate-400 mb-2">Transfer Mode</label>
-                <div className="grid grid-cols-2 gap-3">
+              {/* Transfer Mode: Pill Segmented Toggle exactly like Mockup */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 py-1">
+                <span className="text-sm font-bold text-slate-800 shrink-0">Transfer Mode</span>
+                <div className="inline-flex items-center bg-[#f1f5f9] p-1.5 rounded-full border border-slate-200/80 max-w-md w-full sm:w-auto">
                   <button
                     type="button"
                     onClick={() => setTransferMode('IMPS')}
-                    className={`p-3 rounded-2xl border text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    className={`flex-1 sm:flex-initial px-5 py-2.5 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                       transferMode === 'IMPS'
-                        ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300 shadow-md'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                        ? 'bg-white text-slate-900 shadow-[0_2px_8px_rgba(0,0,0,0.08)]'
+                        : 'text-slate-500 hover:text-slate-900'
                     }`}
                   >
-                    <Zap className="w-4 h-4 text-amber-400" /> IMPS (24x7 Instant)
+                    <span className="w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center text-white text-[11px] font-bold shadow-xs">
+                      ⚡
+                    </span>
+                    <span>IMPS 24x7 Instant</span>
                   </button>
+
                   <button
                     type="button"
                     onClick={() => setTransferMode('NEFT')}
-                    className={`p-3 rounded-2xl border text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    className={`flex-1 sm:flex-initial px-5 py-2.5 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                       transferMode === 'NEFT'
-                        ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300 shadow-md'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                        ? 'bg-white text-slate-900 shadow-[0_2px_8px_rgba(0,0,0,0.08)]'
+                        : 'text-slate-500 hover:text-slate-900'
                     }`}
                   >
-                    <ArrowRightLeft className="w-4 h-4 text-emerald-400" /> NEFT
+                    <ArrowRightLeft className="w-3.5 h-3.5 text-slate-400" />
+                    <span>NEFT</span>
                   </button>
                 </div>
               </div>
 
-              {/* Amount */}
+              {/* Amount Input with Inline Slab Badge */}
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-bold text-slate-400">
-                    Payout Amount (₹) <span className="text-rose-400">*</span>
-                  </label>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 font-mono">
-                    Active Slab Range: ₹{minPayoutLimit.toLocaleString('en-IN')} - ₹{maxPayoutLimit.toLocaleString('en-IN')}
-                  </span>
-                </div>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-black text-slate-500">₹</span>
+                <div className="relative flex items-center bg-white border border-slate-300 hover:border-slate-400 focus-within:border-slate-900 focus-within:ring-2 focus-within:ring-slate-100 rounded-xl transition-all">
+                  <span className="pl-4 pr-1 text-base font-bold text-slate-900 select-none">₹</span>
                   <input
                     type="number"
                     min={minPayoutLimit}
@@ -789,64 +778,52 @@ export const UserPayoutTransfer: React.FC = () => {
                     step="any"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    placeholder={`Enter amount between ${minPayoutLimit} and ${maxPayoutLimit}`}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-10 pr-4 py-3.5 text-white font-bold text-base focus:border-indigo-500 focus:outline-none transition-colors"
+                    placeholder="Payout Amount"
+                    className="w-full py-4 px-2 bg-transparent text-slate-900 font-semibold text-sm placeholder-slate-400 focus:outline-none"
                     required
                   />
+                  <span className="pr-3 pl-2 shrink-0">
+                    <span className="text-xs font-medium px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 font-mono">
+                      Slab: ₹{minPayoutLimit.toLocaleString('en-IN')} - ₹{maxPayoutLimit.toLocaleString('en-IN')}
+                    </span>
+                  </span>
                 </div>
                 {calcLoading && (
-                  <p className="text-[11px] text-indigo-400 mt-1 flex items-center gap-1">
-                    <RefreshCw className="w-3 h-3 animate-spin" /> Calculating slab charge...
+                  <p className="text-[11px] text-slate-600 font-medium mt-1.5 flex items-center gap-1 pl-1">
+                    <RefreshCw className="w-3 h-3 animate-spin text-slate-800" /> Calculating slab charge...
                   </p>
                 )}
               </div>
 
-              {/* SAVED BENEFICIARIES QUICK SELECT */}
+              {/* SAVED BENEFICIARIES QUICK CHIPS */}
               {beneficiaries.length > 0 && (
-                <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
-                      <BookUser className="w-3.5 h-3.5 text-indigo-400" />
-                      Quick Select Saved Beneficiary
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setActiveSubTab('beneficiaries')}
-                      className="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold transition cursor-pointer"
-                    >
-                      View All ({beneficiaries.length}) →
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
-                    {beneficiaries.map((b) => {
-                      const isSelected = accountNumber === b.account_number && ifscCode === b.ifsc_code;
-                      return (
-                        <button
-                          key={b.id}
-                          type="button"
-                          onClick={() => handleSelectBeneficiary(b)}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap border transition flex items-center gap-1.5 cursor-pointer shrink-0 ${
-                            isSelected
-                              ? 'bg-indigo-600/30 border-indigo-500 text-indigo-200 shadow-sm'
-                              : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700'
-                          }`}
-                        >
-                          {b.is_verified && <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />}
-                          <span>{b.beneficiary_name}</span>
-                          <span className="text-[10px] text-slate-500 font-mono">({b.account_number.slice(-4)})</span>
-                        </button>
-                      );
-                    })}
-                  </div>
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none pt-0.5">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">Quick Select:</span>
+                  {beneficiaries.map((b) => {
+                    const isSelected = accountNumber === b.account_number && ifscCode === b.ifsc_code;
+                    return (
+                      <button
+                        key={b.id}
+                        type="button"
+                        onClick={() => handleSelectBeneficiary(b)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap border transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                          isSelected
+                            ? 'bg-slate-900 border-slate-900 text-white shadow-xs'
+                            : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                        }`}
+                      >
+                        {b.is_verified && <CheckCircle2 className={`w-3 h-3 ${isSelected ? 'text-emerald-400' : 'text-emerald-500'} shrink-0`} />}
+                        <span>{b.beneficiary_name}</span>
+                        <span className={`text-[10px] ${isSelected ? 'text-slate-300' : 'text-slate-400'} font-mono`}>({b.account_number.slice(-4)})</span>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
 
-              {/* Account Number & Confirm Account Number */}
+              {/* Account Number & Confirm Account Number: Clean Side-by-Side Boxes */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-1">
-                    Bank Account Number <span className="text-rose-400">*</span>
-                  </label>
+                <div className="bg-white border border-slate-300 hover:border-slate-400 focus-within:border-slate-900 focus-within:ring-2 focus-within:ring-slate-100 rounded-xl transition-all">
                   <input
                     type="text"
                     value={accountNumber}
@@ -855,32 +832,26 @@ export const UserPayoutTransfer: React.FC = () => {
                       setIsAccountVerified(false);
                       setVerificationAlert(null);
                     }}
-                    placeholder="8 to 22 digits"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-white font-mono font-bold text-sm focus:border-indigo-500 focus:outline-none transition-colors"
+                    placeholder="Bank Account Number"
+                    className="w-full px-4 py-4 bg-transparent text-slate-900 font-mono font-medium text-sm placeholder-slate-400 focus:outline-none"
                     required
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-1">
-                    Confirm Account Number <span className="text-rose-400">*</span>
-                  </label>
+                <div className="bg-white border border-slate-300 hover:border-slate-400 focus-within:border-slate-900 focus-within:ring-2 focus-within:ring-slate-100 rounded-xl transition-all">
                   <input
                     type="text"
                     value={confirmAccount}
                     onChange={(e) => setConfirmAccount(e.target.value.replace(/\D/g, ''))}
-                    placeholder="Re-enter account number"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-white font-mono font-bold text-sm focus:border-indigo-500 focus:outline-none transition-colors"
+                    placeholder="Confirm Account Number"
+                    className="w-full px-4 py-4 bg-transparent text-slate-900 font-mono font-medium text-sm placeholder-slate-400 focus:outline-none"
                     required
                   />
                 </div>
               </div>
 
-              {/* IFSC & Bank Name */}
+              {/* Bank IFSC Code & Bank Name: With Bank Icon */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-1">
-                    Bank IFSC Code <span className="text-rose-400">*</span>
-                  </label>
+                <div className="relative flex items-center bg-white border border-slate-300 hover:border-slate-400 focus-within:border-slate-900 focus-within:ring-2 focus-within:ring-slate-100 rounded-xl transition-all">
                   <input
                     type="text"
                     maxLength={11}
@@ -890,184 +861,158 @@ export const UserPayoutTransfer: React.FC = () => {
                       setIsAccountVerified(false);
                       setVerificationAlert(null);
                     }}
-                    placeholder="e.g. HDFC0001234"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-white font-mono font-bold uppercase text-sm focus:border-indigo-500 focus:outline-none transition-colors"
+                    placeholder="Bank IFSC Code"
+                    className="w-full pl-4 pr-2 py-4 bg-transparent text-slate-900 font-mono font-bold uppercase text-sm placeholder-slate-400 focus:outline-none"
                     required
                   />
+                  <span className="pr-4 text-slate-400 shrink-0">
+                    <Building2 className="w-5 h-5 text-slate-400" />
+                  </span>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-1">
-                    Bank Name <span className="text-slate-500">(Optional / Auto-retrieved)</span>
-                  </label>
+                <div className="bg-white border border-slate-300 hover:border-slate-400 focus-within:border-slate-900 focus-within:ring-2 focus-within:ring-slate-100 rounded-xl transition-all">
                   <input
                     type="text"
                     value={bankName}
                     onChange={(e) => setBankName(e.target.value)}
-                    placeholder="e.g. HDFC Bank, ICICI Bank"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-white text-sm focus:border-indigo-500 focus:outline-none transition-colors"
+                    placeholder="Bank Name"
+                    className="w-full px-4 py-4 bg-transparent text-slate-900 font-medium text-sm placeholder-slate-400 focus:outline-none"
                   />
                 </div>
               </div>
 
-              {/* PENNY DROP BANK ACCOUNT VERIFICATION BUTTON & BADGE */}
+              {/* PENNY DROP BANK ACCOUNT VERIFICATION STRIP: Soft Mint Green */}
               {payoutVerificationEnabled && (
-                <div className={`p-4 rounded-2xl border transition-all ${
+                <div className={`rounded-xl border p-3.5 sm:px-4 sm:py-3.5 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                   isAccountVerified
-                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-                    : 'bg-slate-950/80 border-slate-800'
+                    ? 'bg-[#e8f7ee] border-[#86efac] text-[#166534]'
+                    : 'bg-[#eefbf4] border-[#c6f0d7] text-[#15803d]'
                 }`}>
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <ShieldCheck className={`w-4 h-4 ${isAccountVerified ? 'text-emerald-400' : 'text-indigo-400'}`} />
-                        <span className="text-xs font-bold text-white">
-                          {isAccountVerified ? 'Bank Account Verified (Penny Drop)' : 'Verify Account Holder Name (Penny Drop)'}
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className={`w-4 h-4 ${isAccountVerified ? 'text-[#16a34a]' : 'text-[#22c55e]'}`} />
+                      <span className="text-xs font-bold text-[#14532d]">
+                        {isAccountVerified ? 'Bank Account Verified (Penny Drop)' : 'Verify Account Holder Name (Penny Drop)'}
+                      </span>
+                      {isAccountVerified && (
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-[#dcfce7] text-[#166534] border border-[#86efac]">
+                          VERIFIED
                         </span>
-                        {isAccountVerified && (
-                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                            VERIFIED
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-slate-400">
-                        {isAccountVerified
-                          ? `Registered Bank Name: "${verifiedAccountName}" ${verifiedBankName ? `• ${verifiedBankName}` : ''}${verifiedUtr ? ` • UTR: ${verifiedUtr}` : ''}`
-                          : `Retrieve the registered account name directly from the bank. ₹${payoutVerificationCharge.toFixed(2)} deducted from wallet ONLY upon success (₹0 on failure).`}
+                      )}
+                    </div>
+                    {isAccountVerified && (
+                      <p className="text-[11px] text-[#15803d] pl-6 font-medium">
+                        Registered Name: "{verifiedAccountName}" {verifiedBankName ? `• ${verifiedBankName}` : ''}
                       </p>
-                    </div>
-
-                    <div>
-                      <button
-                        type="button"
-                        disabled={verifyingAccount || !accountNumber || !ifscCode}
-                        onClick={handleVerifyAccount}
-                        className={`w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-md ${
-                          isAccountVerified
-                            ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                            : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-600/20'
-                        } disabled:opacity-50`}
-                      >
-                        {verifyingAccount ? (
-                          <>
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                            <span>Verifying with Bank...</span>
-                          </>
-                        ) : isAccountVerified ? (
-                          <>
-                            <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
-                            <span>Re-verify (₹{payoutVerificationCharge.toFixed(2)})</span>
-                          </>
-                        ) : (
-                          <>
-                            <ShieldCheck className="w-3.5 h-3.5" />
-                            <span>Verify Account (₹{payoutVerificationCharge.toFixed(2)})</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
+                    )}
                   </div>
 
-                  {/* Verification feedback message */}
-                  {verificationAlert && (
-                    <div className={`mt-3 p-3 rounded-xl text-xs flex items-center gap-2 border ${
-                      verificationAlert.type === 'success'
-                        ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-200'
-                        : 'bg-rose-500/20 border-rose-500/40 text-rose-200'
-                    }`}>
-                      {verificationAlert.type === 'success' ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <div>
+                    <button
+                      type="button"
+                      disabled={verifyingAccount || !accountNumber || !ifscCode}
+                      onClick={handleVerifyAccount}
+                      className="border border-[#22c55e] bg-white hover:bg-[#dcfce7] text-[#15803d] font-bold text-xs px-4 py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
+                    >
+                      {verifyingAccount ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Verifying...</span>
+                        </>
+                      ) : isAccountVerified ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5" />
+                          <span>Re-verify (₹{payoutVerificationCharge.toFixed(2)})</span>
+                        </>
                       ) : (
-                        <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                        <span>Verify Account</span>
                       )}
-                      <span>{verificationAlert.message}</span>
-                    </div>
-                  )}
+                    </button>
+                  </div>
                 </div>
               )}
 
-              {/* Beneficiary Name */}
-              <div>
-                <label className="block text-xs font-bold text-slate-400 mb-1">
-                  Beneficiary Name (As on Passbook) <span className="text-rose-400">*</span>
-                  {isAccountVerified && (
-                    <span className="text-emerald-400 ml-2 font-normal text-[11px] inline-flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3" /> Auto-populated from bank penny drop
-                    </span>
+              {/* Verification alert banner if any */}
+              {verificationAlert && (
+                <div className={`p-3 rounded-lg text-xs flex items-center gap-2 border font-medium ${
+                  verificationAlert.type === 'success'
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                    : 'bg-rose-50 border-rose-200 text-rose-900'
+                }`}>
+                  {verificationAlert.type === 'success' ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  ) : (
+                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
                   )}
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={beneficiaryName}
-                    onChange={(e) => setBeneficiaryName(e.target.value)}
-                    placeholder="e.g. Ramesh Kumar Patel"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-white font-bold text-sm focus:border-indigo-500 focus:outline-none transition-colors"
-                    required
-                  />
-                  {isAccountVerified && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                    </div>
-                  )}
+                  <span>{verificationAlert.message}</span>
                 </div>
+              )}
+
+              {/* Beneficiary Name Input */}
+              <div className="relative bg-white border border-slate-300 hover:border-slate-400 focus-within:border-slate-900 focus-within:ring-2 focus-within:ring-slate-100 rounded-xl transition-all">
+                <input
+                  type="text"
+                  value={beneficiaryName}
+                  onChange={(e) => setBeneficiaryName(e.target.value)}
+                  placeholder="Beneficiary Name"
+                  className="w-full px-4 py-4 bg-transparent text-slate-900 font-bold text-sm placeholder-slate-400 focus:outline-none"
+                  required
+                />
+                {isAccountVerified && (
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                    <CheckCircle2 className="w-4 h-4 text-[#16a34a]" />
+                  </div>
+                )}
               </div>
 
-              {/* Submit Button */}
+              {/* PROCEED TO INSTANT PAYOUT: Gradient Action Button exactly like Mockup */}
               <div className="pt-2">
                 <button
                   type="submit"
                   disabled={!amount || !accountNumber || !ifscCode || !beneficiaryName}
-                  className="w-full py-4 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 disabled:opacity-50 text-white rounded-2xl font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl shadow-indigo-600/30 transition-all cursor-pointer"
+                  className="w-full py-4 bg-gradient-to-r from-[#0d1f30] via-[#093d48] to-[#0d9488] hover:from-black hover:to-[#0f766e] disabled:opacity-50 text-white rounded-xl font-black text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-teal-900/10 transition-all cursor-pointer"
                 >
-                  <ShieldCheck className="w-5 h-5" /> Proceed to Instant Payout
+                  <span>PROCEED TO INSTANT PAYOUT</span>
                 </button>
               </div>
 
             </form>
           </div>
 
-          {/* Right Column: Live Breakdown Card & Security Notes */}
+          {/* Right Column: Deduction Breakdown & Guaranteed Safety Cards */}
           <div className="space-y-6">
             
-            {/* Live Calculation Preview Card */}
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
-              <h3 className="text-xs font-extrabold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                <Wallet className="w-4 h-4 text-indigo-400" /> Deduction Breakdown
+            {/* Deduction Breakdown Card */}
+            <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.04)] border border-slate-200/70 p-6 sm:p-7 space-y-4">
+              <h3 className="text-base font-bold text-slate-900">
+                Deduction Breakdown
               </h3>
 
-              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-3 text-xs">
-                <div className="flex justify-between items-center text-slate-400">
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between items-center text-slate-700 font-medium">
                   <span>Transfer Amount</span>
-                  <span className="font-bold text-white text-sm">
+                  <span className="font-bold text-slate-900">
                     ₹{parseFloat(amount || '0').toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
 
-                <div className="flex justify-between items-center text-slate-400">
-                  <span className="flex items-center gap-1">
-                    Payout Slab Charge
-                    {calculation?.slab && (
-                      <span className="text-[10px] text-indigo-400">
-                        ({calculation.slab.charge_type === 'percentage' ? `${calculation.slab.charge_value}%` : `₹${calculation.slab.charge_value} flat`})
-                      </span>
-                    )}
-                  </span>
-                  <span className="font-bold text-amber-400 text-sm">
-                    +₹{(calculation ? calculation.charge_amount : 0).toFixed(2)}
+                <div className="flex justify-between items-center text-slate-700 font-medium">
+                  <span>Payout Slab Charge</span>
+                  <span className="font-bold text-slate-900">
+                    ₹{(calculation ? calculation.charge_amount : 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
 
-                <div className="border-t border-slate-800 pt-3 flex justify-between items-center">
-                  <span className="font-bold text-slate-200">Total Wallet Debit</span>
-                  <span className="font-black text-emerald-400 text-base">
+                <div className="border-t border-slate-200 pt-3 flex justify-between items-center">
+                  <span className="font-bold text-slate-900 text-sm">Total Wallet Debit</span>
+                  <span className="font-extrabold text-slate-900 text-base">
                     ₹{(calculation ? calculation.total_deducted : parseFloat(amount || '0')).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
 
-                <div className="border-t border-slate-800/60 pt-2 flex justify-between items-center text-[11px] text-slate-400">
+                <div className="border-t border-slate-200 pt-3 flex justify-between items-center text-slate-600 font-medium">
                   <span>Remaining Balance</span>
                   <span className={`font-mono font-bold ${
-                    currentBalance < (calculation ? calculation.total_deducted : 0) ? 'text-rose-400' : 'text-slate-300'
+                    currentBalance < (calculation ? calculation.total_deducted : 0) ? 'text-rose-600' : 'text-slate-900'
                   }`}>
                     ₹{Math.max(0, currentBalance - (calculation ? calculation.total_deducted : 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </span>
@@ -1075,51 +1020,38 @@ export const UserPayoutTransfer: React.FC = () => {
               </div>
 
               {currentBalance < (calculation ? calculation.total_deducted : 0) && (
-                <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-300 text-[11px] flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-medium flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
                   <span>Wallet balance is insufficient to complete this payout.</span>
                 </div>
               )}
             </div>
 
-            {/* Instant Transfer Benefits */}
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-3">
-              <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" /> Guaranteed Safety
+            {/* Guaranteed Safety Card */}
+            <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.04)] border border-slate-200/70 p-6 sm:p-7 space-y-3">
+              <h4 className="text-base font-bold text-slate-900">
+                Guaranteed Safety
               </h4>
-              <ul className="space-y-2 text-xs text-slate-400">
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                  <span><strong>24x7 Realtime:</strong> Direct NPCI IMPS bank settlement with instant UTR generation.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                  <span><strong>Auto-Refund:</strong> If upstream bank rejects, funds and fees are instantly refunded to your wallet.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                  <span><strong>TPIN Protection:</strong> Mandatory 4-digit TPIN required to authorize each transfer.</span>
-                </li>
-              </ul>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                24x7 Realtime direct NPCI IMPS bank settlement with instant UTR generation, automated refund on bank rejection, and bank-grade TPIN protection.
+              </p>
             </div>
-
           </div>
-
         </div>
       )}
 
       {/* SUB-TAB 2: SAVED BENEFICIARIES */}
       {activeSubTab === 'beneficiaries' && (
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-8 space-y-6 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
             <div>
-              <h2 className="text-lg font-black text-white flex items-center gap-2">
-                <BookUser className="w-5 h-5 text-indigo-400" /> Saved Beneficiaries Directory
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-300 font-mono">
+              <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                <BookUser className="w-5 h-5 text-indigo-600" /> Saved Beneficiaries Directory
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 font-mono">
                   {filteredBeneficiaries.length}{filteredBeneficiaries.length !== beneficiaries.length ? ` / ${beneficiaries.length}` : ''}
                 </span>
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-600">
                 Your saved bank accounts are pre-verified. 1-click send without typing details again.
               </p>
             </div>
@@ -1128,7 +1060,7 @@ export const UserPayoutTransfer: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setActiveSubTab('transfer')}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-lg shadow-indigo-600/30 cursor-pointer"
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-indigo-600/20 cursor-pointer"
               >
                 <ArrowRightLeft className="w-3.5 h-3.5" /> New Bank Transfer
               </button>
@@ -1137,26 +1069,26 @@ export const UserPayoutTransfer: React.FC = () => {
 
           {/* Search bar */}
           <div className="relative">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               value={benSearchTerm}
               onChange={(e) => setBenSearchTerm(e.target.value)}
               placeholder="Search by Beneficiary Name, Account Number, IFSC, or Bank..."
-              className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-10 pr-4 py-3 text-xs text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
+              className="w-full bg-slate-50 border border-slate-200 focus:bg-white rounded-xl pl-10 pr-4 py-3 text-xs text-slate-900 placeholder-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none transition-colors"
             />
           </div>
 
           {/* Cards Grid */}
           {beneficiariesLoading ? (
-            <div className="py-16 text-center text-slate-400 text-xs">
-              <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-indigo-400" />
+            <div className="py-16 text-center text-slate-500 text-xs">
+              <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-indigo-600" />
               Loading saved beneficiaries...
             </div>
           ) : filteredBeneficiaries.length === 0 ? (
-            <div className="py-16 text-center text-slate-400 text-xs space-y-3">
-              <BookUser className="w-10 h-10 text-slate-600 mx-auto" />
-              <p className="font-bold text-slate-300 text-sm">No saved beneficiaries found</p>
+            <div className="py-16 text-center text-slate-500 text-xs space-y-3">
+              <BookUser className="w-10 h-10 text-slate-400 mx-auto" />
+              <p className="font-bold text-slate-800 text-sm">No saved beneficiaries found</p>
               <p className="text-slate-500 max-w-sm mx-auto">
                 {benSearchTerm
                   ? 'No beneficiaries match your search criteria.'
@@ -1166,7 +1098,7 @@ export const UserPayoutTransfer: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setActiveSubTab('transfer')}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition cursor-pointer"
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 rounded-xl text-xs font-bold transition cursor-pointer"
                 >
                   Transfer Money Now
                 </button>
@@ -1177,19 +1109,19 @@ export const UserPayoutTransfer: React.FC = () => {
               {filteredBeneficiaries.map((b) => (
                 <div
                   key={b.id}
-                  className="bg-slate-950 border border-slate-800/80 hover:border-slate-700 p-5 rounded-2xl space-y-3 transition-all relative group shadow-sm hover:shadow-md"
+                  className="bg-slate-50 hover:bg-white border border-slate-200 hover:border-indigo-300 p-5 rounded-2xl space-y-3 transition-all relative group shadow-sm hover:shadow-md"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="space-y-0.5">
                       <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-white text-sm uppercase">{b.beneficiary_name}</span>
+                        <span className="font-bold text-slate-900 text-sm uppercase">{b.beneficiary_name}</span>
                         {b.is_verified && (
-                          <span className="p-0.5 text-emerald-400" title="Account Verified with Bank">
+                          <span className="p-0.5 text-emerald-600" title="Account Verified with Bank">
                             <CheckCircle2 className="w-3.5 h-3.5" />
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] text-slate-400">
+                      <p className="text-[11px] text-slate-600">
                         {b.bank_name || 'Bank Account'} {b.branch ? `• ${b.branch}` : ''}
                       </p>
                     </div>
@@ -1198,7 +1130,7 @@ export const UserPayoutTransfer: React.FC = () => {
                       type="button"
                       disabled={deletingBenId === b.id}
                       onClick={() => handleDeleteBeneficiary(b.id)}
-                      className="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg hover:bg-slate-900 transition cursor-pointer"
+                      className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition cursor-pointer"
                       title="Remove beneficiary"
                     >
                       {deletingBenId === b.id ? (
@@ -1209,14 +1141,14 @@ export const UserPayoutTransfer: React.FC = () => {
                     </button>
                   </div>
 
-                  <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800/60 space-y-1 font-mono text-xs">
-                    <div className="flex justify-between text-slate-400">
+                  <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1 font-mono text-xs">
+                    <div className="flex justify-between text-slate-600">
                       <span>A/C No:</span>
-                      <span className="font-bold text-white tracking-wider">{b.account_number}</span>
+                      <span className="font-bold text-slate-900 tracking-wider">{b.account_number}</span>
                     </div>
-                    <div className="flex justify-between text-slate-400">
+                    <div className="flex justify-between text-slate-600">
                       <span>IFSC:</span>
-                      <span className="font-bold text-indigo-400">{b.ifsc_code}</span>
+                      <span className="font-bold text-indigo-700">{b.ifsc_code}</span>
                     </div>
                   </div>
 
@@ -1228,7 +1160,7 @@ export const UserPayoutTransfer: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleSelectBeneficiary(b)}
-                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-indigo-600/20 cursor-pointer"
+                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm shadow-indigo-600/20 cursor-pointer"
                     >
                       <Send className="w-3 h-3" />
                       <span>Send Money</span>
@@ -1243,16 +1175,16 @@ export const UserPayoutTransfer: React.FC = () => {
 
       {/* SUB-TAB 3: VERIFICATION HISTORY */}
       {activeSubTab === 'verifications' && (
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-4 shadow-xl">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-8 space-y-4 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200">
             <div>
-              <h2 className="text-lg font-black text-white flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-emerald-400" /> Bank Account Verification History (Penny Drop)
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-300 font-mono">
+              <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-emerald-600" /> Bank Account Verification History (Penny Drop)
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 font-mono">
                   {filteredUserVerifications.length}{filteredUserVerifications.length !== userVerifications.length ? ` / ${userVerifications.length}` : ''}
                 </span>
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-600">
                 Log of account holder validations. Fee was deducted only upon success (₹0 on failure).
               </p>
             </div>
@@ -1262,7 +1194,7 @@ export const UserPayoutTransfer: React.FC = () => {
                 type="button"
                 onClick={() => fetchUserVerifications()}
                 disabled={verifsLoading}
-                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${verifsLoading ? 'animate-spin' : ''}`} /> Refresh
               </button>
@@ -1271,35 +1203,35 @@ export const UserPayoutTransfer: React.FC = () => {
 
           {/* Search bar */}
           <div className="relative">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               value={userVerifSearch}
               onChange={(e) => setUserVerifSearch(e.target.value)}
               placeholder="Search by Account Number, IFSC, Name at Bank, or Bank..."
-              className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
+              className="w-full bg-slate-50 border border-slate-200 focus:bg-white rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none transition-colors"
             />
           </div>
 
           {/* Table */}
           {verifsLoading ? (
-            <div className="py-16 text-center text-slate-400 text-xs">
-              <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-emerald-400" />
+            <div className="py-16 text-center text-slate-500 text-xs">
+              <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-emerald-600" />
               Loading verification logs...
             </div>
           ) : filteredUserVerifications.length === 0 ? (
-            <div className="py-16 text-center text-slate-400 text-xs space-y-2">
-              <ShieldCheck className="w-8 h-8 text-slate-600 mx-auto" />
-              <p className="font-bold text-slate-300">No verification logs found</p>
+            <div className="py-16 text-center text-slate-500 text-xs space-y-2">
+              <ShieldCheck className="w-8 h-8 text-slate-400 mx-auto" />
+              <p className="font-bold text-slate-800">No verification logs found</p>
               <p className="text-[11px] text-slate-500">
                 When you verify bank accounts using Penny Drop, the records and bank receipts will appear here.
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto border border-slate-200 rounded-xl">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="bg-slate-950/80 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-800">
+                  <tr className="bg-slate-50 text-slate-600 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200">
                     <th className="py-3 px-4">Date & Time</th>
                     <th className="py-3 px-4">Bank Account & IFSC</th>
                     <th className="py-3 px-4">Registered Name at Bank</th>
@@ -1310,67 +1242,67 @@ export const UserPayoutTransfer: React.FC = () => {
                     <th className="py-3 px-4 text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60">
+                <tbody className="divide-y divide-slate-100 bg-white">
                   {filteredUserVerifications.map((v) => (
-                    <tr key={v.id} className="hover:bg-slate-800/30 transition-colors">
-                      <td className="py-3 px-4 whitespace-nowrap text-slate-400 font-mono text-[11px]">
+                    <tr key={v.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="py-3 px-4 whitespace-nowrap text-slate-500 font-mono text-[11px]">
                         {new Date(v.created_at).toLocaleString('en-IN', {
                           day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
                         })}
                       </td>
                       <td className="py-3 px-4">
-                        <div className="font-mono font-bold text-white">{v.account_number}</div>
-                        <div className="text-[11px] text-indigo-400 font-mono font-bold">{v.ifsc_code}</div>
+                        <div className="font-mono font-bold text-slate-900">{v.account_number}</div>
+                        <div className="text-[11px] text-indigo-700 font-mono font-bold">{v.ifsc_code}</div>
                       </td>
                       <td className="py-3 px-4">
                         {v.name_at_bank ? (
-                          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 font-bold uppercase text-[11px]">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold uppercase text-[11px]">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
                             {v.name_at_bank}
                           </div>
                         ) : (
-                          <span className="text-slate-500 italic text-[11px]">Not retrieved</span>
+                          <span className="text-slate-400 italic text-[11px]">Not retrieved</span>
                         )}
                       </td>
                       <td className="py-3 px-4">
-                        <div className="font-bold text-slate-300">{v.bank_name || 'Bank'}</div>
+                        <div className="font-bold text-slate-800">{v.bank_name || 'Bank'}</div>
                         {v.branch && <div className="text-[11px] text-slate-500">{v.branch}</div>}
                       </td>
                       <td className="py-3 px-4 whitespace-nowrap">
                         {v.utr || v.reference_id ? (
-                          <div className="flex items-center gap-1.5 font-mono text-emerald-400 font-bold">
+                          <div className="flex items-center gap-1.5 font-mono text-emerald-700 font-bold">
                             <span>{v.utr || v.reference_id}</span>
                             <button
                               onClick={() => copyToClipboard(v.utr || v.reference_id || '', v.id)}
-                              className="text-slate-500 hover:text-white p-0.5 rounded"
+                              className="text-slate-400 hover:text-slate-700 p-0.5 rounded"
                               title="Copy UTR"
                             >
-                              {copiedUtr === v.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                              {copiedUtr === v.id ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                             </button>
                           </div>
                         ) : (
-                          <span className="text-slate-500 font-mono text-[11px]">—</span>
+                          <span className="text-slate-400 font-mono text-[11px]">—</span>
                         )}
                       </td>
                       <td className="py-3 px-4 whitespace-nowrap font-bold">
                         {Number(v.charge_deducted || 0) > 0 ? (
-                          <span className="text-amber-400 font-mono">₹{Number(v.charge_deducted).toFixed(2)}</span>
+                          <span className="text-amber-700 font-mono">₹{Number(v.charge_deducted).toFixed(2)}</span>
                         ) : (
                           <span className="text-slate-500 font-mono">₹0.00</span>
                         )}
                       </td>
                       <td className="py-3 px-4 whitespace-nowrap">
                         {v.status === 'success' ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Verified
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Verified
                           </span>
                         ) : (
                           <div className="space-y-0.5">
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-rose-500/10 text-rose-300 border border-rose-500/20">
-                              <AlertTriangle className="w-3 h-3 text-rose-400" /> Failed
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-rose-50 text-rose-700 border border-rose-200">
+                              <AlertTriangle className="w-3 h-3 text-rose-600" /> Failed
                             </span>
                             {v.failure_reason && (
-                              <p className="text-[10px] text-rose-400/80 max-w-xs truncate" title={v.failure_reason}>
+                              <p className="text-[10px] text-rose-600 max-w-xs truncate" title={v.failure_reason}>
                                 {v.failure_reason}
                               </p>
                             )}
@@ -1393,7 +1325,7 @@ export const UserPayoutTransfer: React.FC = () => {
                             }
                             setActiveSubTab('transfer');
                           }}
-                          className="px-2.5 py-1 bg-slate-800 hover:bg-indigo-600 text-slate-300 hover:text-white rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1 cursor-pointer"
+                          className="px-2.5 py-1 bg-slate-100 hover:bg-indigo-600 text-slate-700 hover:text-white border border-slate-200 rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1 cursor-pointer"
                         >
                           <ArrowRightLeft className="w-3 h-3" /> Transfer
                         </button>
@@ -1409,16 +1341,16 @@ export const UserPayoutTransfer: React.FC = () => {
 
       {/* SUB-TAB 4: PAYOUT HISTORY */}
       {activeSubTab === 'history' && (
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-6 space-y-4 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200">
             <div>
-              <h2 className="text-lg font-black text-white flex items-center gap-2">
-                <Clock className="w-5 h-5 text-indigo-400" /> My Payout Transfer Records
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-300 font-mono">
+              <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                <Clock className="w-5 h-5 text-indigo-600" /> My Payout Transfer Records
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 font-mono">
                   {filteredHistory.length}{filteredHistory.length !== history.length ? ` / ${history.length}` : ''}
                 </span>
               </h2>
-              <p className="text-xs text-slate-400">Complete real-time log of your bank transfers with bank UTRs</p>
+              <p className="text-xs text-slate-600">Complete real-time log of your bank transfers with bank UTRs</p>
             </div>
 
             <div className="flex items-center gap-2 self-start sm:self-auto">
@@ -1426,7 +1358,7 @@ export const UserPayoutTransfer: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleClearHistoryFilters}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-rose-300 hover:text-rose-200 border border-rose-500/30 text-xs font-semibold transition"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold transition cursor-pointer"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   Clear Filters
@@ -1436,7 +1368,7 @@ export const UserPayoutTransfer: React.FC = () => {
               <button
                 onClick={() => fetchHistory(true)}
                 disabled={historyLoading}
-                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors"
+                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${historyLoading ? 'animate-spin' : ''}`} /> Refresh Log
               </button>
@@ -1446,19 +1378,19 @@ export const UserPayoutTransfer: React.FC = () => {
           {/* Search & Filter Bar */}
           <div className="flex flex-wrap items-center gap-2.5">
             <div className="relative flex-1 min-w-[200px]">
-              <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={historySearchTerm}
                 onChange={(e) => setHistorySearchTerm(e.target.value)}
                 placeholder="Search order ref, UTR, account..."
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-8 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none placeholder-slate-500"
+                className="w-full bg-slate-50 border border-slate-200 focus:bg-white rounded-xl pl-9 pr-8 py-2 text-xs text-slate-900 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none placeholder-slate-400"
               />
               {historySearchTerm && (
                 <button
                   type="button"
                   onClick={() => setHistorySearchTerm('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -1466,74 +1398,74 @@ export const UserPayoutTransfer: React.FC = () => {
             </div>
 
             {/* Date Range Dropdown */}
-            <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs">
-              <Calendar className="w-4 h-4 text-indigo-400 shrink-0" />
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs">
+              <Calendar className="w-4 h-4 text-indigo-600 shrink-0" />
               <select
                 value={historyDateFilter}
                 onChange={(e) => setHistoryDateFilter(e.target.value as any)}
-                className="bg-transparent text-slate-200 text-xs focus:outline-none cursor-pointer pr-2 font-medium"
+                className="bg-transparent text-slate-800 text-xs focus:outline-none cursor-pointer pr-2 font-medium"
               >
-                <option value="ALL" className="bg-slate-900 text-slate-200">All Time</option>
-                <option value="TODAY" className="bg-slate-900 text-slate-200">Today</option>
-                <option value="YESTERDAY" className="bg-slate-900 text-slate-200">Yesterday</option>
-                <option value="LAST_7_DAYS" className="bg-slate-900 text-slate-200">Last 7 Days</option>
-                <option value="LAST_30_DAYS" className="bg-slate-900 text-slate-200">Last 30 Days</option>
-                <option value="THIS_MONTH" className="bg-slate-900 text-slate-200">This Month</option>
-                <option value="CUSTOM" className="bg-slate-900 text-slate-200">Custom Range</option>
+                <option value="ALL">All Time</option>
+                <option value="TODAY">Today</option>
+                <option value="YESTERDAY">Yesterday</option>
+                <option value="LAST_7_DAYS">Last 7 Days</option>
+                <option value="LAST_30_DAYS">Last 30 Days</option>
+                <option value="THIS_MONTH">This Month</option>
+                <option value="CUSTOM">Custom Range</option>
               </select>
             </div>
 
             {/* Custom Date Inputs */}
             {historyDateFilter === 'CUSTOM' && (
-              <div className="flex items-center gap-2 bg-slate-950 border border-indigo-500/40 rounded-xl px-3 py-1.5 text-xs">
-                <span className="text-[11px] text-slate-400 font-medium">From:</span>
+              <div className="flex items-center gap-2 bg-slate-50 border border-indigo-200 rounded-xl px-3 py-1.5 text-xs">
+                <span className="text-[11px] text-slate-600 font-medium">From:</span>
                 <input
                   type="date"
                   value={historyCustomStartDate}
                   onChange={(e) => setHistoryCustomStartDate(e.target.value)}
-                  className="bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-indigo-400 font-mono"
+                  className="bg-white border border-slate-300 text-slate-800 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-indigo-600 font-mono"
                 />
-                <span className="text-[11px] text-slate-400 font-medium">To:</span>
+                <span className="text-[11px] text-slate-600 font-medium">To:</span>
                 <input
                   type="date"
                   value={historyCustomEndDate}
                   onChange={(e) => setHistoryCustomEndDate(e.target.value)}
-                  className="bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-indigo-400 font-mono"
+                  className="bg-white border border-slate-300 text-slate-800 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-indigo-600 font-mono"
                 />
               </div>
             )}
 
             {/* Status Dropdown */}
-            <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs">
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs">
               <select
                 value={historyStatusFilter}
                 onChange={(e) => setHistoryStatusFilter(e.target.value)}
-                className="bg-transparent text-slate-200 text-xs focus:outline-none cursor-pointer font-medium"
+                className="bg-transparent text-slate-800 text-xs focus:outline-none cursor-pointer font-medium"
               >
-                <option value="all" className="bg-slate-900 text-slate-200">All Status ({history.length})</option>
-                <option value="success" className="bg-slate-900 text-slate-200">Success ({successHistoryCount})</option>
-                <option value="pending" className="bg-slate-900 text-slate-200">Pending ({pendingHistoryCount})</option>
-                <option value="failed" className="bg-slate-900 text-slate-200">Failed / Refunded ({failedHistoryCount})</option>
+                <option value="all">All Status ({history.length})</option>
+                <option value="success">Success ({successHistoryCount})</option>
+                <option value="pending">Pending ({pendingHistoryCount})</option>
+                <option value="failed">Failed / Refunded ({failedHistoryCount})</option>
               </select>
             </div>
           </div>
 
           {historyLoading ? (
-            <div className="py-16 text-center text-slate-400 text-xs">
-              <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-indigo-400" />
+            <div className="py-16 text-center text-slate-500 text-xs">
+              <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-indigo-600" />
               Loading payout history...
             </div>
           ) : filteredHistory.length === 0 ? (
-            <div className="py-16 text-center text-slate-400 text-xs space-y-2">
-              <Building2 className="w-8 h-8 text-slate-600 mx-auto" />
-              <p className="font-bold text-slate-300">No matching transfers found</p>
+            <div className="py-16 text-center text-slate-500 text-xs space-y-2">
+              <Building2 className="w-8 h-8 text-slate-400 mx-auto" />
+              <p className="font-bold text-slate-800">No matching transfers found</p>
               <p className="text-[11px] text-slate-500">Try adjusting your search or date range filters.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto border border-slate-200 rounded-xl">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="bg-slate-950/80 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-800">
+                  <tr className="bg-slate-50 text-slate-600 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200">
                     <th className="py-3 px-4">Date & Time</th>
                     <th className="py-3 px-4">Order Ref</th>
                     <th className="py-3 px-4">Beneficiary & Account</th>
@@ -1545,63 +1477,63 @@ export const UserPayoutTransfer: React.FC = () => {
                     <th className="py-3 px-4 text-right">Receipt</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60">
+                <tbody className="divide-y divide-slate-100 bg-white">
                   {filteredHistory.map((item) => (
-                    <tr key={item.id} className="hover:bg-slate-800/30 transition-colors">
-                      <td className="py-3 px-4 whitespace-nowrap text-slate-400 font-mono text-[11px]">
+                    <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="py-3 px-4 whitespace-nowrap text-slate-500 font-mono text-[11px]">
                         {new Date(item.created_at).toLocaleString('en-IN', {
                           day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
                         })}
                       </td>
-                      <td className="py-3 px-4 whitespace-nowrap font-mono text-slate-300 font-bold">
+                      <td className="py-3 px-4 whitespace-nowrap font-mono text-slate-800 font-bold">
                         {item.client_order_id}
                       </td>
                       <td className="py-3 px-4">
-                        <div className="font-bold text-white">{item.beneficiary_name}</div>
-                        <div className="text-[11px] text-slate-400 font-mono">
-                          {item.account_number} • <span className="text-indigo-400">{item.ifsc_code}</span>
+                        <div className="font-bold text-slate-900">{item.beneficiary_name}</div>
+                        <div className="text-[11px] text-slate-600 font-mono">
+                          {item.account_number} • <span className="text-indigo-700 font-bold">{item.ifsc_code}</span>
                         </div>
                       </td>
-                      <td className="py-3 px-4 whitespace-nowrap font-black text-white">
+                      <td className="py-3 px-4 whitespace-nowrap font-black text-slate-900">
                         ₹{Number(item.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </td>
-                      <td className="py-3 px-4 whitespace-nowrap text-amber-400 font-bold">
+                      <td className="py-3 px-4 whitespace-nowrap text-amber-700 font-bold">
                         ₹{Number(item.slab_charge || 0).toFixed(2)}
                       </td>
-                      <td className="py-3 px-4 whitespace-nowrap font-bold text-slate-200">
+                      <td className="py-3 px-4 whitespace-nowrap font-bold text-slate-900">
                         ₹{Number(item.total_deducted || item.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </td>
                       <td className="py-3 px-4 whitespace-nowrap">
                         {item.utr ? (
-                          <div className="flex items-center gap-1.5 font-mono text-emerald-400 font-bold">
+                          <div className="flex items-center gap-1.5 font-mono text-emerald-700 font-bold">
                             <span>{item.utr}</span>
                             <button
                               onClick={() => copyToClipboard(item.utr || '', item.id)}
-                              className="text-slate-500 hover:text-white"
+                              className="text-slate-400 hover:text-slate-700 p-0.5 rounded"
                               title="Copy UTR"
                             >
-                              {copiedUtr === item.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                              {copiedUtr === item.id ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                             </button>
                           </div>
                         ) : item.status === 'pending' ? (
                           <button
                             onClick={() => handleCheckStatus(item.client_order_id)}
                             disabled={checkingStatusId === item.client_order_id}
-                            className="text-[10px] bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded font-bold hover:bg-indigo-600/40"
+                            className="text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded font-bold hover:bg-indigo-100 cursor-pointer"
                           >
                             {checkingStatusId === item.client_order_id ? 'Checking...' : 'Check Status'}
                           </button>
                         ) : (
-                          <span className="text-slate-500">—</span>
+                          <span className="text-slate-400">—</span>
                         )}
                       </td>
                       <td className="py-3 px-4 whitespace-nowrap">
                         <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
                           item.status === 'success'
-                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                             : item.status === 'failed'
-                            ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                            : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                            ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                            : 'bg-amber-50 text-amber-700 border border-amber-200'
                         }`}>
                           {item.status}
                         </span>
@@ -1612,7 +1544,7 @@ export const UserPayoutTransfer: React.FC = () => {
                             setReceiptTxn(item);
                             setShowReceipt(true);
                           }}
-                          className="px-2.5 py-1 bg-slate-800 hover:bg-indigo-600 text-slate-300 hover:text-white rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1"
+                          className="px-2.5 py-1 bg-slate-100 hover:bg-indigo-600 text-slate-700 hover:text-white border border-slate-200 rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1 cursor-pointer"
                         >
                           <ExternalLink className="w-3 h-3" /> Receipt
                         </button>
@@ -1626,58 +1558,58 @@ export const UserPayoutTransfer: React.FC = () => {
         </div>
       )}
 
-      {/* CONFIRMATION MODAL (NO TPIN REQUIRED) */}
+      {/* CONFIRMATION MODAL (TPIN PROTECTION) */}
       {showConfirmModal && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="relative w-full max-w-md bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-5 shadow-2xl">
             
             <div className="text-center space-y-1">
-              <div className="w-12 h-12 bg-indigo-500/20 text-indigo-400 rounded-2xl flex items-center justify-center mx-auto mb-2 border border-indigo-500/30">
+              <div className="w-12 h-12 bg-slate-100 text-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-2 border border-slate-200">
                 <ArrowRightLeft className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-black text-white">Confirm Bank Payout</h3>
-              <p className="text-xs text-slate-400">
+              <h3 className="text-lg font-black text-slate-900">Confirm Bank Payout</h3>
+              <p className="text-xs text-slate-600">
                 Please verify beneficiary bank details before confirming transfer
               </p>
             </div>
 
             {/* Beneficiary & Amount Summary */}
-            <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl space-y-2 text-xs">
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs">
               <div className="flex justify-between items-center">
-                <span className="text-slate-400">Beneficiary Name:</span>
-                <span className="font-bold text-white uppercase">{beneficiaryName}</span>
+                <span className="text-slate-500 font-medium">Beneficiary Name:</span>
+                <span className="font-bold text-slate-900 uppercase">{beneficiaryName}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-slate-400">Account Number:</span>
-                <span className="font-mono text-slate-200 font-bold">{accountNumber}</span>
+                <span className="text-slate-500 font-medium">Account Number:</span>
+                <span className="font-mono text-slate-900 font-bold">{accountNumber}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-slate-400">Bank IFSC:</span>
-                <span className="font-mono text-indigo-300 uppercase">{ifscCode}</span>
+                <span className="text-slate-500 font-medium">Bank IFSC:</span>
+                <span className="font-mono text-slate-900 font-bold uppercase">{ifscCode}</span>
               </div>
               {bankName && (
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-400">Bank Name:</span>
-                  <span className="text-slate-300">{bankName}</span>
+                  <span className="text-slate-500 font-medium">Bank Name:</span>
+                  <span className="text-slate-800 font-medium">{bankName}</span>
                 </div>
               )}
               <div className="flex justify-between items-center">
-                <span className="text-slate-400">Transfer Mode:</span>
-                <span className="font-bold text-emerald-400">{transferMode}</span>
+                <span className="text-slate-500 font-medium">Transfer Mode:</span>
+                <span className="font-bold text-emerald-700">{transferMode}</span>
               </div>
 
-              <div className="border-t border-slate-800 pt-2 flex justify-between items-center">
-                <span className="text-slate-400">Transfer Amount:</span>
-                <span className="font-bold text-white">₹{parseFloat(amount || '0').toFixed(2)}</span>
+              <div className="border-t border-slate-200 pt-2 flex justify-between items-center">
+                <span className="text-slate-500 font-medium">Transfer Amount:</span>
+                <span className="font-bold text-slate-900">₹{parseFloat(amount || '0').toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-slate-400">Payout Slab Fee:</span>
-                <span className="font-bold text-amber-400">+₹{(calculation ? calculation.charge_amount : 0).toFixed(2)}</span>
+                <span className="text-slate-500 font-medium">Payout Slab Fee:</span>
+                <span className="font-bold text-amber-700">+₹{(calculation ? calculation.charge_amount : 0).toFixed(2)}</span>
               </div>
 
-              <div className="border-t border-slate-800/80 pt-2 flex justify-between items-center">
-                <span className="text-slate-200 font-black text-sm">Total Wallet Debit:</span>
-                <span className="font-black text-emerald-400 text-base">
+              <div className="border-t border-slate-200 pt-2 flex justify-between items-center">
+                <span className="text-slate-800 font-black text-sm">Total Wallet Debit:</span>
+                <span className="font-black text-slate-900 text-base">
                   ₹{(calculation ? calculation.total_deducted : parseFloat(amount || '0')).toFixed(2)}
                 </span>
               </div>
@@ -1685,13 +1617,13 @@ export const UserPayoutTransfer: React.FC = () => {
 
             {/* 4-Digit TPIN Input / Prompt */}
             {!user?.tpin_set ? (
-              <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-center space-y-2.5">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-center space-y-2.5">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
                   <Lock className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-amber-300">4-Digit TPIN Required</p>
-                  <p className="text-[11px] text-slate-300 mt-0.5">
+                  <p className="text-xs font-bold text-amber-800">4-Digit TPIN Required</p>
+                  <p className="text-[11px] text-slate-600 mt-0.5">
                     You have not created your 4-digit Transaction PIN yet. Create it now to authorize payout transfers.
                   </p>
                 </div>
@@ -1702,15 +1634,15 @@ export const UserPayoutTransfer: React.FC = () => {
                     window.history.pushState(null, '', '/manage-tpin');
                     window.dispatchEvent(new PopStateEvent('popstate'));
                   }}
-                  className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs rounded-xl shadow-lg transition cursor-pointer"
+                  className="px-4 py-2 bg-slate-900 hover:bg-black text-white font-bold text-xs rounded-xl shadow-sm transition cursor-pointer"
                 >
                   Go to TPIN Page to Create TPIN
                 </button>
               </div>
             ) : (
-              <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl space-y-2">
-                <label className="block text-xs font-bold text-slate-300">
-                  Enter 4-Digit TPIN <span className="text-rose-400">*</span>
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                <label className="block text-xs font-bold text-slate-700">
+                  Enter 4-Digit TPIN <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="password"
@@ -1719,22 +1651,22 @@ export const UserPayoutTransfer: React.FC = () => {
                   placeholder="••••"
                   value={tpin}
                   onChange={(e) => setTpin(e.target.value.replace(/\D/g, ''))}
-                  className="w-full bg-slate-900 border border-slate-750 rounded-xl p-3 text-base text-center font-mono tracking-widest text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-white border border-slate-300 rounded-xl p-3 text-base text-center font-mono tracking-widest text-slate-900 focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
                 />
-                <p className="text-[10px] text-slate-400 text-center">
+                <p className="text-[10px] text-slate-500 text-center font-medium">
                   Enter your 4-digit secret transaction PIN to authorize this transfer
                 </p>
               </div>
             )}
 
             {confirmError && (
-              <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-300 text-xs">
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-medium">
                 {confirmError}
               </div>
             )}
 
             {refundNotice && (
-              <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-300 text-xs">
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-medium">
                 ✓ {refundNotice}
               </div>
             )}
@@ -1744,7 +1676,7 @@ export const UserPayoutTransfer: React.FC = () => {
                 type="button"
                 disabled={transferLoading || verifyingTpin}
                 onClick={() => setShowConfirmModal(false)}
-                className="w-1/2 py-3 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-300 rounded-xl font-bold text-xs transition-colors cursor-pointer"
+                className="w-1/2 py-3 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-700 border border-slate-200 rounded-xl font-bold text-xs transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -1752,7 +1684,7 @@ export const UserPayoutTransfer: React.FC = () => {
                 type="button"
                 onClick={handleExecutePayout}
                 disabled={!user?.tpin_set || transferLoading || verifyingTpin || tpin.length !== 4}
-                className="w-1/2 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-indigo-600/30 cursor-pointer"
+                className="w-1/2 py-3 bg-slate-900 hover:bg-black disabled:opacity-50 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
               >
                 {transferLoading || verifyingTpin ? (
                   <>
@@ -1765,7 +1697,7 @@ export const UserPayoutTransfer: React.FC = () => {
             </div>
 
             {transferLoading && (
-              <p className="text-[11px] text-center text-indigo-400 animate-pulse">
+              <p className="text-[11px] text-center text-slate-700 font-medium animate-pulse">
                 Transferring funds to bank via IMPS... Please do not refresh.
               </p>
             )}

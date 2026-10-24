@@ -82,36 +82,34 @@ export const ResetPinOtpModal: React.FC<ResetPinOtpModalProps> = ({ isOpen, onCl
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="max-w-md w-full glass-panel rounded-3xl p-6 border border-slate-700 shadow-2xl relative">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-2xl relative">
         
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg bg-slate-800"
+          className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 transition cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>
 
         <div className="text-center mb-5">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto mb-2 border border-emerald-500/40">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-2 border border-emerald-200 shadow-2xs">
             <MessageSquare className="w-6 h-6" />
           </div>
-          <h3 className="text-lg font-bold text-white">Reset Security Credentials</h3>
-          <p className="text-xs text-slate-400">Validate via WhatsApp or SMS OTP verification</p>
+          <h3 className="text-lg font-black text-slate-900">Reset Security Credentials</h3>
+          <p className="text-xs text-slate-500">Validate via WhatsApp or SMS OTP verification</p>
         </div>
 
-
-
         {errorMsg && (
-          <div className="mb-4 p-3 rounded-xl bg-red-500/15 border border-red-500/40 text-red-300 text-xs flex items-center space-x-2">
-            <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+          <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center space-x-2 font-medium shadow-xs">
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
             <span>{errorMsg}</span>
           </div>
         )}
 
         {successMsg && (
-          <div className="mb-4 p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs flex items-center space-x-2">
-            <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+          <div className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs flex items-center space-x-2 font-medium shadow-xs">
+            <Check className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>{successMsg}</span>
           </div>
         )}
@@ -119,43 +117,43 @@ export const ResetPinOtpModal: React.FC<ResetPinOtpModalProps> = ({ isOpen, onCl
         {!otpSent ? (
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Select Delivery Channel</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">Select Delivery Channel</label>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setChannel('WHATSAPP')}
-                  className={`p-3 rounded-xl border flex items-center space-x-2 text-xs font-semibold transition ${
+                  className={`p-3 rounded-xl border flex items-center space-x-2 text-xs font-bold transition cursor-pointer ${
                     channel === 'WHATSAPP'
-                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/60'
-                      : 'bg-slate-800 text-slate-400 border-slate-700'
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-300 shadow-2xs'
+                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                   }`}
                 >
-                  <MessageSquare className="w-4 h-4 text-emerald-400" />
+                  <MessageSquare className="w-4 h-4 text-emerald-600" />
                   <span>WhatsApp OTP</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setChannel('SMS')}
-                  className={`p-3 rounded-xl border flex items-center space-x-2 text-xs font-semibold transition ${
+                  className={`p-3 rounded-xl border flex items-center space-x-2 text-xs font-bold transition cursor-pointer ${
                     channel === 'SMS'
-                      ? 'bg-blue-500/20 text-blue-300 border-blue-500/60'
-                      : 'bg-slate-800 text-slate-400 border-slate-700'
+                      ? 'bg-blue-50 text-blue-700 border-blue-300 shadow-2xs'
+                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                   }`}
                 >
-                  <Phone className="w-4 h-4 text-blue-400" />
+                  <Phone className="w-4 h-4 text-blue-600" />
                   <span>SMS OTP</span>
                 </button>
               </div>
             </div>
 
-            <p className="text-xs text-slate-400">
-              OTP code will be dispatched to registered mobile: <strong className="text-slate-200 font-mono">+91 {user.mobile_number}</strong>
+            <p className="text-xs text-slate-500">
+              OTP code will be dispatched to registered mobile: <strong className="text-slate-900 font-mono font-bold">+91 {user.mobile_number}</strong>
             </p>
 
             <button
               onClick={handleRequestOtp}
               disabled={loading}
-              className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg transition"
+              className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-sm transition cursor-pointer disabled:opacity-50"
             >
               {loading ? 'Sending Security Code...' : 'Request Verification OTP'}
             </button>
@@ -163,18 +161,18 @@ export const ResetPinOtpModal: React.FC<ResetPinOtpModalProps> = ({ isOpen, onCl
         ) : (
           <form onSubmit={handleResetSubmit} className="space-y-4">
             {demoOtp && (
-              <div className="p-3 rounded-xl bg-indigo-500/20 border border-indigo-500/40 text-indigo-300 text-xs flex items-center justify-between">
-                <span className="flex items-center gap-1.5 font-semibold">
-                  <Sparkles className="w-4 h-4 text-amber-400" /> Generated Demo OTP:
+              <div className="p-3 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs flex items-center justify-between shadow-2xs">
+                <span className="flex items-center gap-1.5 font-bold">
+                  <Sparkles className="w-4 h-4 text-amber-500" /> Generated Demo OTP:
                 </span>
-                <span className="font-mono font-extrabold text-white text-sm tracking-wider px-2 py-0.5 rounded bg-indigo-600">
+                <span className="font-mono font-black text-white text-sm tracking-wider px-2 py-0.5 rounded bg-indigo-600 shadow-xs">
                   {demoOtp}
                 </span>
               </div>
             )}
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Enter 6-Digit OTP</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Enter 6-Digit OTP</label>
               <input
                 type="text"
                 required
@@ -182,12 +180,12 @@ export const ResetPinOtpModal: React.FC<ResetPinOtpModalProps> = ({ isOpen, onCl
                 value={otpCode}
                 onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
                 placeholder="Enter received OTP"
-                className="w-full px-4 py-2.5 rounded-xl glass-input text-center font-mono text-lg tracking-widest"
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-white focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 text-center font-mono text-lg tracking-widest transition"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
+              <label className="block text-xs font-bold text-slate-700 mb-1">
                 Enter New {resetType === 'tpin' ? '4-Digit TPIN' : '6-Digit MPIN'}
               </label>
               <input
@@ -197,14 +195,14 @@ export const ResetPinOtpModal: React.FC<ResetPinOtpModalProps> = ({ isOpen, onCl
                 value={newValue}
                 onChange={(e) => setNewValue(e.target.value.replace(/\D/g, ''))}
                 placeholder={resetType === 'tpin' ? 'Enter 4 new digits' : 'Enter 6 new digits'}
-                className="w-full px-4 py-2.5 rounded-xl glass-input text-center font-mono text-lg tracking-widest"
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-white focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 text-center font-mono text-lg tracking-widest transition"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading || !otpCode || !newValue}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-emerald-600 text-white font-bold text-sm shadow-xl hover:opacity-95 transition disabled:opacity-40"
+              className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-sm transition disabled:opacity-40 cursor-pointer"
             >
               {loading ? 'Updating Credentials...' : `Confirm & Update ${resetType.toUpperCase()}`}
             </button>

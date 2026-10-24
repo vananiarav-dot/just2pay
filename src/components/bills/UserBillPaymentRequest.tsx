@@ -314,16 +314,14 @@ export const UserBillPaymentRequest: React.FC = () => {
   return (
     <div className="space-y-6 animate-in fade-in duration-300 w-full pb-10">
       {/* Top Banner & Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/80 p-5 rounded-3xl border border-slate-800 shadow-xl backdrop-blur-md">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-slate-200/90 shadow-sm">
         <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-pink-500 p-0.5 flex items-center justify-center shadow-lg shadow-indigo-950/50">
-            <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
-              <CreditCard className="w-6 h-6 text-purple-400" />
-            </div>
+          <div className="w-12 h-12 rounded-2xl bg-purple-50 border border-purple-200 flex items-center justify-center shadow-xs">
+            <CreditCard className="w-6 h-6 text-purple-600" />
           </div>
           <div>
-            <h2 className="text-xl font-black text-white tracking-tight">Credit Card Bill Payment</h2>
-            <p className="text-xs font-medium text-slate-400 mt-0.5">
+            <h2 className="text-xl font-black text-slate-900 tracking-tight">Credit Card Bill Payment</h2>
+            <p className="text-xs font-medium text-slate-500 mt-0.5">
               Pay credit card bills instantly with dynamic service charges & auto wallet deduction
             </p>
           </div>
@@ -332,24 +330,24 @@ export const UserBillPaymentRequest: React.FC = () => {
 
       {/* Notifications */}
       {successMessage && (
-        <div className="flex items-center justify-between p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold animate-in slide-in-from-top-2">
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold animate-in slide-in-from-top-2">
           <div className="flex items-center gap-2.5">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
             <span>{successMessage}</span>
           </div>
-          <button onClick={() => setSuccessMessage(null)} className="text-emerald-400 hover:text-emerald-200">
+          <button onClick={() => setSuccessMessage(null)} className="text-emerald-600 hover:text-emerald-800">
             <X className="w-4 h-4" />
           </button>
         </div>
       )}
 
       {errorMessage && (
-        <div className="flex items-center justify-between p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-semibold animate-in slide-in-from-top-2">
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold animate-in slide-in-from-top-2">
           <div className="flex items-center gap-2.5">
-            <XCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+            <XCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
             <span>{errorMessage}</span>
           </div>
-          <button onClick={() => setErrorMessage(null)} className="text-rose-400 hover:text-rose-200">
+          <button onClick={() => setErrorMessage(null)} className="text-rose-600 hover:text-rose-800">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -360,12 +358,12 @@ export const UserBillPaymentRequest: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* FORM CONTAINER (8 Columns) */}
-        <div className="lg:col-span-8 bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-            <h3 className="text-sm font-black text-white flex items-center gap-2">
-              <Send className="w-4 h-4 text-purple-400" /> New Bill Payment Request
+        <div className="lg:col-span-8 bg-white border border-slate-200/90 rounded-3xl p-6 shadow-sm space-y-5">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+              <Send className="w-4 h-4 text-purple-600" /> New Bill Payment Request
             </h3>
-            <span className="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-300 border border-indigo-500/30">
+            <span className="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200">
               Instant Processing
             </span>
           </div>
@@ -373,18 +371,18 @@ export const UserBillPaymentRequest: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Customer Name */}
             <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1">
-                Customer Name <span className="text-rose-400">*</span>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Customer Name <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
-                <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
                   required
                   placeholder="Enter Customer Name"
                   value={customerName}
                   onChange={e => setCustomerName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs font-bold text-white placeholder-slate-600 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
+                  className="w-full bg-white border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-xs font-bold text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-purple-600 transition"
                 />
               </div>
             </div>
@@ -393,34 +391,34 @@ export const UserBillPaymentRequest: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Card Number */}
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">
-                  16-Digit Card Number <span className="text-rose-400">*</span>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  16-Digit Card Number <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
-                  <CreditCard className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <CreditCard className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
                     type="text"
                     required
                     placeholder="XXXX XXXX XXXX XXXX"
                     value={formatCardDisplay(cardNumber)}
                     onChange={handleCardNumberChange}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs font-mono font-bold text-white placeholder-slate-600 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition tracking-wider"
+                    className="w-full bg-white border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-xs font-mono font-bold text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-purple-600 transition tracking-wider"
                   />
                 </div>
-                <p className="text-[10px] text-slate-500 mt-1">{cardNumber.length}/16 Digits</p>
+                <p className="text-[10px] text-slate-400 mt-1">{cardNumber.length}/16 Digits</p>
               </div>
 
               {/* Bank Name Dropdown (Fetched from Admin Bank Entry) */}
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">
-                  Select Bank <span className="text-rose-400">*</span>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Select Bank <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
-                  <Building2 className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                  <Building2 className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                   <select
                     value={bankName}
                     onChange={e => setBankName(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs font-bold text-white focus:outline-none focus:border-purple-500 transition appearance-none"
+                    className="w-full bg-white border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-purple-600 transition"
                   >
                     {banks.length === 0 ? (
                       <option value="">No Active Banks Available</option>
@@ -441,15 +439,15 @@ export const UserBillPaymentRequest: React.FC = () => {
               {/* Amount */}
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-bold text-slate-300">
-                    Bill Amount (₹) <span className="text-rose-400">*</span>
+                  <label className="block text-xs font-bold text-slate-700">
+                    Bill Amount (₹) <span className="text-rose-500">*</span>
                   </label>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20 font-mono">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 font-mono">
                     Active Range: ₹{minSlabLimit.toLocaleString('en-IN')} - ₹{maxSlabLimit.toLocaleString('en-IN')}
                   </span>
                 </div>
                 <div className="relative">
-                  <IndianRupee className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <IndianRupee className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
                     type="number"
                     required
@@ -458,18 +456,18 @@ export const UserBillPaymentRequest: React.FC = () => {
                     placeholder={`e.g. between ₹${minSlabLimit} and ₹${maxSlabLimit}`}
                     value={amount}
                     onChange={e => setAmount(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs font-black text-white placeholder-slate-600 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
+                    className="w-full bg-white border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-xs font-black text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-purple-600 transition"
                   />
                 </div>
               </div>
 
               {/* Mobile Number */}
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">
-                  Mobile Number (10 Digits) <span className="text-rose-400">*</span>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Mobile Number (10 Digits) <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
-                  <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
                     type="text"
                     required
@@ -477,7 +475,7 @@ export const UserBillPaymentRequest: React.FC = () => {
                     placeholder="Enter 10 digit mobile"
                     value={mobileNumber}
                     onChange={e => setMobileNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs font-mono font-bold text-white placeholder-slate-600 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
+                    className="w-full bg-white border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-xs font-mono font-bold text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-purple-600 transition"
                   />
                 </div>
               </div>
@@ -485,28 +483,28 @@ export const UserBillPaymentRequest: React.FC = () => {
 
             {/* DEDUCTION BREAKDOWN PILL */}
             {numAmt > 0 && (
-              <div className="p-3.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-xs space-y-1.5 animate-in fade-in">
-                <div className="flex items-center justify-between text-slate-300">
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-1.5 animate-in fade-in">
+                <div className="flex items-center justify-between text-slate-600">
                   <span>Bill Amount:</span>
-                  <span className="font-bold text-white">₹{numAmt.toLocaleString('en-IN')}</span>
+                  <span className="font-bold text-slate-900">₹{numAmt.toLocaleString('en-IN')}</span>
                 </div>
-                <div className="flex items-center justify-between text-slate-300">
+                <div className="flex items-center justify-between text-slate-600">
                   <span>Service Charge (Slab):</span>
-                  <span className="font-bold text-amber-400">+ ₹{calculatedCharge}</span>
+                  <span className="font-bold text-amber-600">+ ₹{calculatedCharge}</span>
                 </div>
-                <div className="border-t border-indigo-500/20 pt-1.5 flex items-center justify-between font-black text-white">
+                <div className="border-t border-slate-200 pt-1.5 flex items-center justify-between font-black text-slate-900">
                   <span>Total Wallet Deduction:</span>
-                  <span className="text-emerald-400 text-sm">₹{totalDeduction.toLocaleString('en-IN')}</span>
+                  <span className="text-emerald-600 text-sm">₹{totalDeduction.toLocaleString('en-IN')}</span>
                 </div>
               </div>
             )}
 
             {/* Action Buttons: Submit & Clear */}
-            <div className="pt-2 flex items-center justify-end gap-3 border-t border-slate-800">
+            <div className="pt-2 flex items-center justify-end gap-3 border-t border-slate-100">
               <button
                 type="button"
                 onClick={handleClearForm}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 font-bold text-xs transition"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition cursor-pointer"
               >
                 <RotateCcw className="w-4 h-4" />
                 <span>Clear Form</span>
@@ -515,7 +513,7 @@ export const UserBillPaymentRequest: React.FC = () => {
               <button
                 type="submit"
                 disabled={submitting}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white font-bold text-xs shadow-lg shadow-purple-900/40 transition disabled:opacity-50"
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm transition disabled:opacity-50 cursor-pointer"
               >
                 {submitting ? (
                   <RefreshCw className="w-4 h-4 animate-spin" />
@@ -530,9 +528,9 @@ export const UserBillPaymentRequest: React.FC = () => {
 
         {/* SLABS & INFO CARD (4 Columns) */}
         <div className="lg:col-span-4 space-y-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-2xl space-y-3">
-            <h4 className="text-xs font-extrabold uppercase text-slate-400 tracking-wider flex items-center gap-2">
-              <Info className="w-4 h-4 text-indigo-400" /> Service Charge Slabs
+          <div className="bg-white border border-slate-200/90 rounded-3xl p-5 shadow-sm space-y-3">
+            <h4 className="text-xs font-extrabold uppercase text-slate-600 tracking-wider flex items-center gap-2">
+              <Info className="w-4 h-4 text-indigo-600" /> Service Charge Slabs
             </h4>
 
             <div className="space-y-2">
@@ -540,14 +538,14 @@ export const UserBillPaymentRequest: React.FC = () => {
                 <div className="text-[11px] text-slate-500">Default: 1-50,000 → ₹25 | 50,001-1,00,000 → ₹50</div>
               ) : (
                 slabs.map((slab, i) => (
-                  <div key={slab.id || i} className="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 text-xs">
+                  <div key={slab.id || i} className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs">
                     <div>
-                      <p className="font-bold text-slate-200">
+                      <p className="font-bold text-slate-800">
                         ₹{Number(slab.min_amount).toLocaleString('en-IN')} - ₹{Number(slab.max_amount).toLocaleString('en-IN')}
                       </p>
                       <p className="text-[10px] text-slate-500">Standard Charge</p>
                     </div>
-                    <span className="px-2.5 py-1 rounded-xl bg-amber-500/10 text-amber-300 border border-amber-500/30 font-black">
+                    <span className="px-2.5 py-1 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 font-black">
                       ₹{slab.charge_amount}
                     </span>
                   </div>
@@ -555,8 +553,8 @@ export const UserBillPaymentRequest: React.FC = () => {
               )}
             </div>
 
-            <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800/80 text-[11px] text-slate-400 space-y-1 leading-relaxed">
-              <p className="font-bold text-slate-300">💡 Important Notice:</p>
+            <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-[11px] text-slate-600 space-y-1 leading-relaxed">
+              <p className="font-bold text-slate-800">💡 Important Notice:</p>
               <p>• Wallet balance is debited immediately upon submitting request.</p>
               <p>• If Admin rejects your request, the amount + charge is <b>100% refunded</b> back to your wallet instantly!</p>
             </div>
@@ -565,40 +563,40 @@ export const UserBillPaymentRequest: React.FC = () => {
       </div>
       ) : (
         /* SERVICE TEMPORARILY OFF NOTICE CARD */
-        <div className="bg-gradient-to-b from-slate-900/90 to-slate-950 border border-amber-500/30 rounded-3xl p-6 sm:p-8 text-center space-y-4 shadow-2xl backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-16 h-16 mx-auto rounded-3xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-lg shadow-amber-950/40">
+        <div className="bg-amber-50/60 border border-amber-200 rounded-3xl p-6 sm:p-8 text-center space-y-4 shadow-sm animate-in fade-in duration-300">
+          <div className="w-16 h-16 mx-auto rounded-3xl bg-amber-100 border border-amber-200 flex items-center justify-center text-amber-700 shadow-xs">
             <AlertTriangle className="w-8 h-8" />
           </div>
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-black uppercase tracking-wider">
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-100 border border-amber-200 text-amber-800 text-xs font-black uppercase tracking-wider">
+              <span className="w-2 h-2 rounded-full bg-amber-500"></span>
               Service Temporarily Off
             </div>
-            <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+            <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
               Credit Card Bill Payment Service is Temporarily Off
             </h3>
-            <p className="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-600 max-w-lg mx-auto leading-relaxed">
               New bill payment request submissions and service charge slab calculations are currently disabled by the administrator. Please check back later or contact support.
             </p>
           </div>
           <div className="pt-2 text-[11px] font-semibold text-slate-500 flex items-center justify-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-indigo-400" />
+            <Clock className="w-3.5 h-3.5 text-indigo-600" />
             <span>You can view and track your previous bill payment requests history below.</span>
           </div>
         </div>
       )}
 
       {/* RECENT REQUESTS TABLE */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl space-y-4 p-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+      <div className="bg-white border border-slate-200/90 rounded-3xl overflow-hidden shadow-sm space-y-4 p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
           <div>
-            <h3 className="text-sm font-black text-white flex items-center gap-2">
-              <Clock className="w-4 h-4 text-indigo-400" /> My Bill Payment Requests History
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-300">
+            <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-indigo-600" /> My Bill Payment Requests History
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700">
                 {filteredRequests.length}{filteredRequests.length !== requests.length ? ` / ${requests.length}` : ''}
               </span>
             </h3>
-            <p className="text-[11px] text-slate-400 mt-0.5">
+            <p className="text-[11px] text-slate-500 mt-0.5">
               Filter by date range, request status, or customer name
             </p>
           </div>
@@ -608,7 +606,7 @@ export const UserBillPaymentRequest: React.FC = () => {
               <button
                 type="button"
                 onClick={handleClearFilters}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-rose-300 hover:text-rose-200 border border-rose-500/30 text-xs font-semibold transition"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold transition cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 Clear Filters
@@ -618,7 +616,7 @@ export const UserBillPaymentRequest: React.FC = () => {
             <button
               onClick={() => loadData(true)}
               disabled={loading}
-              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white transition"
+              className="p-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition cursor-pointer shadow-xs"
               title="Refresh requests"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -630,19 +628,19 @@ export const UserBillPaymentRequest: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Search */}
           <div className="relative flex-1 min-w-[200px]">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               placeholder="Search customer, card, bank..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-8 py-2 text-xs font-medium text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
+              className="w-full bg-white border border-slate-300 rounded-xl pl-9 pr-8 py-2 text-xs font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -650,67 +648,67 @@ export const UserBillPaymentRequest: React.FC = () => {
           </div>
 
           {/* Date Range Dropdown */}
-          <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs">
-            <Calendar className="w-4 h-4 text-indigo-400 shrink-0" />
+          <div className="flex items-center gap-1.5 bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs">
+            <Calendar className="w-4 h-4 text-indigo-600 shrink-0" />
             <select
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value as any)}
-              className="bg-transparent text-slate-200 text-xs focus:outline-none cursor-pointer pr-2 font-medium"
+              className="bg-transparent text-slate-800 text-xs focus:outline-none cursor-pointer pr-2 font-medium"
             >
-              <option value="ALL" className="bg-slate-900 text-slate-200">All Time</option>
-              <option value="TODAY" className="bg-slate-900 text-slate-200">Today</option>
-              <option value="YESTERDAY" className="bg-slate-900 text-slate-200">Yesterday</option>
-              <option value="LAST_7_DAYS" className="bg-slate-900 text-slate-200">Last 7 Days</option>
-              <option value="LAST_30_DAYS" className="bg-slate-900 text-slate-200">Last 30 Days</option>
-              <option value="THIS_MONTH" className="bg-slate-900 text-slate-200">This Month</option>
-              <option value="CUSTOM" className="bg-slate-900 text-slate-200">Custom Range</option>
+              <option value="ALL">All Time</option>
+              <option value="TODAY">Today</option>
+              <option value="YESTERDAY">Yesterday</option>
+              <option value="LAST_7_DAYS">Last 7 Days</option>
+              <option value="LAST_30_DAYS">Last 30 Days</option>
+              <option value="THIS_MONTH">This Month</option>
+              <option value="CUSTOM">Custom Range</option>
             </select>
           </div>
 
           {/* Custom Date Pickers */}
           {dateFilter === 'CUSTOM' && (
-            <div className="flex items-center gap-2 bg-slate-950 border border-indigo-500/40 rounded-xl px-3 py-1.5 text-xs">
-              <span className="text-[11px] text-slate-400 font-medium">From:</span>
+            <div className="flex items-center gap-2 bg-slate-50 border border-indigo-200 rounded-xl px-3 py-1.5 text-xs">
+              <span className="text-[11px] text-slate-600 font-medium">From:</span>
               <input
                 type="date"
                 value={customStartDate}
                 onChange={(e) => setCustomStartDate(e.target.value)}
-                className="bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-indigo-400 font-mono"
+                className="bg-white border border-slate-300 text-slate-800 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-indigo-600 font-mono"
               />
-              <span className="text-[11px] text-slate-400 font-medium">To:</span>
+              <span className="text-[11px] text-slate-600 font-medium">To:</span>
               <input
                 type="date"
                 value={customEndDate}
                 onChange={(e) => setCustomEndDate(e.target.value)}
-                className="bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-indigo-400 font-mono"
+                className="bg-white border border-slate-300 text-slate-800 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-indigo-600 font-mono"
               />
             </div>
           )}
 
           {/* Status Dropdown */}
-          <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs">
+          <div className="flex items-center gap-1.5 bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs">
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as any)}
-              className="bg-transparent text-slate-200 text-xs focus:outline-none cursor-pointer font-medium"
+              className="bg-transparent text-slate-800 text-xs focus:outline-none cursor-pointer font-medium"
             >
-              <option value="all" className="bg-slate-900 text-slate-200">All Requests ({requests.length})</option>
-              <option value="pending" className="bg-slate-900 text-slate-200">Pending ({pendingCount})</option>
-              <option value="approved" className="bg-slate-900 text-slate-200">Approved ({approvedCount})</option>
-              <option value="rejected" className="bg-slate-900 text-slate-200">Reject ({rejectedCount})</option>
+              <option value="all">All Requests ({requests.length})</option>
+              <option value="pending">Pending ({pendingCount})</option>
+              <option value="approved">Approved ({approvedCount})</option>
+              <option value="rejected">Reject ({rejectedCount})</option>
             </select>
           </div>
         </div>
 
         {loading ? (
-          <div className="p-8 text-center text-slate-400 text-xs">Loading request history...</div>
+          <div className="p-8 text-center text-slate-500 text-xs">Loading request history...</div>
         ) : filteredRequests.length === 0 ? (
           <div className="p-8 text-center text-slate-500 text-xs">No matching bill payment requests found.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="bg-slate-950/80 border-b border-slate-800 text-[10px] uppercase tracking-wider font-extrabold text-slate-400">
+                <tr className="bg-slate-50 border-b border-slate-200 text-[10px] uppercase tracking-wider font-extrabold text-slate-600">
                   <th className="py-3 px-4">Date & Time</th>
                   <th className="py-3 px-4">Customer & Card</th>
                   <th className="py-3 px-4">Customer Mobile</th>
@@ -721,20 +719,20 @@ export const UserBillPaymentRequest: React.FC = () => {
                   <th className="py-3 px-4 text-center">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className="divide-y divide-slate-100">
                 {filteredRequests.map(req => (
-                  <tr key={req.id} className="hover:bg-slate-800/40 transition">
+                  <tr key={req.id} className="hover:bg-slate-50 transition">
                     <td className="py-3.5 px-4 whitespace-nowrap">
                       {req.created_at ? (
                         <div className="flex flex-col font-mono text-[11px]">
-                          <span className="font-bold text-slate-200">
+                          <span className="font-bold text-slate-800">
                             {new Date(req.created_at).toLocaleDateString('en-IN', {
                               day: '2-digit',
                               month: 'short',
                               year: 'numeric'
                             })}
                           </span>
-                          <span className="text-[10px] text-slate-400">
+                          <span className="text-[10px] text-slate-500">
                             {new Date(req.created_at).toLocaleTimeString('en-IN', {
                               hour: '2-digit',
                               minute: '2-digit',
@@ -744,13 +742,13 @@ export const UserBillPaymentRequest: React.FC = () => {
                           </span>
                         </div>
                       ) : (
-                        <span className="text-slate-500 font-mono text-xs">N/A</span>
+                        <span className="text-slate-400 font-mono text-xs">N/A</span>
                       )}
                     </td>
 
                     <td className="py-3.5 px-4">
-                      <p className="font-bold text-white">{req.customer_name}</p>
-                      <p className="text-[11px] font-mono text-indigo-400">
+                      <p className="font-bold text-slate-900">{req.customer_name}</p>
+                      <p className="text-[11px] font-mono text-indigo-600 font-semibold">
                         XXXX-XXXX-XXXX-{req.card_number.slice(-4)}
                       </p>
                     </td>
@@ -758,38 +756,38 @@ export const UserBillPaymentRequest: React.FC = () => {
                     {/* Customer Mobile */}
                     <td className="py-3.5 px-4 whitespace-nowrap">
                       {req.mobile_number ? (
-                        <div className="flex items-center gap-1.5 font-mono text-xs text-slate-200 font-semibold">
-                          <Phone className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                        <div className="flex items-center gap-1.5 font-mono text-xs text-slate-700 font-semibold">
+                          <Phone className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
                           <span>+91 {req.mobile_number}</span>
                         </div>
                       ) : (
-                        <span className="text-slate-500 font-mono text-xs">N/A</span>
+                        <span className="text-slate-400 font-mono text-xs">N/A</span>
                       )}
                     </td>
 
-                    <td className="py-3.5 px-4 font-semibold text-slate-300">
+                    <td className="py-3.5 px-4 font-semibold text-slate-700">
                       {req.bank_name}
                     </td>
 
-                    <td className="py-3.5 px-4 font-black text-white">
+                    <td className="py-3.5 px-4 font-black text-slate-900">
                       ₹{Number(req.amount).toLocaleString('en-IN')}
                     </td>
 
-                    <td className="py-3.5 px-4 font-bold text-amber-400">
+                    <td className="py-3.5 px-4 font-bold text-amber-600">
                       ₹{req.service_charge}
                     </td>
 
-                    <td className="py-3.5 px-4 font-black text-emerald-400">
+                    <td className="py-3.5 px-4 font-black text-emerald-600">
                       ₹{Number(req.total_amount).toLocaleString('en-IN')}
                     </td>
 
                     <td className="py-3.5 px-4 text-center">
                       <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase border inline-flex items-center gap-1 ${
                         req.status === 'approved'
-                          ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                           : req.status === 'rejected'
-                          ? 'bg-rose-500/10 text-rose-300 border-rose-500/30'
-                          : 'bg-amber-500/10 text-amber-300 border-amber-500/30'
+                          ? 'bg-rose-50 text-rose-700 border-rose-200'
+                          : 'bg-amber-50 text-amber-700 border-amber-200'
                       }`}>
                         {req.status === 'approved' && <CheckCircle2 className="w-3 h-3" />}
                         {req.status === 'rejected' && <XCircle className="w-3 h-3" />}
@@ -797,7 +795,7 @@ export const UserBillPaymentRequest: React.FC = () => {
                         <span>{req.status}</span>
                       </span>
                       {req.status === 'rejected' && req.rejection_reason && (
-                        <p className="text-[9px] text-rose-400 mt-1 max-w-[140px] truncate mx-auto">
+                        <p className="text-[9px] text-rose-600 mt-1 max-w-[140px] truncate mx-auto">
                           Reason: {req.rejection_reason}
                         </p>
                       )}

@@ -302,141 +302,142 @@ export const BillSubmissionsManagement: React.FC = () => {
       </div>
 
       {/* KPI Counters */}
+      {/* Summary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <div
           onClick={() => setActiveStatusTab('pending')}
-          className={`p-4 rounded-2xl border cursor-pointer transition-all ${
+          className={`p-4 rounded-2xl border cursor-pointer transition-all shadow-xs ${
             activeStatusTab === 'pending'
-              ? 'bg-amber-950/40 border-amber-500/50 shadow-lg shadow-amber-950/20'
-              : 'bg-slate-900/60 border-slate-800 hover:border-amber-500/30'
+              ? 'bg-amber-50 border-amber-300 ring-2 ring-amber-400'
+              : 'bg-white border-slate-200 hover:border-amber-300'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">Pending</span>
-            <Clock className="w-5 h-5 text-amber-400" />
+            <span className="text-xs font-bold text-amber-700 uppercase tracking-wider">Pending</span>
+            <Clock className="w-5 h-5 text-amber-600" />
           </div>
-          <p className="text-3xl font-black text-white mt-2">{counts.pending}</p>
-          <p className="text-[10px] text-amber-400/80 mt-1">Requires Claim / Action</p>
+          <p className="text-3xl font-black text-slate-900 mt-2 font-mono">{counts.pending}</p>
+          <p className="text-[10px] text-amber-700 font-medium mt-1">Requires Claim / Action</p>
         </div>
 
         <div
           onClick={() => setActiveStatusTab('processing')}
-          className={`p-4 rounded-2xl border cursor-pointer transition-all ${
+          className={`p-4 rounded-2xl border cursor-pointer transition-all shadow-xs ${
             activeStatusTab === 'processing'
-              ? 'bg-indigo-950/40 border-indigo-500/50 shadow-lg shadow-indigo-950/20'
-              : 'bg-slate-900/60 border-slate-800 hover:border-indigo-500/30'
+              ? 'bg-indigo-50 border-indigo-300 ring-2 ring-indigo-400'
+              : 'bg-white border-slate-200 hover:border-indigo-300'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Processing (Locked)</span>
-            <Lock className="w-5 h-5 text-indigo-400" />
+            <span className="text-xs font-bold text-indigo-700 uppercase tracking-wider">Processing (Locked)</span>
+            <Lock className="w-5 h-5 text-indigo-600" />
           </div>
-          <p className="text-3xl font-black text-white mt-2">{counts.processing}</p>
-          <p className="text-[10px] text-indigo-400/80 mt-1">Under Board Clearance</p>
+          <p className="text-3xl font-black text-slate-900 mt-2 font-mono">{counts.processing}</p>
+          <p className="text-[10px] text-indigo-700 font-medium mt-1">Under Board Clearance</p>
         </div>
 
         <div
           onClick={() => setActiveStatusTab('approved')}
-          className={`p-4 rounded-2xl border cursor-pointer transition-all ${
+          className={`p-4 rounded-2xl border cursor-pointer transition-all shadow-xs ${
             activeStatusTab === 'approved'
-              ? 'bg-emerald-950/40 border-emerald-500/50 shadow-lg shadow-emerald-950/20'
-              : 'bg-slate-900/60 border-slate-800 hover:border-emerald-500/30'
+              ? 'bg-emerald-50 border-emerald-300 ring-2 ring-emerald-400'
+              : 'bg-white border-slate-200 hover:border-emerald-300'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Approved</span>
-            <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+            <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">Approved</span>
+            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
           </div>
-          <p className="text-3xl font-black text-white mt-2">{counts.approved}</p>
-          <p className="text-[10px] text-emerald-400/80 mt-1">Settled with Operator Ref</p>
+          <p className="text-3xl font-black text-slate-900 mt-2 font-mono">{counts.approved}</p>
+          <p className="text-[10px] text-emerald-700 font-medium mt-1">Settled with Operator Ref</p>
         </div>
 
         <div
           onClick={() => setActiveStatusTab('rejected')}
-          className={`p-4 rounded-2xl border cursor-pointer transition-all ${
+          className={`p-4 rounded-2xl border cursor-pointer transition-all shadow-xs ${
             activeStatusTab === 'rejected'
-              ? 'bg-rose-950/40 border-rose-500/50 shadow-lg shadow-rose-950/20'
-              : 'bg-slate-900/60 border-slate-800 hover:border-rose-500/30'
+              ? 'bg-rose-50 border-rose-300 ring-2 ring-rose-400'
+              : 'bg-white border-slate-200 hover:border-rose-300'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-rose-400 uppercase tracking-wider">Rejected & Refunded</span>
-            <XCircle className="w-5 h-5 text-rose-400" />
+            <span className="text-xs font-bold text-rose-700 uppercase tracking-wider">Rejected & Refunded</span>
+            <XCircle className="w-5 h-5 text-rose-600" />
           </div>
-          <p className="text-3xl font-black text-white mt-2">{counts.rejected}</p>
-          <p className="text-[10px] text-rose-400/80 mt-1">Wallet Refund Executed</p>
+          <p className="text-3xl font-black text-slate-900 mt-2 font-mono">{counts.rejected}</p>
+          <p className="text-[10px] text-rose-700 font-medium mt-1">Wallet Refund Executed</p>
         </div>
 
         <div
           onClick={() => setActiveStatusTab('all')}
-          className={`p-4 rounded-2xl border cursor-pointer transition-all ${
+          className={`p-4 rounded-2xl border cursor-pointer transition-all shadow-xs ${
             activeStatusTab === 'all'
-              ? 'bg-purple-950/40 border-purple-500/50 shadow-lg shadow-purple-950/20'
-              : 'bg-slate-900/60 border-slate-800 hover:border-purple-500/30'
+              ? 'bg-purple-50 border-purple-300 ring-2 ring-purple-400'
+              : 'bg-white border-slate-200 hover:border-purple-300'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-purple-400 uppercase tracking-wider">Total Bills</span>
-            <DollarSign className="w-5 h-5 text-purple-400" />
+            <span className="text-xs font-bold text-purple-700 uppercase tracking-wider">Total Bills</span>
+            <DollarSign className="w-5 h-5 text-purple-600" />
           </div>
-          <p className="text-3xl font-black text-white mt-2">{counts.total}</p>
-          <p className="text-[10px] text-purple-400/80 mt-1">All Offline Submissions</p>
+          <p className="text-3xl font-black text-slate-900 mt-2 font-mono">{counts.total}</p>
+          <p className="text-[10px] text-purple-700 font-medium mt-1">All Offline Submissions</p>
         </div>
       </div>
 
       {/* Filter Toolbar */}
-      <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl space-y-4">
+      <div className="bg-white border border-slate-200 p-4 rounded-2xl space-y-4 shadow-xs">
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
           {/* Status Tabs */}
-          <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 self-start overflow-x-auto">
+          <div className="flex items-center bg-slate-50 p-1 rounded-xl border border-slate-200 self-start overflow-x-auto">
             <button
               onClick={() => setActiveStatusTab('pending')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
-                activeStatusTab === 'pending' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                activeStatusTab === 'pending' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <span>Pending</span>
-              <span className="px-1.5 py-0.2 rounded bg-slate-900 text-amber-300 text-[10px] font-black">{counts.pending}</span>
+              <span className="px-1.5 py-0.2 rounded bg-amber-600 text-white text-[10px] font-black">{counts.pending}</span>
             </button>
 
             <button
               onClick={() => setActiveStatusTab('processing')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
-                activeStatusTab === 'processing' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                activeStatusTab === 'processing' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <span>Processing</span>
-              <span className="px-1.5 py-0.2 rounded bg-slate-950 text-indigo-300 text-[10px] font-black">{counts.processing}</span>
+              <span className="px-1.5 py-0.2 rounded bg-indigo-700 text-white text-[10px] font-black">{counts.processing}</span>
             </button>
 
             <button
               onClick={() => setActiveStatusTab('approved')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
-                activeStatusTab === 'approved' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white'
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                activeStatusTab === 'approved' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <span>Approved</span>
-              <span className="px-1.5 py-0.2 rounded bg-slate-900 text-emerald-300 text-[10px] font-black">{counts.approved}</span>
+              <span className="px-1.5 py-0.2 rounded bg-emerald-700 text-white text-[10px] font-black">{counts.approved}</span>
             </button>
 
             <button
               onClick={() => setActiveStatusTab('rejected')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
-                activeStatusTab === 'rejected' ? 'bg-rose-500 text-white' : 'text-slate-400 hover:text-white'
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                activeStatusTab === 'rejected' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <span>Rejected</span>
-              <span className="px-1.5 py-0.2 rounded bg-slate-950 text-rose-300 text-[10px] font-black">{counts.rejected}</span>
+              <span className="px-1.5 py-0.2 rounded bg-rose-700 text-white text-[10px] font-black">{counts.rejected}</span>
             </button>
 
             <button
               onClick={() => setActiveStatusTab('all')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
-                activeStatusTab === 'all' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white'
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                activeStatusTab === 'all' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <span>All Bills</span>
-              <span className="px-1.5 py-0.2 rounded bg-slate-950 text-purple-300 text-[10px] font-black">{counts.total}</span>
+              <span className="px-1.5 py-0.2 rounded bg-purple-700 text-white text-[10px] font-black">{counts.total}</span>
             </button>
           </div>
 
@@ -445,7 +446,7 @@ export const BillSubmissionsManagement: React.FC = () => {
             <select
               value={serviceFilter}
               onChange={(e) => setServiceFilter(e.target.value)}
-              className="bg-slate-950 border border-slate-800 text-xs text-slate-200 font-medium px-3 py-2 rounded-xl focus:outline-none focus:border-indigo-500"
+              className="bg-slate-50 border border-slate-200 text-xs text-slate-700 font-semibold px-3 py-2 rounded-xl focus:outline-none focus:bg-white focus:border-indigo-600"
             >
               <option value="ALL">All Services</option>
               <option value="Electricity">Electricity</option>
@@ -462,7 +463,7 @@ export const BillSubmissionsManagement: React.FC = () => {
                 placeholder="Search Consumer #, Name, Mobile, Operator Ref..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition"
               />
             </div>
           </div>
@@ -470,23 +471,23 @@ export const BillSubmissionsManagement: React.FC = () => {
       </div>
 
       {/* Main Bills Submissions Table */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
         {loading ? (
-          <div className="p-16 text-center text-slate-400 flex flex-col items-center justify-center">
-            <RefreshCw className="w-8 h-8 text-indigo-500 animate-spin mb-3" />
-            <p className="text-sm font-medium">Loading bill submissions...</p>
+          <div className="p-16 text-center text-slate-500 flex flex-col items-center justify-center">
+            <RefreshCw className="w-8 h-8 text-indigo-600 animate-spin mb-3" />
+            <p className="text-sm font-bold text-slate-800">Loading bill submissions...</p>
           </div>
         ) : bills.length === 0 ? (
           <div className="p-16 text-center text-slate-400 flex flex-col items-center justify-center">
-            <FileText className="w-10 h-10 text-slate-500 mb-3" />
-            <p className="text-base font-bold text-white">No bill submissions found</p>
+            <FileText className="w-10 h-10 text-slate-300 mb-3" />
+            <p className="text-base font-bold text-slate-900">No bill submissions found</p>
             <p className="text-xs text-slate-500 mt-1">There are no bill records matching your filter selection.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-950/80 border-b border-slate-800 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                   <th className="py-3.5 px-4">Service & Provider</th>
                   <th className="py-3.5 px-4">Consumer Account Details</th>
                   <th className="py-3.5 px-4">Retailer Agent</th>
@@ -496,27 +497,27 @@ export const BillSubmissionsManagement: React.FC = () => {
                   <th className="py-3.5 px-4 text-right">Actions & Clearance</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 text-xs text-slate-300">
+              <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
                 {bills.map((bill) => {
                   const elapsedMins = getElapsedMinutes(bill.created_at);
                   const isDelayed = bill.status === 'pending' && elapsedMins >= 30;
 
                   return (
-                    <tr key={bill.id} className={`hover:bg-slate-800/40 transition-colors ${
-                      isDelayed ? 'bg-amber-950/20 border-l-4 border-l-amber-500' : ''
+                    <tr key={bill.id} className={`hover:bg-slate-50/80 transition-colors ${
+                      isDelayed ? 'bg-amber-50/50 border-l-4 border-l-amber-500' : ''
                     }`}>
                       {/* Service & Provider */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-2">
                           {getServiceBadge(bill.service_type)}
                         </div>
-                        <p className="font-bold text-white mt-1">{bill.provider}</p>
+                        <p className="font-bold text-slate-900 mt-1">{bill.provider}</p>
                         {bill.bill_proof_url && (
                           <a
                             href={bill.bill_proof_url}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-1 text-[10px] text-indigo-400 hover:underline mt-0.5"
+                            className="inline-flex items-center gap-1 text-[10px] text-indigo-600 hover:underline mt-0.5 font-bold cursor-pointer"
                           >
                             <ExternalLink className="w-3 h-3" /> View Uploaded Bill PDF
                           </a>
@@ -525,25 +526,25 @@ export const BillSubmissionsManagement: React.FC = () => {
 
                       {/* Consumer Account Details */}
                       <td className="py-3.5 px-4">
-                        <div className="font-mono font-bold text-indigo-300 text-xs bg-slate-950 px-2 py-0.5 rounded border border-slate-800 w-fit">
+                        <div className="font-mono font-bold text-indigo-700 text-xs bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 w-fit">
                           {bill.consumer_number}
                         </div>
                         {bill.customer_name && (
-                          <p className="text-xs text-slate-200 mt-1 flex items-center gap-1">
+                          <p className="text-xs text-slate-800 font-semibold mt-1 flex items-center gap-1">
                             <User className="w-3 h-3 text-slate-400" /> {bill.customer_name}
                           </p>
                         )}
                         {bill.customer_mobile && (
-                          <p className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
-                            <Phone className="w-3 h-3 text-slate-500" /> {bill.customer_mobile}
+                          <p className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5 font-mono">
+                            <Phone className="w-3 h-3 text-slate-400" /> {bill.customer_mobile}
                           </p>
                         )}
                       </td>
 
                       {/* Retailer Agent */}
                       <td className="py-3.5 px-4">
-                        <p className="font-bold text-white">{bill.user_name || bill.user_id}</p>
-                        <p className="text-[11px] text-slate-400">{bill.mobile_number || ''}</p>
+                        <p className="font-bold text-slate-900">{bill.user_name || bill.user_id}</p>
+                        <p className="text-[11px] text-slate-500 font-mono">{bill.mobile_number || ''}</p>
                         {bill.firm_name && (
                           <p className="text-[10px] text-slate-500 truncate max-w-[140px]">{bill.firm_name}</p>
                         )}
@@ -551,7 +552,7 @@ export const BillSubmissionsManagement: React.FC = () => {
 
                       {/* Amount Debited */}
                       <td className="py-3.5 px-4">
-                        <p className="text-sm font-black text-emerald-400">
+                        <p className="text-sm font-black text-emerald-700 font-mono">
                           ₹{Number(bill.total_debited).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                         </p>
                         <p className="text-[10px] text-slate-500">
@@ -562,16 +563,16 @@ export const BillSubmissionsManagement: React.FC = () => {
                       {/* Elapsed Time & Alert */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-1.5">
-                          <Clock className={`w-3.5 h-3.5 ${isDelayed ? 'text-amber-400 animate-bounce' : 'text-slate-400'}`} />
+                          <Clock className={`w-3.5 h-3.5 ${isDelayed ? 'text-amber-500 animate-bounce' : 'text-slate-400'}`} />
                           <span className={`font-mono text-xs font-bold ${
-                            isDelayed ? 'text-amber-400' : 'text-slate-300'
+                            isDelayed ? 'text-amber-700' : 'text-slate-600'
                           }`}>
                             {elapsedMins} mins ago
                           </span>
                         </div>
                         {isDelayed && (
-                          <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30 mt-1">
-                            <AlertTriangle className="w-3 h-3 text-amber-400" /> &gt;30m Delayed
+                          <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 mt-1 shadow-2xs">
+                            <AlertTriangle className="w-3 h-3 text-amber-600" /> &gt;30m Delayed
                           </span>
                         )}
                       </td>
@@ -579,35 +580,35 @@ export const BillSubmissionsManagement: React.FC = () => {
                       {/* Status & Operator Ref */}
                       <td className="py-3.5 px-4">
                         {bill.status === 'pending' && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
-                            <Clock className="w-3 h-3" /> Pending Review
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200 shadow-2xs">
+                            <Clock className="w-3 h-3 text-amber-600" /> Pending Review
                           </span>
                         )}
                         {bill.status === 'processing' && (
                           <div>
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/30">
-                              <Lock className="w-3 h-3 text-indigo-400" /> Processing (Locked)
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs">
+                              <Lock className="w-3 h-3 text-indigo-600" /> Processing (Locked)
                             </span>
-                            <p className="text-[10px] text-slate-400 mt-0.5">By {bill.claimed_by || 'Admin'}</p>
+                            <p className="text-[10px] text-slate-500 mt-0.5">By {bill.claimed_by || 'Admin'}</p>
                           </div>
                         )}
                         {bill.status === 'approved' && (
                           <div>
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                              <CheckCircle2 className="w-3 h-3" /> Approved
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Approved
                             </span>
                             {bill.operator_ref && (
-                              <p className="text-[11px] font-mono text-indigo-300 mt-0.5">Ref: {bill.operator_ref}</p>
+                              <p className="text-[11px] font-mono font-bold text-indigo-700 mt-0.5">Ref: {bill.operator_ref}</p>
                             )}
                           </div>
                         )}
                         {bill.status === 'rejected' && (
                           <div>
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30">
-                              <XCircle className="w-3 h-3" /> Rejected (Refunded)
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200 shadow-2xs">
+                              <XCircle className="w-3 h-3 text-rose-600" /> Rejected (Refunded)
                             </span>
                             {bill.rejection_reason && (
-                              <p className="text-[10px] text-rose-400/90 italic mt-0.5 truncate max-w-[130px]" title={bill.rejection_reason}>
+                              <p className="text-[10px] text-rose-700 italic mt-0.5 truncate max-w-[130px] font-medium" title={bill.rejection_reason}>
                                 "{bill.rejection_reason}"
                               </p>
                             )}
@@ -622,7 +623,7 @@ export const BillSubmissionsManagement: React.FC = () => {
                             <button
                               onClick={() => handleClaimBill(bill.id)}
                               disabled={processingId === bill.id}
-                              className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow inline-flex items-center gap-1"
+                              className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white border border-indigo-200 text-xs font-bold rounded-xl shadow-2xs inline-flex items-center gap-1 transition cursor-pointer"
                               title="Lock bill to prevent duplicate processing by other admins"
                             >
                               <Lock className="w-3 h-3" />
@@ -635,7 +636,7 @@ export const BillSubmissionsManagement: React.FC = () => {
                               <button
                                 onClick={() => setApproveBillItem(bill)}
                                 disabled={processingId === bill.id}
-                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow inline-flex items-center gap-1"
+                                className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200 text-xs font-bold rounded-xl shadow-2xs inline-flex items-center gap-1 transition cursor-pointer"
                               >
                                 <Check className="w-3 h-3" />
                                 <span>Approve</span>
@@ -644,7 +645,7 @@ export const BillSubmissionsManagement: React.FC = () => {
                               <button
                                 onClick={() => setRejectBillItem(bill)}
                                 disabled={processingId === bill.id}
-                                className="px-2.5 py-1 bg-slate-800 hover:bg-rose-950 hover:text-rose-400 border border-slate-700 text-slate-300 text-xs font-bold rounded-xl inline-flex items-center gap-1"
+                                className="px-2.5 py-1 bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 text-xs font-bold rounded-xl inline-flex items-center gap-1 transition cursor-pointer"
                               >
                                 <X className="w-3 h-3" />
                                 <span>Reject & Refund</span>
@@ -654,10 +655,10 @@ export const BillSubmissionsManagement: React.FC = () => {
 
                           <button
                             onClick={() => setReceiptBill(bill)}
-                            className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl"
+                            className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-200 rounded-xl transition cursor-pointer"
                             title="View E-Receipt & Print"
                           >
-                            <Printer className="w-3.5 h-3.5 text-indigo-400" />
+                            <Printer className="w-3.5 h-3.5 text-indigo-600" />
                           </button>
                         </div>
                       </td>
@@ -672,29 +673,29 @@ export const BillSubmissionsManagement: React.FC = () => {
 
       {/* APPROVE BILL MODAL */}
       {approveBillItem && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl">
+                <div className="p-2 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-xl shadow-2xs">
                   <CheckCircle2 className="w-5 h-5" />
                 </div>
-                <h3 className="text-lg font-bold text-white">Approve Bill Settlement</h3>
+                <h3 className="text-lg font-black text-slate-900">Approve Bill Settlement</h3>
               </div>
-              <button onClick={() => setApproveBillItem(null)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setApproveBillItem(null)} className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 text-xs text-slate-300 space-y-1">
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-700 space-y-1">
               <p><strong>Service:</strong> {approveBillItem.service_type} ({approveBillItem.provider})</p>
-              <p><strong>Consumer #:</strong> <span className="font-mono text-indigo-300 font-bold">{approveBillItem.consumer_number}</span></p>
+              <p><strong>Consumer #:</strong> <span className="font-mono text-indigo-700 font-bold">{approveBillItem.consumer_number}</span></p>
               <p><strong>Amount Debited:</strong> ₹{Number(approveBillItem.total_debited).toLocaleString('en-IN')}</p>
             </div>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-bold text-slate-700 mb-1">
                   Operator / BBPS Reference Number *
                 </label>
                 <input
@@ -703,12 +704,12 @@ export const BillSubmissionsManagement: React.FC = () => {
                   placeholder="e.g. BBPS908129384710"
                   value={operatorRef}
                   onChange={(e) => setOperatorRef(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-xl p-3 font-mono focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs rounded-xl p-3 font-mono focus:outline-none focus:bg-white focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-bold text-slate-700 mb-1">
                   Payment Receipt URL (Optional Proof)
                 </label>
                 <input
@@ -716,7 +717,7 @@ export const BillSubmissionsManagement: React.FC = () => {
                   placeholder="https://..."
                   value={receiptProofUrl}
                   onChange={(e) => setReceiptProofUrl(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-xl p-3 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs rounded-xl p-3 focus:outline-none focus:bg-white focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition"
                 />
               </div>
             </div>
@@ -724,14 +725,14 @@ export const BillSubmissionsManagement: React.FC = () => {
             <div className="flex gap-3 pt-2">
               <button
                 onClick={() => setApproveBillItem(null)}
-                className="w-1/2 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl"
+                className="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmApprove}
                 disabled={processingId === approveBillItem.id || !operatorRef.trim()}
-                className="w-1/2 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-emerald-950/50"
+                className="w-1/2 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition cursor-pointer disabled:opacity-50"
               >
                 Approve & Mark Settled
               </button>
@@ -742,34 +743,34 @@ export const BillSubmissionsManagement: React.FC = () => {
 
       {/* REJECT BILL MODAL (AUTOMATIC ATOMIC REFUND) */}
       {rejectBillItem && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="p-2 bg-rose-500/10 text-rose-400 rounded-xl">
+                <div className="p-2 bg-rose-50 text-rose-600 border border-rose-200 rounded-xl shadow-2xs">
                   <XCircle className="w-5 h-5" />
                 </div>
-                <h3 className="text-lg font-bold text-white">Reject Bill & Execute Refund</h3>
+                <h3 className="text-lg font-black text-slate-900">Reject Bill & Execute Refund</h3>
               </div>
-              <button onClick={() => setRejectBillItem(null)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setRejectBillItem(null)} className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-3 bg-rose-950/30 border border-rose-900/40 rounded-xl text-xs text-rose-300 space-y-1">
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 space-y-1">
               <p><strong>Consumer #:</strong> {rejectBillItem.consumer_number}</p>
               <p><strong>Retailer Agent:</strong> {rejectBillItem.user_name || rejectBillItem.user_id}</p>
-              <p className="font-bold text-rose-200">
+              <p className="font-bold text-rose-900">
                 Automatic Refund Amount: ₹{Number(rejectBillItem.total_debited).toLocaleString('en-IN')}
               </p>
             </div>
 
             <div className="space-y-3">
-              <label className="block text-xs font-semibold text-slate-300">Select Rejection Reason:</label>
+              <label className="block text-xs font-bold text-slate-700">Select Rejection Reason:</label>
               <select
                 value={rejectionReasonSelect}
                 onChange={(e) => setRejectionReasonSelect(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-xl p-3 focus:outline-none focus:border-rose-500"
+                className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs rounded-xl p-3 focus:outline-none focus:bg-white focus:border-rose-600 transition"
               >
                 <option value="Invalid Consumer Number">Invalid Consumer Account Number</option>
                 <option value="Consumer Account Blocked">Consumer Account Blocked / Disconnected</option>
@@ -784,7 +785,7 @@ export const BillSubmissionsManagement: React.FC = () => {
                   placeholder="Specify custom reason for retailer..."
                   value={customReason}
                   onChange={(e) => setCustomReason(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-xl p-3 h-20 focus:outline-none focus:border-rose-500"
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-xs rounded-xl p-3 h-20 focus:outline-none focus:bg-white focus:border-rose-600 transition"
                 />
               )}
             </div>
@@ -792,14 +793,14 @@ export const BillSubmissionsManagement: React.FC = () => {
             <div className="flex gap-3 pt-2">
               <button
                 onClick={() => setRejectBillItem(null)}
-                className="w-1/2 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl"
+                className="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmReject}
                 disabled={processingId === rejectBillItem.id}
-                className="w-1/2 py-2.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-rose-950/50"
+                className="w-1/2 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-sm transition cursor-pointer disabled:opacity-50"
               >
                 Confirm & Refund ₹{Number(rejectBillItem.total_debited).toFixed(0)}
               </button>

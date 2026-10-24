@@ -1,5 +1,5 @@
 export type QrStatus = 'Active' | 'Inactive' | 'Disabled';
-export type PaymentRequestStatus = 'pending' | 'approved' | 'rejected';
+export type PaymentRequestStatus = 'pending' | 'approved' | 'rejected' | 'reverted';
 
 export interface QrMaster {
   id: string;
@@ -32,10 +32,17 @@ export interface QrPaymentRequest {
   charge_percent: number;
   charge_amount: number;
   net_amount: number;
+  customer_mobile?: string;
+  payer_name?: string;
+  user_wallet_balance?: number;
   distributor_commission?: number;
   super_distributor_commission?: number;
   admin_commission?: number;
   rejection_reason?: string;
+  revert_reason?: string;
+  admin_note?: string;
+  reverted_at?: string;
+  reverted_by?: string;
   processed_at?: string;
   processed_by?: string;
   created_at: string;

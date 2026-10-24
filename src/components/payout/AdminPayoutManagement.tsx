@@ -474,9 +474,37 @@ export const AdminPayoutManagement: React.FC = () => {
     return true;
   });
 
-  const successTxnCount = transactions.filter(t => t.status === 'success').length;
-  const pendingTxnCount = transactions.filter(t => t.status === 'pending').length;
-  const failedTxnCount = transactions.filter(t => t.status === 'failed').length;
+  // Payout Transaction Metrics
+  const totalPayoutTxns = transactions.length;
+  const totalPayoutVolume = transactions.reduce(
+    (sum, t) => sum + (parseFloat(String(t.amount)) || 0),
+    0
+  );
+
+  const successTxns = transactions.filter(t => t.status === 'success');
+  const successTxnCount = successTxns.length;
+  const successPayoutVolume = successTxns.reduce(
+    (sum, t) => sum + (parseFloat(String(t.amount)) || 0),
+    0
+  );
+  const totalEarnedPayoutCharges = successTxns.reduce(
+    (sum, t) => sum + (parseFloat(String(t.slab_charge || 0)) || 0),
+    0
+  );
+
+  const pendingTxns = transactions.filter(t => t.status === 'pending');
+  const pendingTxnCount = pendingTxns.length;
+  const pendingPayoutVolume = pendingTxns.reduce(
+    (sum, t) => sum + (parseFloat(String(t.amount)) || 0),
+    0
+  );
+
+  const failedTxns = transactions.filter(t => t.status === 'failed');
+  const failedTxnCount = failedTxns.length;
+  const failedPayoutVolume = failedTxns.reduce(
+    (sum, t) => sum + (parseFloat(String(t.amount)) || 0),
+    0
+  );
 
   const isAnyVerifFilterActive = Boolean(
     verifSearchTerm.trim() ||
@@ -567,17 +595,17 @@ export const AdminPayoutManagement: React.FC = () => {
     <div className="space-y-6 w-full pb-10">
       
       {/* TOP HEADER WITH INSTANT PAYOUT TOGGLE SWITCH IN TOP RIGHT CORNER */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-4 sm:p-5 rounded-3xl shadow-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200/90 p-4 sm:p-5 rounded-2xl shadow-sm">
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
-            <div className="p-2.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+            <div className="p-2.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-600">
               <ArrowRightLeft className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-black text-white tracking-tight flex items-center gap-2">
+              <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
                 Payout Slabs & Dynamic Transactions Control
               </h2>
-              <p className="text-[11px] sm:text-xs text-slate-400">
+              <p className="text-[11px] sm:text-xs text-slate-500">
                 Manage dynamic commission/charge slabs and control User Portal Instant Payout menu & route access
               </p>
             </div>
@@ -585,20 +613,20 @@ export const AdminPayoutManagement: React.FC = () => {
         </div>
 
         {/* TOP RIGHT CORNER: TOGGLE SWITCH */}
-        <div className="flex items-center self-end sm:self-auto gap-3.5 bg-slate-950/80 border border-slate-800/80 px-4 py-3 rounded-2xl shadow-inner">
+        <div className="flex items-center self-end sm:self-auto gap-3.5 bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl shadow-inner">
           <div className="text-right">
             <div className="flex items-center gap-1.5 justify-end">
-              <ArrowRightLeft className={`w-3.5 h-3.5 ${instantPayoutEnabled ? 'text-emerald-400' : 'text-slate-500'}`} />
-              <span className="text-xs font-black text-white">Instant Payout Menu</span>
+              <ArrowRightLeft className={`w-3.5 h-3.5 ${instantPayoutEnabled ? 'text-emerald-600' : 'text-slate-400'}`} />
+              <span className="text-xs font-black text-slate-900">Instant Payout Menu</span>
               <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${
                 instantPayoutEnabled 
-                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' 
-                  : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                  : 'bg-rose-50 text-rose-700 border-rose-200'
               }`}>
                 {instantPayoutEnabled ? 'ACTIVE / VISIBLE' : 'OFF / BLOCKED'}
               </span>
             </div>
-            <p className="text-[10px] text-slate-400 mt-0.5">
+            <p className="text-[10px] text-slate-500 mt-0.5">
               {instantPayoutEnabled 
                 ? 'User panel menu is visible & route accessible' 
                 : 'User menu is hidden & route URL blocked'}
@@ -612,8 +640,8 @@ export const AdminPayoutManagement: React.FC = () => {
             aria-checked={instantPayoutEnabled}
             disabled={isTogglingPayout}
             onClick={handleTogglePayout}
-            className={`relative inline-flex h-8 w-14 shrink-0 cursor-pointer items-center rounded-full p-1 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900 shadow-inner ${
-              instantPayoutEnabled ? 'bg-emerald-600 justify-end' : 'bg-slate-800 justify-start'
+            className={`relative inline-flex h-8 w-14 shrink-0 cursor-pointer items-center rounded-full p-1 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 shadow-inner ${
+              instantPayoutEnabled ? 'bg-emerald-600 justify-end' : 'bg-slate-300 justify-start'
             } ${isTogglingPayout ? 'opacity-70 cursor-not-allowed' : ''}`}
             title={instantPayoutEnabled ? 'Click to Turn OFF Instant Payout on User Panel' : 'Click to Turn ON Instant Payout on User Panel'}
           >
@@ -634,16 +662,16 @@ export const AdminPayoutManagement: React.FC = () => {
 
       {/* FEEDBACK ALERT */}
       {toggleAlert && (
-        <div className={`flex items-center justify-between p-3.5 rounded-2xl border text-xs font-semibold animate-in slide-in-from-top-2 ${
+        <div className={`flex items-center justify-between p-3.5 rounded-xl border text-xs font-semibold animate-in slide-in-from-top-2 ${
           toggleAlert.type === 'success' 
-            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' 
-            : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+            ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+            : 'bg-rose-50 border-rose-200 text-rose-800'
         }`}>
           <div className="flex items-center gap-2.5">
             {toggleAlert.type === 'success' ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
             ) : (
-              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
             )}
             <span>{toggleAlert.message}</span>
           </div>
@@ -652,20 +680,20 @@ export const AdminPayoutManagement: React.FC = () => {
 
       {/* ACTION FEEDBACK ALERT */}
       {actionAlert && (
-        <div className={`flex items-center justify-between p-3.5 rounded-2xl border text-xs font-semibold animate-in slide-in-from-top-2 ${
+        <div className={`flex items-center justify-between p-3.5 rounded-xl border text-xs font-semibold animate-in slide-in-from-top-2 ${
           actionAlert.type === 'success' 
-            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' 
-            : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+            ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+            : 'bg-rose-50 border-rose-200 text-rose-800'
         }`}>
           <div className="flex items-center gap-2.5">
             {actionAlert.type === 'success' ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
             ) : (
-              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
             )}
             <span>{actionAlert.message}</span>
           </div>
-          <button onClick={() => setActionAlert(null)} className="text-slate-400 hover:text-white p-1 cursor-pointer">
+          <button onClick={() => setActionAlert(null)} className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -679,8 +707,8 @@ export const AdminPayoutManagement: React.FC = () => {
             onClick={() => setActiveTab('transactions')}
             className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === 'transactions'
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 shadow-sm'
             }`}
           >
             <Clock className="w-4 h-4" /> Payout Transactions ({transactions.length})
@@ -689,18 +717,18 @@ export const AdminPayoutManagement: React.FC = () => {
             onClick={() => setActiveTab('verifications')}
             className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === 'verifications'
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 shadow-sm'
             }`}
           >
-            <ShieldCheck className="w-4 h-4 text-emerald-400" /> Bank Verifications ({verifications.length})
+            <ShieldCheck className="w-4 h-4 text-emerald-600" /> Bank Verifications ({verifications.length})
           </button>
           <button
             onClick={() => setActiveTab('slabs')}
             className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === 'slabs'
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 shadow-sm'
             }`}
           >
             <Sliders className="w-4 h-4" /> Dynamic Slabs ({slabs.length})
@@ -712,7 +740,7 @@ export const AdminPayoutManagement: React.FC = () => {
           {activeTab === 'slabs' && (
             <button
               onClick={openAddSlabModal}
-              className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/30 transition-all cursor-pointer"
+              className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4" /> Create New Slab
             </button>
@@ -725,32 +753,32 @@ export const AdminPayoutManagement: React.FC = () => {
         <div className="space-y-6">
           
           {/* Main Slabs Table */}
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-              <h2 className="text-lg font-black text-white flex items-center gap-2">
-                <Layers className="w-5 h-5 text-indigo-400" /> Active Payout Charge Slabs
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-6 space-y-4 shadow-sm">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+              <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                <Layers className="w-5 h-5 text-indigo-600" /> Active Payout Charge Slabs
               </h2>
-              <span className="text-xs text-slate-400">
+              <span className="text-xs text-slate-500">
                 Applied automatically when user requests payout
               </span>
             </div>
 
             {slabsLoading ? (
-              <div className="py-16 text-center text-slate-400 text-xs">
-                <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-indigo-400" />
+              <div className="py-16 text-center text-slate-500 text-xs">
+                <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-indigo-600" />
                 Loading payout slabs...
               </div>
             ) : slabs.length === 0 ? (
-              <div className="py-16 text-center text-slate-400 text-xs space-y-2">
-                <Layers className="w-8 h-8 text-slate-600 mx-auto" />
-                <p className="font-bold text-slate-300">No payout slabs configured yet</p>
+              <div className="py-16 text-center text-slate-500 text-xs space-y-2">
+                <Layers className="w-8 h-8 text-slate-400 mx-auto" />
+                <p className="font-bold text-slate-800">No payout slabs configured yet</p>
                 <p className="text-[11px] text-slate-500">Click "Create New Slab" to add your first charge slab.</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="w-full text-left text-xs text-slate-700">
                   <thead>
-                    <tr className="bg-slate-950/80 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-800">
+                    <tr className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200">
                       <th className="py-3 px-4">Slab Range (Min - Max)</th>
                       <th className="py-3 px-4">Charge Calculation</th>
                       <th className="py-3 px-4">Charge Value</th>
@@ -758,14 +786,14 @@ export const AdminPayoutManagement: React.FC = () => {
                       <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/60">
+                  <tbody className="divide-y divide-slate-100">
                     {slabs.map((slab) => (
-                      <tr key={slab.id} className="hover:bg-slate-800/30 transition-colors">
-                        <td className="py-3 px-4 font-mono font-bold text-white">
+                      <tr key={slab.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-3 px-4 font-mono font-bold text-slate-900">
                           ₹{Number(slab.min_amount).toLocaleString('en-IN')} - ₹{Number(slab.max_amount).toLocaleString('en-IN')}
                         </td>
                         <td className="py-3 px-4">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-indigo-50 text-indigo-700 border border-indigo-200">
                             {slab.charge_type === 'percentage' ? (
                               <><Percent className="w-3 h-3" /> Percentage (%)</>
                             ) : (
@@ -773,29 +801,29 @@ export const AdminPayoutManagement: React.FC = () => {
                             )}
                           </span>
                         </td>
-                        <td className="py-3 px-4 font-black text-amber-400 text-sm">
+                        <td className="py-3 px-4 font-black text-amber-700 text-sm font-mono">
                           {slab.charge_type === 'percentage' ? `${slab.charge_value}%` : `₹${slab.charge_value.toFixed(2)}`}
                         </td>
                         <td className="py-3 px-4">
                           <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
                             slab.is_active !== false
-                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                              : 'bg-slate-800 text-slate-400 border border-slate-700'
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              : 'bg-slate-100 text-slate-600 border border-slate-200'
                           }`}>
-                            <CheckCircle2 className="w-3 h-3" /> {slab.is_active !== false ? 'Active' : 'Disabled'}
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" /> {slab.is_active !== false ? 'Active' : 'Disabled'}
                           </span>
                         </td>
                         <td className="py-3 px-4 text-right whitespace-nowrap space-x-2">
                           <button
                             onClick={() => openEditSlabModal(slab)}
-                            className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg transition-colors cursor-pointer"
+                            className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors cursor-pointer"
                             title="Edit Slab"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleDeleteSlab(slab.id)}
-                            className="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg transition-colors cursor-pointer"
+                            className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-lg transition-colors cursor-pointer"
                             title="Delete Slab"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -813,23 +841,129 @@ export const AdminPayoutManagement: React.FC = () => {
 
       {/* TAB 2: TRANSACTIONS LIST */}
       {activeTab === 'transactions' && (
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+        <div className="space-y-6">
+          {/* Summary Cards (Consolidated 4-Card Dual-Metric Layout) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* 1. TOTAL PAYOUT TRANSFERS */}
+            <div className="bg-white border border-slate-200/90 p-4 sm:p-5 rounded-2xl shadow-sm flex flex-col justify-between hover:border-slate-300 transition">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Total Payout Transfers</span>
+                <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600">
+                  <ArrowRightLeft className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2.5">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="text-2xl font-black text-slate-900">{totalPayoutTxns}</p>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                    Vol: ₹{totalPayoutVolume.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                  <span className="text-slate-400 font-medium">Earned Slab Fees</span>
+                  <span className="font-bold text-purple-700 font-mono">
+                    ₹{totalEarnedPayoutCharges.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. PENDING SETTLEMENT */}
+            <div className="bg-white border border-slate-200/90 p-4 sm:p-5 rounded-2xl shadow-sm flex flex-col justify-between hover:border-amber-300 transition">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-700">Pending Settlement</span>
+                <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
+                  <Clock className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2.5">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="text-xl sm:text-2xl font-black text-amber-600 font-mono">
+                    ₹{pendingPayoutVolume.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </p>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                    {pendingTxnCount} Pending
+                  </span>
+                </div>
+                <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                  <span className="text-slate-400 font-medium">Bank Processing</span>
+                  <span className="font-bold text-amber-700">
+                    {pendingTxnCount === 0 ? 'Queue Clear' : `${pendingTxnCount} in queue`}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. SETTLED PAYOUTS */}
+            <div className="bg-white border border-slate-200/90 p-4 sm:p-5 rounded-2xl shadow-sm flex flex-col justify-between hover:border-emerald-300 transition">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700">Settled Payouts</span>
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
+                  <CheckCircle2 className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2.5">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="text-xl sm:text-2xl font-black text-emerald-700 font-mono">
+                    ₹{successPayoutVolume.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </p>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    {successTxnCount} Settled
+                  </span>
+                </div>
+                <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                  <span className="text-slate-400 font-medium">Collected Slab Revenue</span>
+                  <span className="font-bold text-purple-700 font-mono">
+                    + ₹{totalEarnedPayoutCharges.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* 4. FAILED / REFUNDED */}
+            <div className="bg-white border border-slate-200/90 p-4 sm:p-5 rounded-2xl shadow-sm flex flex-col justify-between hover:border-rose-300 transition">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-rose-700">Failed / Refunded</span>
+                <div className="w-8 h-8 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600">
+                  <AlertCircle className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2.5">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="text-xl sm:text-2xl font-black text-rose-600 font-mono">
+                    ₹{failedPayoutVolume.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </p>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                    {failedTxnCount} Failed
+                  </span>
+                </div>
+                <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                  <span className="text-slate-400 font-medium">Wallet Reversal</span>
+                  <span className="font-bold text-rose-600">
+                    {failedTxnCount === 0 ? 'No Failures' : 'Auto-Refunded'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-6 space-y-4 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
             <div>
-              <h2 className="text-lg font-black text-white flex items-center gap-2">
-                <Clock className="w-5 h-5 text-indigo-400" /> All Bank Payout Transactions
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-300 font-mono">
+              <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                <Clock className="w-5 h-5 text-indigo-600" /> All Bank Payout Transactions
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 font-mono">
                   {filteredTxns.length}{filteredTxns.length !== transactions.length ? ` / ${transactions.length}` : ''}
                 </span>
               </h2>
-              <p className="text-xs text-slate-400">Real-time settlement history of merchant bank transfers</p>
+              <p className="text-xs text-slate-500">Real-time settlement history of merchant bank transfers</p>
             </div>
 
             {isAnyFilterActive && (
               <button
                 type="button"
                 onClick={handleClearFilters}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-rose-300 hover:text-rose-200 border border-rose-500/30 text-xs font-semibold transition self-start sm:self-auto"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold transition self-start sm:self-auto cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 Clear Filters
@@ -840,19 +974,19 @@ export const AdminPayoutManagement: React.FC = () => {
           {/* Search & Filter Bar */}
           <div className="flex flex-wrap items-center gap-2.5">
             <div className="relative flex-1 min-w-[200px]">
-              <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search user, UTR, account..."
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-8 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none placeholder-slate-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-8 py-2 text-xs text-slate-900 focus:bg-white focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none placeholder-slate-400"
               />
               {searchTerm && (
                 <button
                   type="button"
                   onClick={() => setSearchTerm('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -860,71 +994,71 @@ export const AdminPayoutManagement: React.FC = () => {
             </div>
 
             {/* Date Range Dropdown */}
-            <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs">
-              <Calendar className="w-4 h-4 text-indigo-400 shrink-0" />
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs">
+              <Calendar className="w-4 h-4 text-indigo-600 shrink-0" />
               <select
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value as any)}
-                className="bg-transparent text-slate-200 text-xs focus:outline-none cursor-pointer pr-2 font-medium"
+                className="bg-transparent text-slate-800 text-xs focus:outline-none cursor-pointer pr-2 font-medium"
               >
-                <option value="ALL" className="bg-slate-900 text-slate-200">All Time</option>
-                <option value="TODAY" className="bg-slate-900 text-slate-200">Today</option>
-                <option value="YESTERDAY" className="bg-slate-900 text-slate-200">Yesterday</option>
-                <option value="LAST_7_DAYS" className="bg-slate-900 text-slate-200">Last 7 Days</option>
-                <option value="LAST_30_DAYS" className="bg-slate-900 text-slate-200">Last 30 Days</option>
-                <option value="THIS_MONTH" className="bg-slate-900 text-slate-200">This Month</option>
-                <option value="CUSTOM" className="bg-slate-900 text-slate-200">Custom Range</option>
+                <option value="ALL">All Time</option>
+                <option value="TODAY">Today</option>
+                <option value="YESTERDAY">Yesterday</option>
+                <option value="LAST_7_DAYS">Last 7 Days</option>
+                <option value="LAST_30_DAYS">Last 30 Days</option>
+                <option value="THIS_MONTH">This Month</option>
+                <option value="CUSTOM">Custom Range</option>
               </select>
             </div>
 
             {/* Custom Date Inputs */}
             {dateFilter === 'CUSTOM' && (
-              <div className="flex items-center gap-2 bg-slate-950 border border-indigo-500/40 rounded-xl px-3 py-1.5 text-xs">
-                <span className="text-[11px] text-slate-400 font-medium">From:</span>
+              <div className="flex items-center gap-2 bg-slate-50 border border-indigo-200 rounded-xl px-3 py-1.5 text-xs">
+                <span className="text-[11px] text-slate-500 font-medium">From:</span>
                 <input
                   type="date"
                   value={customStartDate}
                   onChange={(e) => setCustomStartDate(e.target.value)}
-                  className="bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-indigo-400 font-mono"
+                  className="bg-white border border-slate-300 text-slate-800 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-indigo-600 font-mono"
                 />
-                <span className="text-[11px] text-slate-400 font-medium">To:</span>
+                <span className="text-[11px] text-slate-500 font-medium">To:</span>
                 <input
                   type="date"
                   value={customEndDate}
                   onChange={(e) => setCustomEndDate(e.target.value)}
-                  className="bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-indigo-400 font-mono"
+                  className="bg-white border border-slate-300 text-slate-800 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-indigo-600 font-mono"
                 />
               </div>
             )}
 
             {/* Status Dropdown */}
-            <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs">
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs">
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-transparent text-slate-200 text-xs focus:outline-none cursor-pointer font-medium"
+                className="bg-transparent text-slate-800 text-xs focus:outline-none cursor-pointer font-medium"
               >
-                <option value="all" className="bg-slate-900 text-slate-200">All Status ({transactions.length})</option>
-                <option value="success" className="bg-slate-900 text-slate-200">Success ({successTxnCount})</option>
-                <option value="pending" className="bg-slate-900 text-slate-200">Pending ({pendingTxnCount})</option>
-                <option value="failed" className="bg-slate-900 text-slate-200">Failed / Refunded ({failedTxnCount})</option>
+                <option value="all">All Status ({transactions.length})</option>
+                <option value="success">Success ({successTxnCount})</option>
+                <option value="pending">Pending ({pendingTxnCount})</option>
+                <option value="failed">Failed / Refunded ({failedTxnCount})</option>
               </select>
             </div>
 
             {/* Direct Bank Status Query Input */}
-            <form onSubmit={handleDirectQuery} className="flex items-center gap-1.5 bg-slate-950 border border-indigo-500/40 rounded-xl px-2.5 py-1.5 text-xs">
-              <Building2 className="w-4 h-4 text-indigo-400 shrink-0" />
+            <form onSubmit={handleDirectQuery} className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs">
+              <Building2 className="w-4 h-4 text-indigo-600 shrink-0" />
               <input
                 type="text"
                 value={directQueryInput}
                 onChange={(e) => setDirectQueryInput(e.target.value)}
                 placeholder="Query Order ID in Bank..."
-                className="bg-transparent text-slate-200 text-xs focus:outline-none placeholder-slate-500 w-36 sm:w-48 font-mono"
+                className="bg-transparent text-slate-900 text-xs focus:outline-none placeholder-slate-400 w-36 sm:w-48 font-mono"
               />
               <button
                 type="submit"
                 disabled={directQueryLoading || !directQueryInput.trim()}
-                className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer shrink-0"
+                className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer shrink-0 shadow-sm"
                 title="Query Real-Time Bank Status & UTR"
               >
                 {directQueryLoading ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Search className="w-3 h-3" />}
@@ -934,20 +1068,20 @@ export const AdminPayoutManagement: React.FC = () => {
           </div>
 
           {txnsLoading ? (
-            <div className="py-16 text-center text-slate-400 text-xs">
-              <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-indigo-400" />
+            <div className="py-16 text-center text-slate-500 text-xs">
+              <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-indigo-600" />
               Loading payout transactions...
             </div>
           ) : filteredTxns.length === 0 ? (
-            <div className="py-16 text-center text-slate-400 text-xs space-y-2">
-              <Building2 className="w-8 h-8 text-slate-600 mx-auto" />
-              <p className="font-bold text-slate-300">No matching transactions found</p>
+            <div className="py-16 text-center text-slate-500 text-xs space-y-2">
+              <Building2 className="w-8 h-8 text-slate-400 mx-auto" />
+              <p className="font-bold text-slate-800">No matching transactions found</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+              <table className="w-full text-left text-xs text-slate-700">
                 <thead>
-                  <tr className="bg-slate-950/80 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-800">
+                  <tr className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200">
                     <th className="py-3 px-4">Date & Time</th>
                     <th className="py-3 px-4">Merchant User</th>
                     <th className="py-3 px-4">Beneficiary & Bank</th>
@@ -959,68 +1093,68 @@ export const AdminPayoutManagement: React.FC = () => {
                     <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60">
+                <tbody className="divide-y divide-slate-100">
                   {filteredTxns.map((item) => (
-                    <tr key={item.id} className="hover:bg-slate-800/30 transition-colors">
-                      <td className="py-3 px-4 whitespace-nowrap text-slate-400 font-mono text-[11px]">
+                    <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="py-3 px-4 whitespace-nowrap text-slate-600 font-mono text-[11px]">
                         {new Date(item.created_at).toLocaleString('en-IN', {
                           day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
                         })}
                       </td>
                       <td className="py-3 px-4">
-                        <div className="font-bold text-white">{item.user_name || 'Merchant'}</div>
-                        <div className="text-[11px] text-slate-400">{item.firm_name || item.user_mobile}</div>
+                        <div className="font-bold text-slate-900">{item.user_name || 'Merchant'}</div>
+                        <div className="text-[11px] text-slate-500">{item.firm_name || item.user_mobile}</div>
                       </td>
                       <td className="py-3 px-4">
-                        <div className="font-bold text-white">{item.beneficiary_name}</div>
-                        <div className="text-[11px] text-slate-400 font-mono">
-                          {item.account_number} • <span className="text-indigo-400">{item.ifsc_code}</span>
+                        <div className="font-bold text-slate-900">{item.beneficiary_name}</div>
+                        <div className="text-[11px] text-slate-500 font-mono">
+                          {item.account_number} • <span className="text-indigo-600 font-bold">{item.ifsc_code}</span>
                         </div>
                       </td>
-                      <td className="py-3 px-4 whitespace-nowrap font-black text-white">
+                      <td className="py-3 px-4 whitespace-nowrap font-black text-slate-900 font-mono">
                         ₹{Number(item.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </td>
-                      <td className="py-3 px-4 whitespace-nowrap text-amber-400 font-bold">
+                      <td className="py-3 px-4 whitespace-nowrap text-amber-700 font-bold font-mono">
                         ₹{Number(item.slab_charge || 0).toFixed(2)}
                       </td>
-                      <td className="py-3 px-4 whitespace-nowrap font-bold text-slate-200">
+                      <td className="py-3 px-4 whitespace-nowrap font-bold text-slate-900 font-mono">
                         ₹{Number(item.total_deducted || item.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </td>
                       <td className="py-3 px-4 whitespace-nowrap">
                         {item.utr ? (
-                          <div className="flex items-center gap-1.5 font-mono text-emerald-400 font-bold">
+                          <div className="flex items-center gap-1.5 font-mono text-emerald-700 font-bold">
                             <span>{item.utr}</span>
                             <button
                               onClick={() => copyToClipboard(item.utr || '', item.id)}
-                              className="text-slate-500 hover:text-white"
+                              className="text-slate-400 hover:text-slate-700 cursor-pointer"
                               title="Copy UTR"
                             >
-                              {copiedUtr === item.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                              {copiedUtr === item.id ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                             </button>
                           </div>
                         ) : (
-                          <span className="text-slate-500">—</span>
+                          <span className="text-slate-400">—</span>
                         )}
                       </td>
                       <td className="py-3 px-4 whitespace-nowrap">
                         <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
                           item.status === 'success'
-                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                             : item.status === 'failed'
-                            ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                            : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                            ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                            : 'bg-amber-50 text-amber-700 border border-amber-200'
                         }`}>
                           {item.status}
                         </span>
                         {item.refunded_to_wallet && (
-                          <span className="block text-[10px] text-emerald-400 mt-0.5">Refunded</span>
+                          <span className="block text-[10px] text-emerald-700 mt-0.5 font-bold">Refunded</span>
                         )}
                       </td>
                       <td className="py-3 px-4 whitespace-nowrap text-right space-x-2">
                         <button
                           onClick={() => handleCheckStatus(item.client_order_id || item.api_order_id || '')}
                           disabled={checkingOrderId === (item.client_order_id || item.api_order_id)}
-                          className="px-2.5 py-1 bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1 cursor-pointer"
+                          className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1 cursor-pointer shadow-sm"
                           title="Query live real-time status & UTR from bank gateway"
                         >
                           <RefreshCw className={`w-3 h-3 ${checkingOrderId === (item.client_order_id || item.api_order_id) ? 'animate-spin' : ''}`} />
@@ -1028,7 +1162,7 @@ export const AdminPayoutManagement: React.FC = () => {
                         </button>
                         <button
                           onClick={() => handleOpenReconcile(item)}
-                          className="px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1 cursor-pointer"
+                          className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1 cursor-pointer shadow-sm"
                           title="Reconcile Transaction"
                         >
                           <Sliders className="w-3 h-3" /> Reconcile
@@ -1038,7 +1172,7 @@ export const AdminPayoutManagement: React.FC = () => {
                             setReceiptTxn(item);
                             setShowReceipt(true);
                           }}
-                          className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1 cursor-pointer"
+                          className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1 cursor-pointer shadow-sm"
                         >
                           <ExternalLink className="w-3 h-3" /> Receipt
                         </button>
@@ -1050,30 +1184,31 @@ export const AdminPayoutManagement: React.FC = () => {
             </div>
           )}
         </div>
+        </div>
       )}
 
       {/* TAB 3: BANK ACCOUNT VERIFICATIONS (PENNY DROP) */}
       {activeTab === 'verifications' && (
         <div className="space-y-6">
 
-          {/* TOP SETTINGS & MARGIN CARD */}
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-slate-800/80">
+          {/* TOP SETTINGS & PRICING CONTROLS */}
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
               <div className="space-y-1.5 max-w-xl">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold uppercase">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold uppercase">
                   <ShieldCheck className="w-3.5 h-3.5" /> NPCI Penny Drop API Configuration
                 </div>
-                <h3 className="text-lg font-black text-white">Bank Account Validation & Pricing Controls</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
+                <h3 className="text-lg font-black text-slate-900">Bank Account Validation & Pricing Controls</h3>
+                <p className="text-xs text-slate-500 leading-relaxed">
                   Validate beneficiary bank accounts and fetch real-time registered account holder names directly from the bank. 
                   Charges are deducted from the user's wallet <strong>ONLY upon successful verification</strong> (₹0 on failure).
                 </p>
               </div>
 
               {/* Fee & Toggle Controls */}
-              <form onSubmit={handleSaveVerifSettings} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-slate-950/80 p-4 rounded-2xl border border-slate-800">
+              <form onSubmit={handleSaveVerifSettings} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1">
+                  <label className="block text-[11px] font-bold text-slate-500 mb-1">
                     User Wallet Debit Fee (₹)
                   </label>
                   <div className="relative">
@@ -1084,14 +1219,14 @@ export const AdminPayoutManagement: React.FC = () => {
                       min="0"
                       value={payoutVerificationCharge}
                       onChange={(e) => setPayoutVerificationCharge(parseFloat(e.target.value) || 0)}
-                      className="w-28 pl-7 pr-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white font-bold text-sm focus:border-indigo-500 focus:outline-none font-mono"
+                      className="w-28 pl-7 pr-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 font-bold text-sm focus:border-indigo-600 focus:outline-none font-mono"
                       required
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1">
+                  <label className="block text-[11px] font-bold text-slate-500 mb-1">
                     Gateway Wholesale (₹)
                   </label>
                   <div className="relative">
@@ -1102,35 +1237,35 @@ export const AdminPayoutManagement: React.FC = () => {
                       min="0"
                       value={payoutVerificationGatewayCost}
                       onChange={(e) => setPayoutVerificationGatewayCost(parseFloat(e.target.value) || 0)}
-                      className="w-28 pl-7 pr-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white font-bold text-sm focus:border-indigo-500 focus:outline-none font-mono"
+                      className="w-28 pl-7 pr-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 font-bold text-sm focus:border-indigo-600 focus:outline-none font-mono"
                       required
                     />
                   </div>
                 </div>
 
                 <div className="flex flex-col justify-end">
-                  <span className="text-[10px] text-emerald-400 mb-1 font-bold">Platform Margin</span>
+                  <span className="text-[10px] text-emerald-700 mb-1 font-bold">Platform Margin</span>
                   <div className={`px-3 py-2 rounded-xl text-xs font-mono font-bold border ${
                     payoutVerificationCharge >= payoutVerificationGatewayCost
-                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                      : 'bg-rose-500/10 border-rose-500/30 text-rose-400'
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                      : 'bg-rose-50 border-rose-200 text-rose-700'
                   }`}>
                     {payoutVerificationCharge >= payoutVerificationGatewayCost ? '+' : ''}₹{(payoutVerificationCharge - payoutVerificationGatewayCost).toFixed(2)} <span className="text-[10px] font-normal">profit</span>
                   </div>
                 </div>
 
                 <div className="flex flex-col justify-end">
-                  <span className="text-[10px] text-slate-400 mb-1">Service Status</span>
+                  <span className="text-[10px] text-slate-500 mb-1">Service Status</span>
                   <button
                     type="button"
                     onClick={() => setPayoutVerificationEnabled(!payoutVerificationEnabled)}
                     className={`px-3 py-2 rounded-xl text-xs font-bold border transition flex items-center justify-center gap-1.5 cursor-pointer ${
                       payoutVerificationEnabled
-                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-                        : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                        ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                        : 'bg-rose-50 border-rose-200 text-rose-700'
                     }`}
                   >
-                    {payoutVerificationEnabled ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <X className="w-3.5 h-3.5 text-rose-400" />}
+                    {payoutVerificationEnabled ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> : <X className="w-3.5 h-3.5 text-rose-600" />}
                     {payoutVerificationEnabled ? 'ACTIVE' : 'DISABLED'}
                   </button>
                 </div>
@@ -1140,7 +1275,7 @@ export const AdminPayoutManagement: React.FC = () => {
                   <button
                     type="submit"
                     disabled={savingVerifSettings}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-lg shadow-indigo-600/30 cursor-pointer"
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
                   >
                     {savingVerifSettings ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                     <span>Save Settings</span>
@@ -1148,69 +1283,133 @@ export const AdminPayoutManagement: React.FC = () => {
                 </div>
               </form>
             </div>
+          </div>
 
-            {/* 5 METRIC CARDS */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 pt-6">
-              <div className="bg-slate-950/70 border border-slate-800/80 p-4 rounded-2xl">
-                <span className="text-[11px] font-bold text-slate-400 block mb-1">Total Verifications</span>
-                <span className="text-xl font-black text-white font-mono">
-                  {verificationStats?.total_verifications ?? verifications.length}
-                </span>
-                <span className="text-[10px] text-slate-500 block mt-0.5">All time attempts</span>
+          {/* SUMMARY CARDS (CONSOLIDATED 4-CARD DUAL-METRIC LAYOUT) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* 1. TOTAL VERIFICATIONS */}
+            <div className="bg-white border border-slate-200/90 p-4 sm:p-5 rounded-2xl shadow-sm flex flex-col justify-between hover:border-slate-300 transition">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Total Verifications</span>
+                <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
               </div>
-
-              <div className="bg-slate-950/70 border border-slate-800/80 p-4 rounded-2xl">
-                <span className="text-[11px] font-bold text-emerald-400 block mb-1">Successful (Penny Drop)</span>
-                <span className="text-xl font-black text-emerald-400 font-mono">
-                  {verificationStats?.success_count ?? successVerifsCount}
-                </span>
-                <span className="text-[10px] text-slate-500 block mt-0.5">Active bank accounts</span>
+              <div className="mt-2.5">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="text-2xl font-black text-slate-900 font-mono">
+                    {verificationStats?.total_verifications ?? verifications.length}
+                  </p>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 font-mono">
+                    Fee: ₹{(verificationStats?.total_collected ?? totalVerifsFee).toFixed(2)}
+                  </span>
+                </div>
+                <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                  <span className="text-slate-400 font-medium">Wholesale Cost</span>
+                  <span className="font-bold text-purple-700 font-mono">
+                    ₹{totalVerifsCost.toFixed(2)}
+                  </span>
+                </div>
               </div>
+            </div>
 
-              <div className="bg-slate-950/70 border border-slate-800/80 p-4 rounded-2xl">
-                <span className="text-[11px] font-bold text-rose-400 block mb-1">Failed / Invalid</span>
-                <span className="text-xl font-black text-rose-400 font-mono">
-                  {verificationStats?.failed_count ?? failedVerifsCount}
-                </span>
-                <span className="text-[10px] text-slate-500 block mt-0.5">₹0 fee deducted</span>
+            {/* 2. SUCCESSFUL VALIDATIONS */}
+            <div className="bg-white border border-slate-200/90 p-4 sm:p-5 rounded-2xl shadow-sm flex flex-col justify-between hover:border-emerald-300 transition">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700">Successful Penny Drop</span>
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
+                  <CheckCircle2 className="w-4 h-4" />
+                </div>
               </div>
-
-              <div className="bg-slate-950/70 border border-slate-800/80 p-4 rounded-2xl">
-                <span className="text-[11px] font-bold text-amber-400 block mb-1">Total Collected</span>
-                <span className="text-xl font-black text-amber-400 font-mono">
-                  ₹{(verificationStats?.total_collected ?? totalVerifsFee).toFixed(2)}
-                </span>
-                <span className="text-[10px] text-slate-500 block mt-0.5">From user wallets</span>
+              <div className="mt-2.5">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="text-xl sm:text-2xl font-black text-emerald-700 font-mono">
+                    {verificationStats?.success_count ?? successVerifsCount}
+                  </p>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    {verificationStats?.success_count ?? successVerifsCount} Validated
+                  </span>
+                </div>
+                <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                  <span className="text-slate-400 font-medium">Bank Accounts</span>
+                  <span className="font-bold text-emerald-700">
+                    Active & Name-Matched
+                  </span>
+                </div>
               </div>
+            </div>
 
-              <div className="bg-slate-950/70 border border-emerald-500/20 bg-emerald-500/[0.02] p-4 rounded-2xl">
-                <span className="text-[11px] font-bold text-emerald-300 block mb-1">Net Platform Profit</span>
-                <span className="text-xl font-black text-emerald-300 font-mono">
-                  ₹{(verificationStats?.net_profit ?? totalVerifsProfit).toFixed(2)}
-                </span>
-                <span className="text-[10px] text-emerald-500/80 block mt-0.5">After ₹{payoutVerificationGatewayCost.toFixed(2)}/verif cost</span>
+            {/* 3. FAILED / INVALID */}
+            <div className="bg-white border border-slate-200/90 p-4 sm:p-5 rounded-2xl shadow-sm flex flex-col justify-between hover:border-rose-300 transition">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-rose-700">Failed / Invalid</span>
+                <div className="w-8 h-8 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600">
+                  <AlertCircle className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2.5">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="text-xl sm:text-2xl font-black text-rose-600 font-mono">
+                    {verificationStats?.failed_count ?? failedVerifsCount}
+                  </p>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                    {failedVerifsCount} Failed
+                  </span>
+                </div>
+                <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                  <span className="text-slate-400 font-medium">User Loss</span>
+                  <span className="font-bold text-rose-600">
+                    ₹0.00 Deducted (Zero Risk)
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* 4. NET PLATFORM PROFIT */}
+            <div className="bg-white border border-slate-200/90 p-4 sm:p-5 rounded-2xl shadow-sm flex flex-col justify-between hover:border-amber-300 transition">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-700">Net Platform Profit</span>
+                <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
+                  <IndianRupee className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2.5">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="text-xl sm:text-2xl font-black text-amber-700 font-mono">
+                    ₹{(verificationStats?.net_profit ?? totalVerifsProfit).toFixed(2)}
+                  </p>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 font-mono">
+                    +₹{(payoutVerificationCharge - payoutVerificationGatewayCost).toFixed(2)}/verif
+                  </span>
+                </div>
+                <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                  <span className="text-slate-400 font-medium">Wholesale Rate</span>
+                  <span className="font-bold text-slate-700 font-mono">
+                    ₹{payoutVerificationGatewayCost.toFixed(2)} cost
+                  </span>
+                </div>
               </div>
             </div>
           </div>
 
           {/* TABLE CONTAINER */}
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-6 space-y-4 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
               <div>
-                <h3 className="text-lg font-black text-white flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-emerald-400" /> Bank Verification History (Penny Drop)
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-300 font-mono">
+                <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-emerald-600" /> Bank Verification History (Penny Drop)
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 font-mono">
                     {filteredVerifications.length}{filteredVerifications.length !== verifications.length ? ` / ${verifications.length}` : ''}
                   </span>
                 </h3>
-                <p className="text-xs text-slate-400">Complete audit log of real-time account name validations</p>
+                <p className="text-xs text-slate-500">Complete audit log of real-time account name validations</p>
               </div>
 
               {isAnyVerifFilterActive && (
                 <button
                   type="button"
                   onClick={handleClearVerifFilters}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-rose-300 hover:text-rose-200 border border-rose-500/30 text-xs font-semibold transition self-start sm:self-auto cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold transition self-start sm:self-auto cursor-pointer"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   Clear Filters
@@ -1221,23 +1420,23 @@ export const AdminPayoutManagement: React.FC = () => {
             {/* FILTERS BAR */}
             <div className="flex flex-col lg:flex-row gap-3 pt-1">
               <div className="relative flex-1">
-                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
                   value={verifSearchTerm}
                   onChange={(e) => setVerifSearchTerm(e.target.value)}
                   placeholder="Search by Merchant, Name, Account, IFSC, or UTR..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none transition-colors"
                 />
               </div>
 
               {/* Status Filter */}
-              <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
                 <button
                   type="button"
                   onClick={() => setVerifStatusFilter('all')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                    verifStatusFilter === 'all' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                    verifStatusFilter === 'all' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   All ({verifications.length})
@@ -1246,7 +1445,7 @@ export const AdminPayoutManagement: React.FC = () => {
                   type="button"
                   onClick={() => setVerifStatusFilter('success')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                    verifStatusFilter === 'success' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                    verifStatusFilter === 'success' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   Verified ({successVerifsCount})
@@ -1255,7 +1454,7 @@ export const AdminPayoutManagement: React.FC = () => {
                   type="button"
                   onClick={() => setVerifStatusFilter('failed')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                    verifStatusFilter === 'failed' ? 'bg-rose-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                    verifStatusFilter === 'failed' ? 'bg-rose-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   Failed ({failedVerifsCount})
@@ -1263,14 +1462,14 @@ export const AdminPayoutManagement: React.FC = () => {
               </div>
 
               {/* Date Filter Pills */}
-              <div className="flex flex-wrap items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+              <div className="flex flex-wrap items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
                 {(['ALL', 'TODAY', 'YESTERDAY', 'LAST_7_DAYS', 'THIS_MONTH', 'CUSTOM'] as const).map((mode) => (
                   <button
                     key={mode}
                     type="button"
                     onClick={() => setVerifDateFilter(mode)}
                     className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                      verifDateFilter === mode ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                      verifDateFilter === mode ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
                     {mode === 'ALL' ? 'All Time' : mode === 'TODAY' ? 'Today' : mode === 'YESTERDAY' ? 'Yesterday' : mode === 'LAST_7_DAYS' ? '7 Days' : mode === 'THIS_MONTH' ? 'Month' : 'Custom'}
@@ -1281,43 +1480,43 @@ export const AdminPayoutManagement: React.FC = () => {
 
             {/* Custom Date Pickers */}
             {verifDateFilter === 'CUSTOM' && (
-              <div className="flex flex-wrap items-center gap-3 p-3 bg-slate-950/80 rounded-2xl border border-slate-800 text-xs">
-                <span className="text-slate-400 font-bold">Custom Range:</span>
+              <div className="flex flex-wrap items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+                <span className="text-slate-600 font-bold">Custom Range:</span>
                 <input
                   type="date"
                   value={verifCustomStartDate}
                   onChange={(e) => setVerifCustomStartDate(e.target.value)}
-                  className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white focus:outline-none"
+                  className="bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-slate-800 focus:outline-none"
                 />
-                <span className="text-slate-500">to</span>
+                <span className="text-slate-400">to</span>
                 <input
                   type="date"
                   value={verifCustomEndDate}
                   onChange={(e) => setVerifCustomEndDate(e.target.value)}
-                  className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white focus:outline-none"
+                  className="bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-slate-800 focus:outline-none"
                 />
               </div>
             )}
 
             {/* Table */}
             {verificationsLoading ? (
-              <div className="py-16 text-center text-slate-400 text-xs">
-                <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-emerald-400" />
+              <div className="py-16 text-center text-slate-500 text-xs">
+                <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-emerald-600" />
                 Loading verification records...
               </div>
             ) : filteredVerifications.length === 0 ? (
-              <div className="py-16 text-center text-slate-400 text-xs space-y-2">
-                <ShieldCheck className="w-8 h-8 text-slate-600 mx-auto" />
-                <p className="font-bold text-slate-300">No bank verification records found</p>
+              <div className="py-16 text-center text-slate-500 text-xs space-y-2">
+                <ShieldCheck className="w-8 h-8 text-slate-400 mx-auto" />
+                <p className="font-bold text-slate-800">No bank verification records found</p>
                 <p className="text-[11px] text-slate-500">
                   {isAnyVerifFilterActive ? 'Try adjusting your filters.' : 'When users verify their bank accounts, verification logs will appear here.'}
                 </p>
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="w-full text-left text-xs text-slate-700">
                   <thead>
-                    <tr className="bg-slate-950/80 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-800">
+                    <tr className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200">
                       <th className="py-3 px-4">Date & Time</th>
                       <th className="py-3 px-4">Merchant</th>
                       <th className="py-3 px-4">Account & IFSC</th>
@@ -1328,73 +1527,73 @@ export const AdminPayoutManagement: React.FC = () => {
                       <th className="py-3 px-4">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/60">
+                  <tbody className="divide-y divide-slate-100">
                     {filteredVerifications.map((v) => (
-                      <tr key={v.id} className="hover:bg-slate-800/30 transition-colors">
-                        <td className="py-3 px-4 whitespace-nowrap text-slate-400 font-mono text-[11px]">
+                      <tr key={v.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-3 px-4 whitespace-nowrap text-slate-600 font-mono text-[11px]">
                           {new Date(v.created_at).toLocaleString('en-IN', {
                             day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
                           })}
                         </td>
                         <td className="py-3 px-4">
-                          <div className="font-bold text-white">{v.user_name || 'Merchant'}</div>
-                          <div className="text-[11px] text-slate-400">{v.user_mobile || v.user_id}</div>
+                          <div className="font-bold text-slate-900">{v.user_name || 'Merchant'}</div>
+                          <div className="text-[11px] text-slate-500">{v.user_mobile || v.user_id}</div>
                         </td>
                         <td className="py-3 px-4">
-                          <div className="font-mono font-bold text-white">{v.account_number}</div>
-                          <div className="text-[11px] text-indigo-400 font-mono font-bold">{v.ifsc_code}</div>
+                          <div className="font-mono font-bold text-slate-900">{v.account_number}</div>
+                          <div className="text-[11px] text-indigo-600 font-mono font-bold">{v.ifsc_code}</div>
                         </td>
                         <td className="py-3 px-4">
                           {v.name_at_bank ? (
-                            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 font-bold uppercase text-[11px]">
-                              <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold uppercase text-[11px]">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
                               {v.name_at_bank}
                             </div>
                           ) : (
-                            <span className="text-slate-500 italic text-[11px]">Not retrieved</span>
+                            <span className="text-slate-400 italic text-[11px]">Not retrieved</span>
                           )}
                         </td>
                         <td className="py-3 px-4">
-                          <div className="font-bold text-slate-300">{v.bank_name || 'Bank'}</div>
+                          <div className="font-bold text-slate-900">{v.bank_name || 'Bank'}</div>
                           {v.branch && <div className="text-[11px] text-slate-500">{v.branch}</div>}
                         </td>
                         <td className="py-3 px-4 whitespace-nowrap">
                           {v.utr || v.reference_id ? (
                             <div className="flex items-center gap-1.5">
-                              <span className="font-mono font-bold text-emerald-400 text-xs">
+                              <span className="font-mono font-bold text-emerald-700 text-xs">
                                 {v.utr || v.reference_id}
                               </span>
                               <button
                                 onClick={() => copyToClipboard(v.utr || v.reference_id || '', v.id)}
-                                className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white cursor-pointer"
+                                className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-700 cursor-pointer"
                                 title="Copy UTR"
                               >
-                                {copiedUtr === v.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                                {copiedUtr === v.id ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                               </button>
                             </div>
                           ) : (
-                            <span className="text-slate-500 font-mono text-[11px]">{v.client_reference_id || '—'}</span>
+                            <span className="text-slate-400 font-mono text-[11px]">{v.client_reference_id || '—'}</span>
                           )}
                         </td>
                         <td className="py-3 px-4 whitespace-nowrap font-bold">
                           {Number(v.charge_deducted || 0) > 0 ? (
-                            <span className="text-amber-400 font-mono">₹{Number(v.charge_deducted).toFixed(2)}</span>
+                            <span className="text-amber-700 font-mono font-bold">₹{Number(v.charge_deducted).toFixed(2)}</span>
                           ) : (
-                            <span className="text-slate-500 font-mono">₹0.00</span>
+                            <span className="text-slate-400 font-mono">₹0.00</span>
                           )}
                         </td>
                         <td className="py-3 px-4 whitespace-nowrap">
                           {v.status === 'success' ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
-                              <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Verified
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Verified
                             </span>
                           ) : (
                             <div className="space-y-0.5">
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-rose-500/10 text-rose-300 border border-rose-500/20">
-                                <AlertTriangle className="w-3 h-3 text-rose-400" /> Failed
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-rose-50 text-rose-700 border border-rose-200">
+                                <AlertTriangle className="w-3 h-3 text-rose-600" /> Failed
                               </span>
                               {v.failure_reason && (
-                                <p className="text-[10px] text-rose-400/80 max-w-xs truncate" title={v.failure_reason}>
+                                <p className="text-[10px] text-rose-600 max-w-xs truncate" title={v.failure_reason}>
                                   {v.failure_reason}
                                 </p>
                               )}
@@ -1414,24 +1613,24 @@ export const AdminPayoutManagement: React.FC = () => {
 
       {/* CREATE / EDIT SLAB MODAL */}
       {showSlabModal && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="relative w-full max-w-md bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-5 shadow-2xl">
             
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h3 className="text-base font-black text-white flex items-center gap-2">
-                <Sliders className="w-5 h-5 text-indigo-400" />
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <Sliders className="w-5 h-5 text-indigo-600" />
                 {editingSlab ? 'Edit Payout Slab' : 'Create New Payout Slab'}
               </h3>
               <button
                 onClick={() => setShowSlabModal(false)}
-                className="text-slate-400 hover:text-white text-lg font-bold"
+                className="text-slate-400 hover:text-slate-600 text-lg font-bold"
               >
                 ✕
               </button>
             </div>
 
             {slabModalError && (
-              <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-300 text-xs">
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs">
                 {slabModalError}
               </div>
             )}
@@ -1441,7 +1640,7 @@ export const AdminPayoutManagement: React.FC = () => {
               {/* Range Inputs */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
                     Min Amount (₹)
                   </label>
                   <input
@@ -1451,12 +1650,12 @@ export const AdminPayoutManagement: React.FC = () => {
                     value={minAmount}
                     onChange={(e) => setMinAmount(e.target.value)}
                     placeholder="e.g. 100"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white font-bold text-sm focus:border-indigo-500 focus:outline-none"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-slate-900 font-bold text-sm focus:bg-white focus:border-indigo-600 focus:outline-none"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
                     Max Amount (₹)
                   </label>
                   <input
@@ -1466,7 +1665,7 @@ export const AdminPayoutManagement: React.FC = () => {
                     value={maxAmount}
                     onChange={(e) => setMaxAmount(e.target.value)}
                     placeholder="e.g. 25000"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white font-bold text-sm focus:border-indigo-500 focus:outline-none"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-slate-900 font-bold text-sm focus:bg-white focus:border-indigo-600 focus:outline-none"
                     required
                   />
                 </div>
@@ -1474,7 +1673,7 @@ export const AdminPayoutManagement: React.FC = () => {
 
               {/* Charge Type Selection */}
               <div>
-                <label className="block text-xs font-bold text-slate-400 mb-1.5">
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
                   Charge Type
                 </label>
                 <div className="grid grid-cols-2 gap-2">
@@ -1483,8 +1682,8 @@ export const AdminPayoutManagement: React.FC = () => {
                     onClick={() => setChargeType('flat')}
                     className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                       chargeType === 'flat'
-                        ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300 shadow-sm'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                        ? 'bg-indigo-50 border-indigo-300 text-indigo-700 shadow-sm'
+                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:text-slate-900'
                     }`}
                   >
                     Flat Fee (₹)
@@ -1494,8 +1693,8 @@ export const AdminPayoutManagement: React.FC = () => {
                     onClick={() => setChargeType('percentage')}
                     className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                       chargeType === 'percentage'
-                        ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300 shadow-sm'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                        ? 'bg-indigo-50 border-indigo-300 text-indigo-700 shadow-sm'
+                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:text-slate-900'
                     }`}
                   >
                     Percentage (%)
@@ -1505,7 +1704,7 @@ export const AdminPayoutManagement: React.FC = () => {
 
               {/* Charge Value Input */}
               <div>
-                <label className="block text-xs font-bold text-slate-400 mb-1">
+                <label className="block text-xs font-bold text-slate-700 mb-1">
                   Charge Value ({chargeType === 'percentage' ? '%' : '₹'})
                 </label>
                 <input
@@ -1515,7 +1714,7 @@ export const AdminPayoutManagement: React.FC = () => {
                   value={chargeValue}
                   onChange={(e) => setChargeValue(e.target.value)}
                   placeholder={chargeType === 'percentage' ? 'e.g. 0.50' : 'e.g. 15.00'}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white font-bold text-sm focus:border-indigo-500 focus:outline-none"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-slate-900 font-bold text-sm focus:bg-white focus:border-indigo-600 focus:outline-none font-mono"
                   required
                 />
               </div>
@@ -1527,9 +1726,9 @@ export const AdminPayoutManagement: React.FC = () => {
                   id="slabActive"
                   checked={isActive}
                   onChange={(e) => setIsActive(e.target.checked)}
-                  className="w-4 h-4 rounded bg-slate-950 border-slate-800 text-indigo-600 focus:ring-indigo-500"
+                  className="w-4 h-4 rounded bg-white border-slate-300 text-indigo-600 focus:ring-indigo-500"
                 />
-                <label htmlFor="slabActive" className="text-xs font-bold text-slate-300 cursor-pointer">
+                <label htmlFor="slabActive" className="text-xs font-bold text-slate-700 cursor-pointer">
                   Activate this slab immediately
                 </label>
               </div>
@@ -1539,14 +1738,14 @@ export const AdminPayoutManagement: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowSlabModal(false)}
-                  className="w-1/2 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold text-xs transition-colors cursor-pointer"
+                  className="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={savingSlab}
-                  className="w-1/2 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-indigo-600/30 cursor-pointer"
+                  className="w-1/2 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
                 >
                   {savingSlab ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Save Slab'}
                 </button>
@@ -1560,65 +1759,65 @@ export const AdminPayoutManagement: React.FC = () => {
 
       {/* RECONCILE MODAL */}
       {showReconcileModal && reconcileTxn && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="relative w-full max-w-md bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-5 shadow-2xl">
             
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <div className="flex items-center gap-2">
-                <div className="p-2 bg-indigo-500/20 text-indigo-400 rounded-xl">
+                <div className="p-2 bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-xl">
                   <Sliders className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-white">Manual Reconciliation</h3>
-                  <p className="text-xs text-slate-400">Order: {reconcileTxn.client_order_id}</p>
+                  <h3 className="text-base font-black text-slate-900">Manual Reconciliation</h3>
+                  <p className="text-xs text-slate-500">Order: {reconcileTxn.client_order_id}</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowReconcileModal(false)}
-                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition cursor-pointer"
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {reconcileError && (
-              <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-xs flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
                 <span>{reconcileError}</span>
               </div>
             )}
 
             <form onSubmit={handleExecuteReconcile} className="space-y-4">
-              <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800/80 space-y-1.5 text-xs">
-                <div className="flex justify-between text-slate-400">
+              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1.5 text-xs">
+                <div className="flex justify-between text-slate-500">
                   <span>Merchant:</span>
-                  <span className="font-bold text-white">{reconcileTxn.user_name || reconcileTxn.user_mobile || 'Merchant'}</span>
+                  <span className="font-bold text-slate-900">{reconcileTxn.user_name || reconcileTxn.user_mobile || 'Merchant'}</span>
                 </div>
-                <div className="flex justify-between text-slate-400">
+                <div className="flex justify-between text-slate-500">
                   <span>Beneficiary:</span>
-                  <span className="font-bold text-white">{reconcileTxn.beneficiary_name}</span>
+                  <span className="font-bold text-slate-900">{reconcileTxn.beneficiary_name}</span>
                 </div>
-                <div className="flex justify-between text-slate-400">
+                <div className="flex justify-between text-slate-500">
                   <span>Amount:</span>
-                  <span className="font-bold text-white">₹{Number(reconcileTxn.amount).toFixed(2)} (+ ₹{Number(reconcileTxn.slab_charge || 0).toFixed(2)} Fee)</span>
+                  <span className="font-bold text-slate-900 font-mono">₹{Number(reconcileTxn.amount).toFixed(2)} (+ ₹{Number(reconcileTxn.slab_charge || 0).toFixed(2)} Fee)</span>
                 </div>
-                <div className="flex justify-between text-slate-400">
+                <div className="flex justify-between text-slate-500">
                   <span>Current Status:</span>
-                  <span className="font-black uppercase tracking-wider text-amber-400">{reconcileTxn.status}</span>
+                  <span className="font-black uppercase tracking-wider text-amber-700">{reconcileTxn.status}</span>
                 </div>
               </div>
 
               {/* Action Selector */}
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">Reconciliation Action</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Reconciliation Action</label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => setReconcileAction('mark_success')}
                     className={`py-2 px-3 rounded-xl text-xs font-bold border transition text-center cursor-pointer ${
                       reconcileAction === 'mark_success'
-                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-sm'
-                        : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-300 shadow-sm'
+                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:text-slate-900'
                     }`}
                   >
                     ✓ Mark as Success
@@ -1628,8 +1827,8 @@ export const AdminPayoutManagement: React.FC = () => {
                     onClick={() => setReconcileAction('mark_failed')}
                     className={`py-2 px-3 rounded-xl text-xs font-bold border transition text-center cursor-pointer ${
                       reconcileAction === 'mark_failed'
-                        ? 'bg-rose-500/20 text-rose-300 border-rose-500/50 shadow-sm'
-                        : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
+                        ? 'bg-rose-50 text-rose-700 border-rose-300 shadow-sm'
+                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:text-slate-900'
                     }`}
                   >
                     ✕ Mark as Failed & Refund
@@ -1639,22 +1838,22 @@ export const AdminPayoutManagement: React.FC = () => {
 
               {reconcileAction === 'mark_success' ? (
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">
-                    Bank UTR / Reference RRN <span className="text-slate-500 font-normal">(Optional)</span>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Bank UTR / Reference RRN <span className="text-slate-400 font-normal">(Optional)</span>
                   </label>
                   <input
                     type="text"
                     value={reconcileUtr}
                     onChange={(e) => setReconcileUtr(e.target.value)}
                     placeholder="Enter Bank UTR (e.g. 429011982736)"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none font-mono"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:bg-white focus:border-indigo-600 focus:outline-none font-mono"
                   />
-                  <p className="text-[11px] text-slate-400 mt-1">
+                  <p className="text-[11px] text-slate-500 mt-1">
                     Marking as Success keeps merchant wallet funds debited and confirms bank settlement.
                   </p>
                 </div>
               ) : (
-                <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-300 text-xs">
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs">
                   <p className="font-bold">Notice:</p>
                   <p className="text-[11px] mt-0.5">
                     Marking as failed will immediately refund ₹{Number(reconcileTxn.total_deducted || reconcileTxn.amount).toFixed(2)} back to merchant's wallet (if not already refunded).
@@ -1663,15 +1862,15 @@ export const AdminPayoutManagement: React.FC = () => {
               )}
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">
-                  Admin Note / Remarks <span className="text-slate-500 font-normal">(Optional)</span>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Admin Note / Remarks <span className="text-slate-400 font-normal">(Optional)</span>
                 </label>
                 <input
                   type="text"
                   value={reconcileNote}
                   onChange={(e) => setReconcileNote(e.target.value)}
                   placeholder="e.g. Verified with bank / UTR confirmed"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:bg-white focus:border-indigo-600 focus:outline-none"
                 />
               </div>
 
@@ -1680,17 +1879,17 @@ export const AdminPayoutManagement: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowReconcileModal(false)}
-                  className="w-1/2 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold text-xs transition-colors cursor-pointer"
+                  className="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={reconcileLoading}
-                  className={`w-1/2 py-2.5 text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-lg cursor-pointer ${
+                  className={`w-1/2 py-2.5 text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer ${
                     reconcileAction === 'mark_success'
-                      ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30'
-                      : 'bg-rose-600 hover:bg-rose-500 shadow-rose-600/30'
+                      ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30'
+                      : 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/30'
                   }`}
                 >
                   {reconcileLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Confirm Reconciliation'}
@@ -1703,57 +1902,57 @@ export const AdminPayoutManagement: React.FC = () => {
 
       {/* LIVE BANK STATUS MODAL */}
       {showLiveStatusModal && liveBankResult && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="relative w-full max-w-lg bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-5 shadow-2xl">
             
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <div className="flex items-center gap-2.5">
-                <div className="p-2.5 bg-indigo-500/20 text-indigo-400 rounded-xl">
+                <div className="p-2.5 bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-xl">
                   <Building2 className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-white">Live Bank Gateway Status</h3>
-                  <p className="text-xs text-slate-400 font-mono">Query: {liveBankResult.query_id}</p>
+                  <h3 className="text-base font-black text-slate-900">Live Bank Gateway Status</h3>
+                  <p className="text-xs text-slate-500 font-mono">Query: {liveBankResult.query_id}</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowLiveStatusModal(false)}
-                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition cursor-pointer"
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Status Banner */}
-            <div className="text-center py-3 bg-slate-950/80 rounded-2xl border border-slate-800/80 space-y-2">
+            <div className="text-center py-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
               <span className={`inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
                 String(liveBankResult.data?.status || '').toLowerCase() === 'success'
-                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                   : String(liveBankResult.data?.status || '').toLowerCase() === 'failed'
-                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
-                  : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                  ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                  : 'bg-amber-50 text-amber-700 border border-amber-200'
               }`}>
                 {String(liveBankResult.data?.status || '').toLowerCase() === 'success' ? (
-                  <CheckCircle2 className="w-4 h-4" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 ) : String(liveBankResult.data?.status || '').toLowerCase() === 'failed' ? (
-                  <AlertCircle className="w-4 h-4" />
+                  <AlertCircle className="w-4 h-4 text-rose-600" />
                 ) : (
-                  <Clock className="w-4 h-4 animate-pulse" />
+                  <Clock className="w-4 h-4 text-amber-600 animate-pulse" />
                 )}
                 {liveBankResult.data?.status || 'UNKNOWN'}
               </span>
 
               {liveBankResult.data?.utr && (
                 <div className="pt-1">
-                  <p className="text-[10px] uppercase font-bold text-slate-400">Bank Reference / UTR</p>
-                  <p className="text-lg font-black font-mono text-emerald-400 tracking-wider flex items-center justify-center gap-2">
+                  <p className="text-[10px] uppercase font-bold text-slate-500">Bank Reference / UTR</p>
+                  <p className="text-lg font-black font-mono text-emerald-700 tracking-wider flex items-center justify-center gap-2">
                     {liveBankResult.data.utr}
                     <button
                       onClick={() => copyToClipboard(liveBankResult.data.utr, 'modal_utr')}
-                      className="text-slate-400 hover:text-white p-1 rounded"
+                      className="text-slate-400 hover:text-slate-700 p-1 rounded cursor-pointer"
                       title="Copy UTR"
                     >
-                      {copiedUtr === 'modal_utr' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                      {copiedUtr === 'modal_utr' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
                     </button>
                   </p>
                 </div>
@@ -1761,53 +1960,53 @@ export const AdminPayoutManagement: React.FC = () => {
             </div>
 
             {/* Detail Grid */}
-            <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800/80 space-y-2 text-xs font-medium">
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-xs font-medium">
               {liveBankResult.data?.order_id && (
-                <div className="flex justify-between border-b border-slate-800/60 pb-1.5">
-                  <span className="text-slate-400">Gateway Order ID:</span>
-                  <span className="font-mono font-bold text-white">{liveBankResult.data.order_id}</span>
+                <div className="flex justify-between border-b border-slate-200 pb-1.5">
+                  <span className="text-slate-500">Gateway Order ID:</span>
+                  <span className="font-mono font-bold text-slate-900">{liveBankResult.data.order_id}</span>
                 </div>
               )}
               {liveBankResult.data?.client_order_id && (
-                <div className="flex justify-between border-b border-slate-800/60 pb-1.5">
-                  <span className="text-slate-400">Client Order ID:</span>
-                  <span className="font-mono font-bold text-indigo-300">{liveBankResult.data.client_order_id}</span>
+                <div className="flex justify-between border-b border-slate-200 pb-1.5">
+                  <span className="text-slate-500">Client Order ID:</span>
+                  <span className="font-mono font-bold text-indigo-700">{liveBankResult.data.client_order_id}</span>
                 </div>
               )}
               {liveBankResult.data?.beneficiary_name && (
-                <div className="flex justify-between border-b border-slate-800/60 pb-1.5">
-                  <span className="text-slate-400">Beneficiary:</span>
-                  <span className="font-bold text-white uppercase">{liveBankResult.data.beneficiary_name}</span>
+                <div className="flex justify-between border-b border-slate-200 pb-1.5">
+                  <span className="text-slate-500">Beneficiary:</span>
+                  <span className="font-bold text-slate-900 uppercase">{liveBankResult.data.beneficiary_name}</span>
                 </div>
               )}
               {liveBankResult.data?.account_number && (
-                <div className="flex justify-between border-b border-slate-800/60 pb-1.5">
-                  <span className="text-slate-400">Bank Account & IFSC:</span>
-                  <span className="font-mono font-bold text-white">{liveBankResult.data.account_number} • {liveBankResult.data.ifsc_code}</span>
+                <div className="flex justify-between border-b border-slate-200 pb-1.5">
+                  <span className="text-slate-500">Bank Account & IFSC:</span>
+                  <span className="font-mono font-bold text-slate-900">{liveBankResult.data.account_number} • {liveBankResult.data.ifsc_code}</span>
                 </div>
               )}
               {liveBankResult.data?.transfer_mode && (
-                <div className="flex justify-between border-b border-slate-800/60 pb-1.5">
-                  <span className="text-slate-400">Transfer Mode:</span>
-                  <span className="font-bold text-emerald-400">{liveBankResult.data.transfer_mode}</span>
+                <div className="flex justify-between border-b border-slate-200 pb-1.5">
+                  <span className="text-slate-500">Transfer Mode:</span>
+                  <span className="font-bold text-emerald-700">{liveBankResult.data.transfer_mode}</span>
                 </div>
               )}
               {liveBankResult.data?.amount && (
-                <div className="flex justify-between border-b border-slate-800/60 pb-1.5">
-                  <span className="text-slate-400">Amount / Fees:</span>
-                  <span className="font-bold text-white">
+                <div className="flex justify-between border-b border-slate-200 pb-1.5">
+                  <span className="text-slate-500">Amount / Fees:</span>
+                  <span className="font-bold text-slate-900 font-mono">
                     ₹{Number(liveBankResult.data.amount).toFixed(2)}
                     {liveBankResult.data.fee ? ` (+ ₹${Number(liveBankResult.data.fee).toFixed(2)} fee)` : ''}
                   </span>
                 </div>
               )}
               {liveBankResult.data?.created_at && (
-                <div className="flex justify-between border-b border-slate-800/60 pb-1.5">
-                  <span className="text-slate-400">Bank Gateway Time:</span>
-                  <span className="font-mono text-slate-300">{new Date(liveBankResult.data.created_at).toLocaleString('en-IN')}</span>
+                <div className="flex justify-between border-b border-slate-200 pb-1.5">
+                  <span className="text-slate-500">Bank Gateway Time:</span>
+                  <span className="font-mono text-slate-700">{new Date(liveBankResult.data.created_at).toLocaleString('en-IN')}</span>
                 </div>
               )}
-              <div className="pt-1 flex items-center gap-1.5 text-emerald-400 text-[11px] font-bold">
+              <div className="pt-1 flex items-center gap-1.5 text-emerald-700 text-[11px] font-bold">
                 <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                 <span>Portal database has been synchronized with latest bank status.</span>
               </div>
@@ -1823,7 +2022,7 @@ export const AdminPayoutManagement: React.FC = () => {
                     setShowReceipt(true);
                     setShowLiveStatusModal(false);
                   }}
-                  className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-lg shadow-indigo-600/30"
+                  className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
                 >
                   <ExternalLink className="w-3.5 h-3.5" /> View Full Receipt
                 </button>
@@ -1831,7 +2030,7 @@ export const AdminPayoutManagement: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowLiveStatusModal(false)}
-                className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold text-xs transition-colors cursor-pointer"
+                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition-colors cursor-pointer"
               >
                 Close
               </button>

@@ -134,17 +134,17 @@ export const UserAccountStatement: React.FC = () => {
     <div className="space-y-6 w-full pb-10">
       
       {/* HEADER BANNER */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-slate-800 p-6 sm:p-8 rounded-3xl shadow-2xl">
+      <div className="bg-white border border-slate-200 p-6 sm:p-8 rounded-3xl shadow-sm">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="space-y-1">
-            <span className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold uppercase inline-flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" /> Bank Passbook & Account Statement
+            <span className="px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold uppercase inline-flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" /> Bank Passbook & Account Statement
             </span>
-            <h1 className="text-2xl sm:text-3xl font-black text-white">
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900">
               Wallet Account Statement
             </h1>
-            <p className="text-xs text-slate-400">
-              Account: <strong className="text-slate-200">{account?.name}</strong> • Firm: <span className="text-slate-300">{account?.firm_name}</span> • Mobile: <span className="font-mono text-slate-300">{account?.mobile_number}</span>
+            <p className="text-xs text-slate-500">
+              Account: <strong className="text-slate-800">{account?.name}</strong> • Firm: <span className="text-slate-700">{account?.firm_name}</span> • Mobile: <span className="font-mono text-slate-700">{account?.mobile_number}</span>
             </p>
           </div>
 
@@ -152,78 +152,78 @@ export const UserAccountStatement: React.FC = () => {
             <button
               onClick={() => setShowPrintModal(true)}
               disabled={!statement || statement.entries.length === 0}
-              className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/30 transition-all cursor-pointer"
+              className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition-all cursor-pointer"
             >
               <Printer className="w-4 h-4" /> Print Passbook
             </button>
             <button
               onClick={handleExportCSV}
               disabled={!statement || statement.entries.length === 0}
-              className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer"
+              className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer"
             >
               <Download className="w-4 h-4" /> Export CSV
             </button>
             <button
               onClick={fetchStatement}
               disabled={loading}
-              className="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl transition-colors cursor-pointer"
+              className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-200 rounded-xl transition-colors cursor-pointer"
               title="Refresh"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-indigo-600' : ''}`} />
             </button>
           </div>
         </div>
 
         {/* 5-SUMMARY CARDS GRID (PASSBOOK HEADER BALANCES) */}
         {summary && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 mt-6 border-t border-slate-800/80 pt-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 mt-6 border-t border-slate-100 pt-5">
             
             {/* 1. Opening Balance */}
-            <div className="bg-slate-950/80 border border-slate-800 p-4 rounded-2xl">
-              <p className="text-[10px] uppercase font-bold text-slate-400">Opening Balance</p>
-              <p className="text-lg font-black text-white mt-1">
+            <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl">
+              <p className="text-[10px] uppercase font-bold text-slate-500">Opening Balance</p>
+              <p className="text-lg font-black text-slate-900 mt-1">
                 ₹{summary.opening_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </p>
             </div>
 
             {/* 2. Total Inflow / Credits */}
-            <div className="bg-slate-950/80 border border-emerald-500/20 p-4 rounded-2xl">
-              <p className="text-[10px] uppercase font-bold text-emerald-400 flex items-center gap-1">
+            <div className="bg-emerald-50/70 border border-emerald-200 p-4 rounded-2xl">
+              <p className="text-[10px] uppercase font-bold text-emerald-700 flex items-center gap-1">
                 <ArrowDownLeft className="w-3.5 h-3.5" /> Total Inflow (Credits)
               </p>
-              <p className="text-lg font-black text-emerald-400 mt-1">
+              <p className="text-lg font-black text-emerald-700 mt-1">
                 +₹{summary.total_credits.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </p>
             </div>
 
             {/* 3. Total Outflow / Debits */}
-            <div className="bg-slate-950/80 border border-rose-500/20 p-4 rounded-2xl">
-              <p className="text-[10px] uppercase font-bold text-rose-400 flex items-center gap-1">
+            <div className="bg-rose-50/70 border border-rose-200 p-4 rounded-2xl">
+              <p className="text-[10px] uppercase font-bold text-rose-700 flex items-center gap-1">
                 <ArrowUpRight className="w-3.5 h-3.5" /> Total Outflow (Debits)
               </p>
-              <p className="text-lg font-black text-rose-400 mt-1">
+              <p className="text-lg font-black text-rose-700 mt-1">
                 -₹{summary.total_debits.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </p>
             </div>
 
             {/* 4. Total Commission Highlight Card */}
-            <div className="bg-gradient-to-br from-amber-500/10 via-slate-950/90 to-purple-500/10 border border-amber-500/30 p-4 rounded-2xl shadow-sm">
-              <p className="text-[10px] uppercase font-bold text-amber-400 flex items-center gap-1">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Total Commission
+            <div className="bg-amber-50/70 border border-amber-200 p-4 rounded-2xl shadow-xs">
+              <p className="text-[10px] uppercase font-bold text-amber-700 flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5 text-amber-600" /> Total Commission
               </p>
-              <p className="text-lg font-black text-amber-300 mt-1">
+              <p className="text-lg font-black text-amber-700 mt-1">
                 ₹{summary.total_commission.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </p>
-              <p className="text-[9px] text-slate-400 mt-0.5">Downline Earnings</p>
+              <p className="text-[9px] text-amber-600 mt-0.5">Downline Earnings</p>
             </div>
 
             {/* 5. Closing / Current Balance */}
-            <div className="bg-slate-950/90 border border-indigo-500/30 p-4 rounded-2xl col-span-2 sm:col-span-1 shadow-md">
-              <p className="text-[10px] uppercase font-bold text-indigo-400">Net Running Balance</p>
-              <p className="text-xl font-black text-white mt-1">
+            <div className="bg-indigo-50/80 border border-indigo-200 p-4 rounded-2xl col-span-2 sm:col-span-1 shadow-xs">
+              <p className="text-[10px] uppercase font-bold text-indigo-700">Net Running Balance</p>
+              <p className="text-xl font-black text-slate-900 mt-1">
                 ₹{summary.closing_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </p>
-              <p className="text-[9px] text-slate-400 mt-0.5">{summary.total_entries_count} Entries in Period</p>
+              <p className="text-[9px] text-slate-500 mt-0.5">{summary.total_entries_count} Entries in Period</p>
             </div>
 
           </div>
@@ -231,15 +231,15 @@ export const UserAccountStatement: React.FC = () => {
       </div>
 
       {/* FILTER CONTROLS BAR */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-4 shadow-xl">
+      <div className="bg-white border border-slate-200 rounded-3xl p-5 space-y-4 shadow-sm">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           
           {/* Quick Date Range Pills */}
-          <div className="flex flex-wrap items-center gap-1.5 bg-slate-950 border border-slate-800 p-1 rounded-2xl text-xs">
+          <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 border border-slate-200 p-1 rounded-2xl text-xs">
             <button
               onClick={() => handleDatePillChange('today')}
               className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
-                activeDatePill === 'today' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                activeDatePill === 'today' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Today
@@ -247,7 +247,7 @@ export const UserAccountStatement: React.FC = () => {
             <button
               onClick={() => handleDatePillChange('yesterday')}
               className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
-                activeDatePill === 'yesterday' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                activeDatePill === 'yesterday' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Yesterday
@@ -255,7 +255,7 @@ export const UserAccountStatement: React.FC = () => {
             <button
               onClick={() => handleDatePillChange('week')}
               className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
-                activeDatePill === 'week' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                activeDatePill === 'week' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Last 7 Days
@@ -263,7 +263,7 @@ export const UserAccountStatement: React.FC = () => {
             <button
               onClick={() => handleDatePillChange('month')}
               className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
-                activeDatePill === 'month' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                activeDatePill === 'month' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               This Month
@@ -271,7 +271,7 @@ export const UserAccountStatement: React.FC = () => {
             <button
               onClick={() => handleDatePillChange('all')}
               className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
-                activeDatePill === 'all' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                activeDatePill === 'all' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               All Time
@@ -280,8 +280,8 @@ export const UserAccountStatement: React.FC = () => {
 
           {/* Custom Date Inputs */}
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-xl">
-              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+            <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl">
+              <Calendar className="w-3.5 h-3.5 text-slate-500" />
               <input
                 type="date"
                 value={startDate}
@@ -289,12 +289,12 @@ export const UserAccountStatement: React.FC = () => {
                   setStartDate(e.target.value);
                   setActiveDatePill('custom');
                 }}
-                className="bg-transparent text-slate-200 focus:outline-none"
+                className="bg-transparent text-slate-800 focus:outline-none"
               />
             </div>
-            <span className="text-slate-500">to</span>
-            <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-xl">
-              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+            <span className="text-slate-400">to</span>
+            <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl">
+              <Calendar className="w-3.5 h-3.5 text-slate-500" />
               <input
                 type="date"
                 value={endDate}
@@ -302,7 +302,7 @@ export const UserAccountStatement: React.FC = () => {
                   setEndDate(e.target.value);
                   setActiveDatePill('custom');
                 }}
-                className="bg-transparent text-slate-200 focus:outline-none"
+                className="bg-transparent text-slate-800 focus:outline-none"
               />
             </div>
           </div>
@@ -310,17 +310,17 @@ export const UserAccountStatement: React.FC = () => {
         </div>
 
         {/* Secondary Filter Row: Search & Dropdowns */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-slate-800/60">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-slate-100">
           
           {/* Live Search Input */}
           <div className="relative w-full sm:w-80">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by UTR, narration, card, A/C..."
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none"
+              className="w-full bg-slate-50 border border-slate-200 focus:bg-white rounded-xl pl-9 pr-4 py-2 text-xs text-slate-900 placeholder-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none transition"
             />
           </div>
 
@@ -329,7 +329,7 @@ export const UserAccountStatement: React.FC = () => {
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 focus:border-indigo-500 focus:outline-none flex-1 sm:flex-none cursor-pointer"
+              className="bg-slate-50 border border-slate-200 focus:bg-white rounded-xl px-3 py-2 text-xs text-slate-700 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none flex-1 sm:flex-none cursor-pointer"
             >
               <option value="ALL">All Flow (Cr & Dr)</option>
               <option value="CREDIT">Credits Only (+ Inflow)</option>
@@ -340,7 +340,7 @@ export const UserAccountStatement: React.FC = () => {
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 focus:border-indigo-500 focus:outline-none flex-1 sm:flex-none cursor-pointer"
+              className="bg-slate-50 border border-slate-200 focus:bg-white rounded-xl px-3 py-2 text-xs text-slate-700 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none flex-1 sm:flex-none cursor-pointer"
             >
               <option value="ALL">All Categories</option>
               <option value="QR_LOAD">QR Add Money</option>
@@ -355,32 +355,32 @@ export const UserAccountStatement: React.FC = () => {
       </div>
 
       {/* PASSBOOK ENTRIES TABLE */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-          <h2 className="text-base font-black text-white flex items-center gap-2">
-            <FileText className="w-5 h-5 text-indigo-400" /> Account Passbook Entries
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-sm">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+            <FileText className="w-5 h-5 text-indigo-600" /> Account Passbook Entries
           </h2>
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-slate-500">
             Showing {statement?.entries.length || 0} entries
           </span>
         </div>
 
         {loading ? (
           <div className="py-20 text-center text-slate-400 text-xs">
-            <RefreshCw className="w-7 h-7 animate-spin mx-auto mb-2 text-indigo-400" />
+            <RefreshCw className="w-7 h-7 animate-spin mx-auto mb-2 text-indigo-600" />
             Generating account statement...
           </div>
         ) : !statement || statement.entries.length === 0 ? (
           <div className="py-20 text-center text-slate-400 text-xs space-y-2">
-            <AlertCircle className="w-8 h-8 text-slate-600 mx-auto" />
-            <p className="font-bold text-slate-300">No statement transactions found</p>
+            <AlertCircle className="w-8 h-8 text-slate-300 mx-auto" />
+            <p className="font-bold text-slate-700">No statement transactions found</p>
             <p className="text-[11px] text-slate-500">Try adjusting your date range or filter criteria.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+          <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+            <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-950/80 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-800">
+                <tr className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200">
                   <th className="py-3 px-4">Date & Time</th>
                   <th className="py-3 px-4">Reference / UTR</th>
                   <th className="py-3 px-4">Narration & Math Breakdown</th>
@@ -391,12 +391,12 @@ export const UserAccountStatement: React.FC = () => {
                   <th className="py-3 px-4 text-center">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className="divide-y divide-slate-100">
                 {statement.entries.map((entry) => (
-                  <tr key={entry.id} className="hover:bg-slate-800/30 transition-colors">
+                  <tr key={entry.id} className="hover:bg-slate-50/80 transition-colors">
                     
                     {/* Date */}
-                    <td className="py-3 px-4 whitespace-nowrap text-slate-400 font-mono text-[11px]">
+                    <td className="py-3 px-4 whitespace-nowrap text-slate-600 font-mono text-[11px]">
                       {new Date(entry.created_at).toLocaleString('en-IN', {
                         day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
                       })}
@@ -405,27 +405,27 @@ export const UserAccountStatement: React.FC = () => {
                     {/* Reference / UTR with Copy */}
                     <td className="py-3 px-4 whitespace-nowrap">
                       {entry.reference_id ? (
-                        <div className="flex items-center gap-1.5 font-mono text-slate-300 text-xs">
+                        <div className="flex items-center gap-1.5 font-mono text-slate-700 text-xs">
                           <span>{entry.reference_id}</span>
                           <button
                             onClick={() => copyToClipboard(entry.reference_id, entry.id)}
-                            className="text-slate-500 hover:text-white cursor-pointer"
+                            className="text-slate-400 hover:text-slate-700 cursor-pointer"
                             title="Copy Ref"
                           >
-                            {copiedId === entry.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            {copiedId === entry.id ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                           </button>
                         </div>
                       ) : (
-                        <span className="text-slate-500">—</span>
+                        <span className="text-slate-400">—</span>
                       )}
                     </td>
 
                     {/* Narration with Title & Math Breakdown */}
                     <td className="py-3 px-4 max-w-md">
-                      <div className="font-bold text-white text-xs">{entry.title}</div>
-                      <div className="text-[11px] text-slate-400 mt-0.5">{entry.narration}</div>
+                      <div className="font-bold text-slate-900 text-xs">{entry.title}</div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">{entry.narration}</div>
                       {entry.math_breakdown && (
-                        <div className="mt-1 inline-block bg-slate-950 border border-slate-800 px-2 py-0.5 rounded-md font-mono text-[10px] text-indigo-300">
+                        <div className="mt-1 inline-block bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md font-mono text-[10px] text-indigo-700 font-bold">
                           {entry.math_breakdown}
                         </div>
                       )}
@@ -433,44 +433,44 @@ export const UserAccountStatement: React.FC = () => {
 
                     {/* Category */}
                     <td className="py-3 px-4 whitespace-nowrap">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-slate-950 border border-slate-800 text-slate-300">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-slate-100 border border-slate-200 text-slate-700">
                         {entry.category}
                       </span>
                     </td>
 
                     {/* Debit (Dr) in Red */}
-                    <td className="py-3 px-4 whitespace-nowrap text-right font-black text-rose-400 text-xs">
+                    <td className="py-3 px-4 whitespace-nowrap text-right font-black text-rose-600 text-xs">
                       {entry.type === 'DEBIT' ? (
                         `-₹${entry.net_amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
                       ) : (
-                        <span className="text-slate-600 font-normal">—</span>
+                        <span className="text-slate-400 font-normal">—</span>
                       )}
                     </td>
 
                     {/* Credit (Cr) in Green */}
-                    <td className="py-3 px-4 whitespace-nowrap text-right font-black text-emerald-400 text-xs">
+                    <td className="py-3 px-4 whitespace-nowrap text-right font-black text-emerald-600 text-xs">
                       {entry.type === 'CREDIT' ? (
                         `+₹${entry.net_amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
                       ) : (
-                        <span className="text-slate-600 font-normal">—</span>
+                        <span className="text-slate-400 font-normal">—</span>
                       )}
                     </td>
 
                     {/* Running Balance */}
-                    <td className="py-3 px-4 whitespace-nowrap text-right font-mono font-black text-white text-xs">
+                    <td className="py-3 px-4 whitespace-nowrap text-right font-mono font-black text-slate-900 text-xs">
                       ₹{entry.running_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </td>
 
                     {/* Status Badge */}
                     <td className="py-3 px-4 whitespace-nowrap text-center">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
                         entry.status === 'SUCCESS'
-                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                           : entry.status === 'REFUNDED'
-                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                           : entry.status === 'FAILED' || entry.status === 'REJECTED'
-                          ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                          : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                          ? 'bg-rose-50 text-rose-700 border-rose-200'
+                          : 'bg-amber-50 text-amber-700 border-amber-200'
                       }`}>
                         {entry.status}
                       </span>

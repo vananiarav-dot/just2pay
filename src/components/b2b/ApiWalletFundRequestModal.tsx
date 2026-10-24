@@ -245,25 +245,25 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/85 backdrop-blur-md overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+      <div className="relative w-full max-w-4xl bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col">
         
         {/* MODAL HEADER */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/60 shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white shrink-0">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-950/50">
+            <div className="p-2.5 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 shadow-sm">
               <Wallet className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base sm:text-lg font-black text-white tracking-wide">
-                  API Wallet Top-Up (Fund Request)
+                <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-wide">
+                  API Wallet Top-Up
                 </h2>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-50 text-emerald-700 border border-emerald-200">
                   B2B Upstream
                 </span>
               </div>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500">
                 Top up your API balances for CSPL, BBPS & Instant Payouts via electronic UTR submission
               </p>
             </div>
@@ -271,21 +271,21 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition"
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* TABS NAVIGATION */}
-        <div className="flex items-center px-6 border-b border-slate-800 bg-slate-950/40 shrink-0 gap-2 pt-2">
+        <div className="flex items-center px-6 border-b border-slate-200 bg-slate-50/70 shrink-0 gap-2 pt-2">
           <button
             type="button"
             onClick={() => setActiveTab('submit')}
             className={`px-4 py-2.5 text-xs font-bold rounded-t-xl transition-all border-b-2 flex items-center gap-2 ${
               activeTab === 'submit'
-                ? 'border-indigo-500 text-white bg-slate-850/60 shadow-sm'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'border-indigo-600 text-indigo-700 bg-white shadow-sm'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
             <Layers className="w-4 h-4" />
@@ -297,14 +297,14 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
             onClick={() => setActiveTab('history')}
             className={`px-4 py-2.5 text-xs font-bold rounded-t-xl transition-all border-b-2 flex items-center gap-2 ${
               activeTab === 'history'
-                ? 'border-indigo-500 text-white bg-slate-850/60 shadow-sm'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'border-indigo-600 text-indigo-700 bg-white shadow-sm'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
             <Clock className="w-4 h-4" />
             <span>Request History & Live Status</span>
             {historyList.filter(r => r.status === 'pending').length > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono font-bold animate-pulse">
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-50 text-amber-700 border border-amber-200 font-mono font-bold animate-pulse">
                 {historyList.filter(r => r.status === 'pending').length}
               </span>
             )}
@@ -312,22 +312,22 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
         </div>
 
         {/* SCROLLABLE CONTENT BODY */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6 bg-white">
 
           {/* TAB 1: SUBMIT FUND REQUEST */}
           {activeTab === 'submit' && (
             <div className="space-y-6">
               
               {/* SECTION 1: USEPAY DEPOSIT BANK ACCOUNTS */}
-              <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3">
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Landmark className="w-4 h-4 text-indigo-400" />
-                    <h3 className="text-xs sm:text-sm font-black text-white uppercase tracking-wider">
+                    <Landmark className="w-4 h-4 text-indigo-600" />
+                    <h3 className="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider">
                       UsePay Deposit Bank Accounts
                     </h3>
                   </div>
-                  <span className="text-[11px] text-slate-400">
+                  <span className="text-[11px] text-slate-500">
                     Deposit funds to any of the accounts below before submitting UTR
                   </span>
                 </div>
@@ -343,14 +343,14 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
                         key={bank.id}
                         className={`p-3.5 rounded-xl border transition relative ${
                           adminBankAccountId === bank.id 
-                            ? 'bg-indigo-950/30 border-indigo-500/50 shadow-md' 
-                            : 'bg-slate-900/90 border-slate-800 hover:border-slate-700'
+                            ? 'bg-indigo-50/60 border-indigo-400 shadow-sm' 
+                            : 'bg-white border-slate-200 hover:border-slate-300'
                         }`}
                       >
                         <div className="flex items-start justify-between mb-2">
                           <div>
-                            <span className="text-xs font-black text-white">{bank.bank_name}</span>
-                            <p className="text-[11px] text-slate-400">{bank.account_holder_name}</p>
+                            <span className="text-xs font-black text-slate-900">{bank.bank_name}</span>
+                            <p className="text-[11px] text-slate-500">{bank.account_holder_name}</p>
                           </div>
                           <button
                             type="button"
@@ -358,7 +358,7 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
                             className={`text-[10px] font-bold px-2 py-0.5 rounded-md transition ${
                               adminBankAccountId === bank.id
                                 ? 'bg-indigo-600 text-white shadow-sm'
-                                : 'bg-slate-800 text-slate-300 hover:text-white'
+                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                             }`}
                           >
                             {adminBankAccountId === bank.id ? '✓ Selected' : 'Select'}
@@ -366,48 +366,48 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
                         </div>
 
                         <div className="space-y-1.5 text-xs font-mono">
-                          <div className="flex items-center justify-between bg-slate-950/70 px-2.5 py-1.5 rounded-lg border border-slate-800/80">
-                            <span className="text-slate-400 text-[11px]">A/C No:</span>
+                          <div className="flex items-center justify-between bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200">
+                            <span className="text-slate-500 text-[11px]">A/C No:</span>
                             <div className="flex items-center gap-2">
-                              <span className="text-white font-bold">{bank.account_number}</span>
+                              <span className="text-slate-900 font-bold">{bank.account_number}</span>
                               <button
                                 type="button"
                                 onClick={() => handleCopy(bank.account_number, `ac_${bank.id}`)}
-                                className="text-slate-400 hover:text-white"
+                                className="text-slate-400 hover:text-slate-700"
                                 title="Copy Account Number"
                               >
-                                {copiedText === `ac_${bank.id}` ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                                {copiedText === `ac_${bank.id}` ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                               </button>
                             </div>
                           </div>
 
-                          <div className="flex items-center justify-between bg-slate-950/70 px-2.5 py-1.5 rounded-lg border border-slate-800/80">
-                            <span className="text-slate-400 text-[11px]">IFSC:</span>
+                          <div className="flex items-center justify-between bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200">
+                            <span className="text-slate-500 text-[11px]">IFSC:</span>
                             <div className="flex items-center gap-2">
-                              <span className="text-indigo-300 font-bold">{bank.ifsc_code}</span>
+                              <span className="text-indigo-700 font-bold">{bank.ifsc_code}</span>
                               <button
                                 type="button"
                                 onClick={() => handleCopy(bank.ifsc_code, `ifsc_${bank.id}`)}
-                                className="text-slate-400 hover:text-white"
+                                className="text-slate-400 hover:text-slate-700"
                                 title="Copy IFSC"
                               >
-                                {copiedText === `ifsc_${bank.id}` ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                                {copiedText === `ifsc_${bank.id}` ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                               </button>
                             </div>
                           </div>
 
                           {bank.upi_id && (
-                            <div className="flex items-center justify-between bg-slate-950/70 px-2.5 py-1.5 rounded-lg border border-slate-800/80">
-                              <span className="text-slate-400 text-[11px]">UPI ID:</span>
+                            <div className="flex items-center justify-between bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200">
+                              <span className="text-slate-500 text-[11px]">UPI ID:</span>
                               <div className="flex items-center gap-2">
-                                <span className="text-emerald-300 font-bold">{bank.upi_id}</span>
+                                <span className="text-emerald-700 font-bold">{bank.upi_id}</span>
                                 <button
                                   type="button"
                                   onClick={() => handleCopy(bank.upi_id!, `upi_${bank.id}`)}
-                                  className="text-slate-400 hover:text-white"
+                                  className="text-slate-400 hover:text-slate-700"
                                   title="Copy UPI ID"
                                 >
-                                  {copiedText === `upi_${bank.id}` ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                                  {copiedText === `upi_${bank.id}` ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                                 </button>
                               </div>
                             </div>
@@ -425,13 +425,10 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
                 {/* 1. WALLET_TYPE SELECTION (CRITICAL: Inactive services are NOT shown at all) */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-black text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                    <label className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
                       <span>1. Target Destination Wallet</span>
-                      <span className="text-rose-400">*</span>
+                      <span className="text-rose-500">*</span>
                     </label>
-                    <span className="text-[11px] text-slate-400">
-                      (Only active API services are shown)
-                    </span>
                   </div>
 
                   {servicesLoading ? (
@@ -439,8 +436,8 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
                       Checking active API wallet services...
                     </div>
                   ) : activeServices.length === 0 ? (
-                    <div className="p-4 rounded-xl bg-rose-950/30 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 shrink-0" />
+                    <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
                       <span>No wallet services are currently active on the UsePay API provider side.</span>
                     </div>
                   ) : (
@@ -451,25 +448,25 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
                           onClick={() => setWalletType(service.wallet_type)}
                           className={`cursor-pointer p-4 rounded-2xl border transition-all flex flex-col justify-between ${
                             walletType === service.wallet_type
-                              ? 'bg-gradient-to-br from-indigo-950/60 to-slate-900 border-indigo-500 ring-2 ring-indigo-500/20 shadow-lg'
-                              : 'bg-slate-950 border-slate-800 hover:border-slate-700 opacity-90'
+                              ? 'bg-indigo-50/60 border-indigo-500 ring-2 ring-indigo-500/20 shadow-sm'
+                              : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
                           }`}
                         >
                           <div>
                             <div className="flex items-center justify-between mb-2">
-                              <span className="text-xs font-black text-white">{service.label}</span>
-                              <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border ${service.badge_color}`}>
+                              <span className="text-xs font-black text-slate-900">{service.label}</span>
+                              <span className="text-[9px] font-black px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">
                                 Active
                               </span>
                             </div>
-                            <p className="text-[11px] text-slate-400 leading-snug line-clamp-2">
+                            <p className="text-[11px] text-slate-500 leading-snug line-clamp-2">
                               {service.service_title}
                             </p>
                           </div>
 
-                          <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
-                            <span className="text-slate-400 font-medium">Balance:</span>
-                            <span className="font-mono font-bold text-white">
+                          <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                            <span className="text-slate-500 font-medium">Balance:</span>
+                            <span className="font-mono font-bold text-slate-900">
                               ₹{service.current_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                             </span>
                           </div>
@@ -481,9 +478,9 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
 
                 {/* 2. AMOUNT INPUT & QUICK CHIPS */}
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                  <label className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
                     <span>2. Deposit Amount (₹)</span>
-                    <span className="text-rose-400">*</span>
+                    <span className="text-rose-500">*</span>
                   </label>
 
                   <div className="relative">
@@ -496,7 +493,7 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
                       onChange={(e) => setAmount(e.target.value)}
                       placeholder="e.g. 50000"
                       required
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-3 text-sm text-white font-mono font-bold focus:border-indigo-500 focus:outline-none transition placeholder-slate-600"
+                      className="w-full bg-slate-50 border border-slate-200 focus:bg-white rounded-xl pl-9 pr-4 py-3 text-sm text-slate-900 font-mono font-bold focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none transition placeholder-slate-400"
                     />
                   </div>
 
@@ -507,7 +504,7 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
                         key={amt}
                         type="button"
                         onClick={() => setAmount(String(amt))}
-                        className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-750 text-slate-300 hover:text-white border border-slate-700/80 text-[11px] font-mono font-bold transition"
+                        className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 hover:border-indigo-200 text-[11px] font-mono font-bold transition"
                       >
                         +₹{amt.toLocaleString('en-IN')}
                       </button>
@@ -517,9 +514,9 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
 
                 {/* 3. UTR NUMBER INPUT */}
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                  <label className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
                     <span>3. Unique Bank Reference / UTR Number</span>
-                    <span className="text-rose-400">*</span>
+                    <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -527,7 +524,7 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
                     onChange={(e) => setUtrNumber(e.target.value.toUpperCase())}
                     placeholder="e.g. UTR9876543210 or 12-digit Ref"
                     required
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono font-bold focus:border-indigo-500 focus:outline-none transition placeholder-slate-600 tracking-wider"
+                    className="w-full bg-slate-50 border border-slate-200 focus:bg-white rounded-xl px-4 py-3 text-sm text-slate-900 font-mono font-bold focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none transition placeholder-slate-400 tracking-wider"
                   />
                   <p className="text-[11px] text-slate-500">
                     The 12-digit numeric or alphanumeric reference number generated by your bank during transfer
@@ -536,14 +533,14 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
 
                 {/* 4. ADMIN BANK ACCOUNT ID (OPTIONAL) */}
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-200 uppercase tracking-wider flex items-center justify-between">
+                  <label className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center justify-between">
                     <span>4. Deposited Bank Account (admin_bank_account_id)</span>
                     <span className="text-[10px] text-slate-400 font-normal">Optional</span>
                   </label>
                   <select
                     value={adminBankAccountId}
                     onChange={(e) => setAdminBankAccountId(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:border-indigo-500 focus:outline-none transition cursor-pointer"
+                    className="w-full bg-slate-50 border border-slate-200 focus:bg-white rounded-xl px-4 py-3 text-xs text-slate-800 font-medium focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none transition cursor-pointer"
                   >
                     <option value="">-- None / Direct UPI Transfer --</option>
                     {bankAccounts.map((b) => (
@@ -554,56 +551,38 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
                   </select>
                 </div>
 
-                {/* 5. PROOF URL & SCREENSHOT UPLOAD (OPTIONAL) */}
+                {/* 5. PROOF SCREENSHOT UPLOAD (OPTIONAL) */}
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-200 uppercase tracking-wider flex items-center justify-between">
-                    <span>5. Deposit Slip / Payment Receipt (proof_url)</span>
+                  <label className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center justify-between">
+                    <span>5. Deposit Slip / Payment Receipt</span>
                     <span className="text-[10px] text-slate-400 font-normal">Optional</span>
                   </label>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {/* Option A: URL Input */}
-                    <div>
+                  <div>
+                    <label className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-dashed border-slate-300 hover:border-indigo-500 bg-slate-50 hover:bg-white text-xs font-bold text-slate-700 hover:text-indigo-600 cursor-pointer transition shadow-sm">
+                      <Upload className="w-4 h-4 text-indigo-500" />
+                      <span>Upload Receipt Screenshot</span>
                       <input
-                        type="url"
-                        value={proofUrl.startsWith('data:') ? '' : proofUrl}
-                        onChange={(e) => {
-                          setProofUrl(e.target.value);
-                          setProofPreview(e.target.value || null);
-                        }}
-                        placeholder="https://example.com/receipt.jpg"
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none transition placeholder-slate-600 font-mono"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileUpload}
+                        className="hidden"
                       />
-                      <span className="text-[10px] text-slate-500 block mt-1">Direct public image link</span>
-                    </div>
-
-                    {/* Option B: File Upload */}
-                    <div>
-                      <label className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl border border-dashed border-slate-700 hover:border-indigo-500 bg-slate-950/60 hover:bg-slate-900 text-xs text-slate-300 hover:text-white cursor-pointer transition">
-                        <Upload className="w-4 h-4 text-indigo-400" />
-                        <span>Upload Receipt Screenshot</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleFileUpload}
-                          className="hidden"
-                        />
-                      </label>
-                      <span className="text-[10px] text-slate-500 block mt-1">PNG, JPG, JPEG up to 5MB</span>
-                    </div>
+                    </label>
+                    <span className="text-[10px] text-slate-500 block mt-1">PNG, JPG, JPEG up to 5MB</span>
                   </div>
 
                   {/* Receipt Preview Thumbnail */}
                   {proofPreview && (
-                    <div className="mt-2 flex items-center gap-3 p-2 bg-slate-950 rounded-xl border border-slate-800">
+                    <div className="mt-2 flex items-center gap-3 p-2 bg-slate-50 rounded-xl border border-slate-200">
                       <img 
                         src={proofPreview} 
                         alt="Receipt Preview" 
-                        className="w-12 h-12 object-cover rounded-lg border border-slate-700" 
+                        className="w-12 h-12 object-cover rounded-lg border border-slate-200" 
                       />
                       <div className="text-xs truncate flex-1">
-                        <span className="text-emerald-400 font-bold block">✓ Receipt Attached</span>
-                        <span className="text-slate-400 text-[11px] truncate block">Ready to submit with fund request</span>
+                        <span className="text-emerald-700 font-bold block">✓ Receipt Attached</span>
+                        <span className="text-slate-500 text-[11px] truncate block">Ready to submit with fund request</span>
                       </div>
                       <button
                         type="button"
@@ -611,7 +590,7 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
                           setProofPreview(null);
                           setProofUrl('');
                         }}
-                        className="text-xs text-rose-400 hover:text-rose-300 font-bold px-2 py-1"
+                        className="text-xs text-rose-600 hover:text-rose-700 font-bold px-2 py-1"
                       >
                         Remove
                       </button>
@@ -621,15 +600,15 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
 
                 {/* ERROR & SUCCESS MESSAGES */}
                 {formError && (
-                  <div className="p-3.5 rounded-xl bg-rose-950/40 border border-rose-500/40 text-rose-300 text-xs flex items-center gap-2.5">
-                    <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                  <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2.5">
+                    <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
                     <span>{formError}</span>
                   </div>
                 )}
 
                 {formSuccess && (
-                  <div className="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2.5">
-                    <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                  <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs flex items-center gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
                     <span>{formSuccess}</span>
                   </div>
                 )}
@@ -638,7 +617,7 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
                 <button
                   type="submit"
                   disabled={submitting || activeServices.length === 0}
-                  className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black text-sm tracking-wide shadow-xl shadow-indigo-950/60 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full py-3.5 px-6 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm tracking-wide shadow-md shadow-indigo-600/20 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {submitting ? (
                     <>
@@ -659,12 +638,12 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
           {/* TAB 2: REQUEST HISTORY & LIVE STATUS */}
           {activeTab === 'history' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-200">
                 <div>
-                  <h3 className="text-xs sm:text-sm font-black text-white uppercase tracking-wider">
+                  <h3 className="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider">
                     Submitted Fund Requests
                   </h3>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-slate-500">
                     Live approval status from UsePay Admin (Pending / Approved / Rejected)
                   </p>
                 </div>
@@ -672,9 +651,9 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
                 <button
                   onClick={() => loadHistory(true)}
                   disabled={historyLoading}
-                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold flex items-center gap-1.5 transition"
+                  className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition"
                 >
-                  <RefreshCw className={`w-3.5 h-3.5 ${historyLoading ? 'animate-spin text-indigo-400' : ''}`} />
+                  <RefreshCw className={`w-3.5 h-3.5 ${historyLoading ? 'animate-spin text-indigo-600' : ''}`} />
                   <span>Refresh</span>
                 </button>
               </div>
@@ -685,15 +664,15 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
                 </div>
               ) : historyList.length === 0 ? (
                 <div className="py-12 text-center text-slate-400 space-y-2">
-                  <Clock className="w-8 h-8 text-slate-600 mx-auto" />
-                  <p className="text-sm font-bold text-slate-300">No Fund Requests Found</p>
+                  <Clock className="w-8 h-8 text-slate-300 mx-auto" />
+                  <p className="text-sm font-bold text-slate-700">No Fund Requests Found</p>
                   <p className="text-xs text-slate-500">Submit a new request from the first tab to top up your API wallet.</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-950/60">
+                <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
-                      <tr className="bg-slate-900/90 text-slate-400 border-b border-slate-800 text-[11px] uppercase tracking-wider font-extrabold">
+                      <tr className="bg-slate-50 text-slate-500 border-b border-slate-200 text-[10px] uppercase tracking-wider font-bold">
                         <th className="py-3 px-4">Date / Time</th>
                         <th className="py-3 px-4">Request ID</th>
                         <th className="py-3 px-4">Target Wallet</th>
@@ -703,12 +682,12 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
                         <th className="py-3 px-4 text-right">Action</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800/80">
+                    <tbody className="divide-y divide-slate-100">
                       {historyList.map((req) => (
-                        <tr key={req.id} className="hover:bg-slate-900/50 transition">
+                        <tr key={req.id} className="hover:bg-slate-50/80 transition">
                           
                           {/* 1. Date */}
-                          <td className="py-3 px-4 text-slate-300 whitespace-nowrap font-medium text-[11px]">
+                          <td className="py-3 px-4 text-slate-600 whitespace-nowrap font-medium text-[11px]">
                             {new Date(req.submitted_at).toLocaleString('en-IN', {
                               day: '2-digit',
                               month: 'short',
@@ -719,15 +698,15 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
                           </td>
 
                           {/* 2. Request ID */}
-                          <td className="py-3 px-4 font-mono font-semibold text-slate-300 whitespace-nowrap">
+                          <td className="py-3 px-4 font-mono font-semibold text-slate-800 whitespace-nowrap">
                             <div className="flex items-center gap-1.5">
                               <span className="truncate max-w-[120px]">{req.request_id}</span>
                               <button
                                 onClick={() => handleCopy(req.request_id, req.request_id)}
-                                className="text-slate-500 hover:text-white"
+                                className="text-slate-400 hover:text-slate-700"
                                 title="Copy Request ID"
                               >
-                                {copiedText === req.request_id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                                {copiedText === req.request_id ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
                               </button>
                             </div>
                           </td>
@@ -736,10 +715,10 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
                           <td className="py-3 px-4 whitespace-nowrap">
                             <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase border ${
                               req.wallet_type === 'cspl'
-                                ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                                ? 'bg-amber-50 text-amber-700 border-amber-200'
                                 : req.wallet_type === 'payout'
-                                ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
-                                : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                                ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                             }`}>
                               {req.wallet_type === 'cspl' && 'CSPL Fast Bill'}
                               {req.wallet_type === 'payout' && 'Bank Payout'}
@@ -748,20 +727,20 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
                           </td>
 
                           {/* 4. Amount */}
-                          <td className="py-3 px-4 font-mono font-bold text-white whitespace-nowrap">
+                          <td className="py-3 px-4 font-mono font-bold text-slate-900 whitespace-nowrap">
                             ₹{Number(req.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                           </td>
 
                           {/* 5. UTR Number */}
-                          <td className="py-3 px-4 font-mono text-slate-300 whitespace-nowrap">
+                          <td className="py-3 px-4 font-mono text-slate-700 whitespace-nowrap">
                             <div className="flex items-center gap-1.5">
                               <span>{req.utr_number}</span>
                               <button
                                 onClick={() => handleCopy(req.utr_number, req.utr_number)}
-                                className="text-slate-500 hover:text-white"
+                                className="text-slate-400 hover:text-slate-700"
                                 title="Copy UTR"
                               >
-                                {copiedText === req.utr_number ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                                {copiedText === req.utr_number ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
                               </button>
                             </div>
                           </td>
@@ -770,10 +749,10 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
                           <td className="py-3 px-4 text-center whitespace-nowrap">
                             <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase border ${
                               req.status === 'approved'
-                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                 : req.status === 'rejected'
-                                ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                                : 'bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse'
+                                ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                : 'bg-amber-50 text-amber-700 border-amber-200 animate-pulse'
                             }`}>
                               {req.status === 'approved' && <CheckCircle2 className="w-3 h-3" />}
                               {req.status === 'rejected' && <X className="w-3 h-3" />}
@@ -789,7 +768,7 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
                                 <button
                                   type="button"
                                   onClick={() => setPreviewProofModal(req.proof_url || null)}
-                                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition"
+                                  className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-200 transition"
                                   title="View Receipt Screenshot"
                                 >
                                   <Eye className="w-3.5 h-3.5" />
@@ -800,7 +779,7 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
                                 type="button"
                                 onClick={() => handleCheckStatus(req.request_id)}
                                 disabled={checkingId === req.request_id}
-                                className="px-2.5 py-1 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-[11px] font-bold transition flex items-center gap-1 disabled:opacity-50"
+                                className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-[11px] font-bold transition flex items-center gap-1 disabled:opacity-50"
                                 title="Query live status from UsePay API"
                               >
                                 <RefreshCw className={`w-3 h-3 ${checkingId === req.request_id ? 'animate-spin' : ''}`} />
@@ -821,14 +800,14 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
         </div>
 
         {/* MODAL FOOTER */}
-        <div className="px-6 py-3 border-t border-slate-800 bg-slate-950/70 flex items-center justify-between text-xs text-slate-400 shrink-0">
+        <div className="px-6 py-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between text-xs text-slate-500 shrink-0">
           <span className="flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
             <span>Secure End-to-End B2B API Fund Verification</span>
           </span>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold transition text-xs"
+            className="px-4 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold transition text-xs"
           >
             Close
           </button>
@@ -839,20 +818,20 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
       {/* PROOF PREVIEW LIGHTBOX MODAL */}
       {previewProofModal && (
         <div 
-          className="fixed inset-0 z-60 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4"
+          className="fixed inset-0 z-60 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={() => setPreviewProofModal(null)}
         >
-          <div className="relative max-w-2xl w-full bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-2xl space-y-3" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-              <span className="text-xs font-bold text-white">Payment Receipt Proof</span>
+          <div className="relative max-w-2xl w-full bg-white border border-slate-200 rounded-2xl p-4 shadow-2xl space-y-3" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <span className="text-xs font-bold text-slate-900">Payment Receipt Proof</span>
               <button 
                 onClick={() => setPreviewProofModal(null)} 
-                className="text-slate-400 hover:text-white p-1"
+                className="text-slate-400 hover:text-slate-700 p-1"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="max-h-[70vh] overflow-auto rounded-xl flex items-center justify-center bg-slate-950">
+            <div className="max-h-[70vh] overflow-auto rounded-xl flex items-center justify-center bg-slate-50 border border-slate-200">
               <img 
                 src={previewProofModal} 
                 alt="Payment Receipt" 
@@ -864,7 +843,7 @@ export const ApiWalletFundRequestModal: React.FC<ApiWalletFundRequestModalProps>
                 href={previewProofModal}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 font-bold"
+                className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700 font-bold"
               >
                 <span>Open in full tab</span>
                 <ExternalLink className="w-3 h-3" />

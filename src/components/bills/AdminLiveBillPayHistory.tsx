@@ -296,13 +296,43 @@ export const AdminLiveBillPayHistory: React.FC = () => {
   });
 
   // Calculate Metrics
-  const totalVolume = historyList
-    .filter(i => (i.status || '').toLowerCase() === 'success' || (i.status || '').toLowerCase() === 'approved')
-    .reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+  const totalRequests = historyList.length;
+  const totalVolume = historyList.reduce(
+    (sum, item) => sum + (parseFloat(item.amount) || 0), 
+    0
+  );
 
-  const successCount = historyList.filter(i => (i.status || '').toLowerCase() === 'success' || (i.status || '').toLowerCase() === 'approved').length;
-  const pendingCount = historyList.filter(i => (i.status || '').toLowerCase() === 'pending').length;
-  const failedCount = historyList.filter(i => (i.status || '').toLowerCase() === 'failed' || (i.status || '').toLowerCase() === 'rejected').length;
+  const successTransactions = historyList.filter(
+    i => (i.status || '').toLowerCase() === 'success' || (i.status || '').toLowerCase() === 'approved'
+  );
+  const successVolume = successTransactions.reduce(
+    (sum, item) => sum + (parseFloat(item.amount) || 0), 
+    0
+  );
+  const successCount = successTransactions.length;
+
+  const totalEarnedCharges = successTransactions.reduce(
+    (sum, item) => sum + getServiceCharge(item),
+    0
+  );
+
+  const pendingTransactions = historyList.filter(
+    i => (i.status || '').toLowerCase() === 'pending'
+  );
+  const pendingVolume = pendingTransactions.reduce(
+    (sum, item) => sum + (parseFloat(item.amount) || 0),
+    0
+  );
+  const pendingCount = pendingTransactions.length;
+
+  const failedTransactions = historyList.filter(
+    i => (i.status || '').toLowerCase() === 'failed' || (i.status || '').toLowerCase() === 'rejected'
+  );
+  const failedVolume = failedTransactions.reduce(
+    (sum, item) => sum + (parseFloat(item.amount) || 0),
+    0
+  );
+  const failedCount = failedTransactions.length;
 
   return (
     <div className="space-y-6 w-full pb-16 animate-in fade-in duration-300">
@@ -310,17 +340,17 @@ export const AdminLiveBillPayHistory: React.FC = () => {
 
 
       {/* TOP HEADER WITH LIVE BILL PAY TOGGLE SWITCH IN TOP RIGHT CORNER */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-4 sm:p-5 rounded-3xl shadow-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200/90 p-4 sm:p-5 rounded-2xl shadow-sm">
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
-            <div className="p-2.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+            <div className="p-2.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-600">
               <Receipt className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-black text-white tracking-tight flex items-center gap-2">
+              <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
                 LiveBillPay Monitoring & Gateway Control
               </h2>
-              <p className="text-[11px] sm:text-xs text-slate-400">
+              <p className="text-[11px] sm:text-xs text-slate-500">
                 Monitor live BBPS transactions and control Retailer panel Live Bill Pay menu & route access
               </p>
             </div>
@@ -328,20 +358,20 @@ export const AdminLiveBillPayHistory: React.FC = () => {
         </div>
 
         {/* TOP RIGHT CORNER: TOGGLE SWITCH */}
-        <div className="flex items-center self-end sm:self-auto gap-3.5 bg-slate-950/80 border border-slate-800/80 px-4 py-3 rounded-2xl shadow-inner">
+        <div className="flex items-center self-end sm:self-auto gap-3.5 bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl shadow-inner">
           <div className="text-right">
             <div className="flex items-center gap-1.5 justify-end">
-              <Zap className={`w-3.5 h-3.5 ${liveBillPayEnabled ? 'text-emerald-400 fill-emerald-400/20' : 'text-slate-500'}`} />
-              <span className="text-xs font-black text-white">Live Bill Pay Menu</span>
+              <Zap className={`w-3.5 h-3.5 ${liveBillPayEnabled ? 'text-emerald-600 fill-emerald-600/20' : 'text-slate-400'}`} />
+              <span className="text-xs font-black text-slate-900">Live Bill Pay Menu</span>
               <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${
                 liveBillPayEnabled 
-                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' 
-                  : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                  : 'bg-rose-50 text-rose-700 border-rose-200'
               }`}>
                 {liveBillPayEnabled ? 'ACTIVE / VISIBLE' : 'OFF / BLOCKED'}
               </span>
             </div>
-            <p className="text-[10px] text-slate-400 mt-0.5">
+            <p className="text-[10px] text-slate-500 mt-0.5">
               {liveBillPayEnabled 
                 ? 'User panel menu is visible & route accessible' 
                 : 'User menu is hidden & route URL blocked'}
@@ -355,8 +385,8 @@ export const AdminLiveBillPayHistory: React.FC = () => {
             aria-checked={liveBillPayEnabled}
             disabled={isTogglingLiveBill}
             onClick={handleToggleLiveBill}
-            className={`relative inline-flex h-8 w-14 shrink-0 cursor-pointer items-center rounded-full p-1 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900 shadow-inner ${
-              liveBillPayEnabled ? 'bg-emerald-600 justify-end' : 'bg-slate-800 justify-start'
+            className={`relative inline-flex h-8 w-14 shrink-0 cursor-pointer items-center rounded-full p-1 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 shadow-inner ${
+              liveBillPayEnabled ? 'bg-emerald-600 justify-end' : 'bg-slate-300 justify-start'
             } ${isTogglingLiveBill ? 'opacity-70 cursor-not-allowed' : ''}`}
             title={liveBillPayEnabled ? 'Click to Turn OFF Live Bill Pay on User Panel' : 'Click to Turn ON Live Bill Pay on User Panel'}
           >
@@ -377,91 +407,139 @@ export const AdminLiveBillPayHistory: React.FC = () => {
 
       {/* FEEDBACK ALERT */}
       {toggleAlert && (
-        <div className={`flex items-center justify-between p-3.5 rounded-2xl border text-xs font-semibold animate-in slide-in-from-top-2 ${
+        <div className={`flex items-center justify-between p-3.5 rounded-xl border text-xs font-semibold animate-in slide-in-from-top-2 ${
           toggleAlert.type === 'success' 
-            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' 
-            : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+            ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+            : 'bg-rose-50 border-rose-200 text-rose-800'
         }`}>
           <div className="flex items-center gap-2.5">
             {toggleAlert.type === 'success' ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
             ) : (
-              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
             )}
             <span>{toggleAlert.message}</span>
           </div>
-          <button onClick={() => setToggleAlert(null)} className="text-slate-400 hover:text-white p-1">
+          <button onClick={() => setToggleAlert(null)} className="text-slate-400 hover:text-slate-600 p-1">
             <X className="w-4 h-4" />
           </button>
         </div>
       )}
 
-      {/* METRICS CARDS */}
+      {/* Summary Cards (Consolidated 4-Card Dual-Metric Layout) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        
-        {/* TOTAL VOLUME */}
-        <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl space-y-2 shadow-xl">
+        {/* 1. TOTAL REQUESTS */}
+        <div className="bg-white border border-slate-200/90 p-4 sm:p-5 rounded-2xl shadow-sm flex flex-col justify-between hover:border-slate-300 transition">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Total Live BBPS Volume</span>
-            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
-              <Landmark className="w-4 h-4" />
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Total Live Bills</span>
+            <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600">
+              <Receipt className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-black text-white font-mono">
-            ₹{totalVolume.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-          </p>
-          <p className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
-            <ArrowUpRight className="w-3.5 h-3.5" /> Approved Settlement Volume
-          </p>
-        </div>
-
-        {/* SUCCESSFUL PAYMENTS */}
-        <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl space-y-2 shadow-xl">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Successful Transactions</span>
-            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
-              <CheckCircle2 className="w-4 h-4" />
+          <div className="mt-2.5">
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="text-2xl font-black text-slate-900">{totalRequests}</p>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                Vol: ₹{totalVolume.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+            <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+              <span className="text-slate-400 font-medium">Earned Charges</span>
+              <span className="font-bold text-purple-700 font-mono">
+                ₹{totalEarnedCharges.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              </span>
             </div>
           </div>
-          <p className="text-2xl font-black text-white font-mono">{successCount}</p>
-          <p className="text-[11px] text-slate-400 font-medium">Completed via BBPS Gateway</p>
         </div>
 
-        {/* PENDING TRANSACTIONS */}
-        <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl space-y-2 shadow-xl">
+        {/* 2. PENDING / PROCESSING */}
+        <div className="bg-white border border-slate-200/90 p-4 sm:p-5 rounded-2xl shadow-sm flex flex-col justify-between hover:border-amber-300 transition">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Pending / Processing</span>
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-700">Pending / Processing</span>
+            <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
               <Clock className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-black text-white font-mono">{pendingCount}</p>
-          <p className="text-[11px] text-amber-400 font-medium">Processing at Biller Network</p>
+          <div className="mt-2.5">
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="text-xl sm:text-2xl font-black text-amber-600 font-mono">
+                ₹{pendingVolume.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              </p>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                {pendingCount} Pending
+              </span>
+            </div>
+            <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+              <span className="text-slate-400 font-medium">Network Queue</span>
+              <span className="font-bold text-amber-700">
+                {pendingCount === 0 ? 'Queue Clear' : `${pendingCount} in queue`}
+              </span>
+            </div>
+          </div>
         </div>
 
-        {/* FAILED TRANSACTIONS */}
-        <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl space-y-2 shadow-xl">
+        {/* 3. SUCCESSFUL BILLS */}
+        <div className="bg-white border border-slate-200/90 p-4 sm:p-5 rounded-2xl shadow-sm flex flex-col justify-between hover:border-emerald-300 transition">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Failed / Rejected</span>
-            <div className="p-2 rounded-xl bg-rose-500/10 text-rose-400">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700">Successful Bills</span>
+            <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
+              <CheckCircle2 className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-2.5">
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="text-xl sm:text-2xl font-black text-emerald-700 font-mono">
+                ₹{successVolume.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              </p>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                {successCount} Successful
+              </span>
+            </div>
+            <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+              <span className="text-slate-400 font-medium">Earned Fees</span>
+              <span className="font-bold text-purple-700 font-mono">
+                + ₹{totalEarnedCharges.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* 4. FAILED / REJECTED */}
+        <div className="bg-white border border-slate-200/90 p-4 sm:p-5 rounded-2xl shadow-sm flex flex-col justify-between hover:border-rose-300 transition">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-rose-700">Failed / Rejected</span>
+            <div className="w-8 h-8 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600">
               <AlertCircle className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-black text-white font-mono">{failedCount}</p>
-          <p className="text-[11px] text-rose-400 font-medium">Gateway Error / Network Rejection</p>
+          <div className="mt-2.5">
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="text-xl sm:text-2xl font-black text-rose-600 font-mono">
+                ₹{failedVolume.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              </p>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                {failedCount} Failed
+              </span>
+            </div>
+            <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+              <span className="text-slate-400 font-medium">Gateway Status</span>
+              <span className="font-bold text-rose-600">
+                {failedCount === 0 ? 'No Failures' : 'Auto-Refunded'}
+              </span>
+            </div>
+          </div>
         </div>
-
       </div>
 
       {/* SEARCH & FILTER BAR */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-4 shadow-xl">
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-5 space-y-4 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-purple-400" />
-            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-300">
+            <Filter className="w-4 h-4 text-purple-600" />
+            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
               Filter Records
             </span>
-            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-300 font-mono">
+            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 font-mono">
               {filteredHistory.length}{filteredHistory.length !== historyList.length ? ` / ${historyList.length}` : ''}
             </span>
           </div>
@@ -470,7 +548,7 @@ export const AdminLiveBillPayHistory: React.FC = () => {
             <button
               type="button"
               onClick={handleClearFilters}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-rose-300 hover:text-rose-200 border border-rose-500/30 text-xs font-semibold transition"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold transition"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               Clear Filters
@@ -487,13 +565,13 @@ export const AdminLiveBillPayHistory: React.FC = () => {
               placeholder="Search User / Mobile / Biller / Txn ID / Ref ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-8 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-8 py-2 text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-purple-600"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -501,72 +579,72 @@ export const AdminLiveBillPayHistory: React.FC = () => {
           </div>
 
           {/* DATE RANGE DROPDOWN */}
-          <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs">
-            <Calendar className="w-4 h-4 text-purple-400 shrink-0" />
+          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs">
+            <Calendar className="w-4 h-4 text-purple-600 shrink-0" />
             <select
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value as any)}
-              className="bg-transparent text-slate-200 text-xs focus:outline-none cursor-pointer pr-2 font-medium"
+              className="bg-transparent text-slate-800 text-xs focus:outline-none cursor-pointer pr-2 font-medium"
             >
-              <option value="ALL" className="bg-slate-900 text-slate-200">All Time</option>
-              <option value="TODAY" className="bg-slate-900 text-slate-200">Today</option>
-              <option value="YESTERDAY" className="bg-slate-900 text-slate-200">Yesterday</option>
-              <option value="LAST_7_DAYS" className="bg-slate-900 text-slate-200">Last 7 Days</option>
-              <option value="LAST_30_DAYS" className="bg-slate-900 text-slate-200">Last 30 Days</option>
-              <option value="THIS_MONTH" className="bg-slate-900 text-slate-200">This Month</option>
-              <option value="CUSTOM" className="bg-slate-900 text-slate-200">Custom Range</option>
+              <option value="ALL">All Time</option>
+              <option value="TODAY">Today</option>
+              <option value="YESTERDAY">Yesterday</option>
+              <option value="LAST_7_DAYS">Last 7 Days</option>
+              <option value="LAST_30_DAYS">Last 30 Days</option>
+              <option value="THIS_MONTH">This Month</option>
+              <option value="CUSTOM">Custom Range</option>
             </select>
           </div>
 
           {/* CUSTOM DATE RANGE INPUTS */}
           {dateFilter === 'CUSTOM' && (
-            <div className="flex items-center gap-2 bg-slate-950 border border-purple-500/40 rounded-xl px-3 py-1.5 text-xs">
-              <span className="text-[11px] text-slate-400 font-medium">From:</span>
+            <div className="flex items-center gap-2 bg-slate-50 border border-purple-300 rounded-xl px-3 py-1.5 text-xs">
+              <span className="text-[11px] text-slate-500 font-medium">From:</span>
               <input
                 type="date"
                 value={customStartDate}
                 onChange={(e) => setCustomStartDate(e.target.value)}
-                className="bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-purple-400 font-mono"
+                className="bg-white border border-slate-300 text-slate-800 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-purple-600 font-mono"
               />
-              <span className="text-[11px] text-slate-400 font-medium">To:</span>
+              <span className="text-[11px] text-slate-500 font-medium">To:</span>
               <input
                 type="date"
                 value={customEndDate}
                 onChange={(e) => setCustomEndDate(e.target.value)}
-                className="bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-purple-400 font-mono"
+                className="bg-white border border-slate-300 text-slate-800 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-purple-600 font-mono"
               />
             </div>
           )}
 
-          {/* STATUS DROPDOWN (CONVERTED FROM PILL BUTTONS) */}
-          <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs">
+          {/* STATUS DROPDOWN */}
+          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="bg-transparent text-slate-200 text-xs focus:outline-none cursor-pointer font-medium"
+              className="bg-transparent text-slate-800 text-xs focus:outline-none cursor-pointer font-medium"
             >
-              <option value="all" className="bg-slate-900 text-slate-200">All Records ({historyList.length})</option>
-              <option value="success" className="bg-slate-900 text-slate-200">Success ({successCount})</option>
-              <option value="pending" className="bg-slate-900 text-slate-200">Pending ({pendingCount})</option>
-              <option value="failed" className="bg-slate-900 text-slate-200">Failed ({failedCount})</option>
+              <option value="all">All Records ({historyList.length})</option>
+              <option value="success">Success ({successCount})</option>
+              <option value="pending">Pending ({pendingCount})</option>
+              <option value="failed">Failed ({failedCount})</option>
             </select>
           </div>
         </div>
       </div>
 
       {/* MASTER HISTORY TABLE */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-2xl">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-          <h2 className="text-base font-extrabold text-white flex items-center gap-2">
-            <Receipt className="w-4 h-4 text-purple-400" />
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-6 space-y-4 shadow-sm">
+        <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+          <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+            <Receipt className="w-4 h-4 text-purple-600" />
             Showing {filteredHistory.length} Live Bill Pay Records
           </h2>
         </div>
 
         {filteredHistory.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-slate-950 text-[10px] uppercase tracking-wider font-extrabold text-slate-400 border-b border-slate-800">
+            <table className="w-full text-left text-xs text-slate-700">
+              <thead className="bg-slate-50 text-[10px] uppercase tracking-wider font-extrabold text-slate-500 border-b border-slate-200">
                 <tr>
                   <th className="p-3.5">Date & Time</th>
                   <th className="p-3.5">Merchant / Firm Name</th>
@@ -581,15 +659,15 @@ export const AdminLiveBillPayHistory: React.FC = () => {
                   <th className="p-3.5">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 font-mono">
+              <tbody className="divide-y divide-slate-100 font-mono">
                 {filteredHistory.map((item, idx) => {
                   const itemId = item.client_transaction_id || item.transaction_id || item.bbps_txn_ref_id || item.id;
                   const isCheckingThis = checkingStatusId === itemId;
                   const cardLast4 = getCardLast4(item);
 
                   return (
-                    <tr key={itemId || idx} className="hover:bg-slate-800/30 transition">
-                      <td className="p-3.5 text-slate-400 font-sans whitespace-nowrap">
+                    <tr key={itemId || idx} className="hover:bg-slate-50/80 transition">
+                      <td className="p-3.5 text-slate-600 font-sans whitespace-nowrap">
                         {new Date(item.created_at || Date.now()).toLocaleString('en-IN', {
                           day: '2-digit', month: 'short', year: 'numeric',
                           hour: '2-digit', minute: '2-digit'
@@ -597,74 +675,74 @@ export const AdminLiveBillPayHistory: React.FC = () => {
                       </td>
                       <td className="p-3.5 font-sans">
                         <div className="space-y-0.5">
-                          <p className="font-extrabold text-white text-xs flex items-center gap-1.5">
-                            <Building2 className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                          <p className="font-extrabold text-slate-900 text-xs flex items-center gap-1.5">
+                            <Building2 className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
                             <span>{item.firm_name || 'Retailer Firm'}</span>
                           </p>
-                          <p className="text-[11px] text-slate-400 flex items-center gap-1 font-mono">
-                            <UserCheck className="w-3 h-3 text-slate-500 shrink-0" />
+                          <p className="text-[11px] text-slate-500 flex items-center gap-1 font-mono">
+                            <UserCheck className="w-3 h-3 text-slate-400 shrink-0" />
                             <span>{item.user_id || 'System User'}</span>
                             {item.user_name && item.user_name !== item.user_id && (
-                              <span className="text-slate-500 font-sans text-[10px]">({item.user_name})</span>
+                              <span className="text-slate-400 font-sans text-[10px]">({item.user_name})</span>
                             )}
                           </p>
                         </div>
                       </td>
                       <td className="p-3.5">
-                        <p className="font-bold text-white font-sans">{item.biller_name || item.biller_id}</p>
-                        <span className="text-[10px] text-indigo-400 font-mono">{item.biller_id}</span>
+                        <p className="font-bold text-slate-900 font-sans">{item.biller_name || item.biller_id}</p>
+                        <span className="text-[10px] text-indigo-600 font-mono font-medium">{item.biller_id}</span>
                       </td>
                       <td className="p-3.5 font-sans whitespace-nowrap">
                         {cardLast4 ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-200 font-mono text-xs font-bold tracking-wider shadow-sm">
-                            <CreditCard className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-purple-50 border border-purple-200 text-purple-700 font-mono text-xs font-bold tracking-wider">
+                            <CreditCard className="w-3.5 h-3.5 text-purple-600 shrink-0" />
                             •••• {cardLast4}
                           </span>
                         ) : (
-                          <span className="text-slate-500 font-mono text-xs">•••• ----</span>
+                          <span className="text-slate-400 font-mono text-xs">•••• ----</span>
                         )}
                       </td>
                       <td className="p-3.5 font-sans">
-                        <p className="font-bold text-white">{item.customer_name || 'VALUED CARD HOLDER'}</p>
-                        <p className="text-[10px] text-slate-400 font-mono">{item.customer_mobile || item.mobile}</p>
+                        <p className="font-bold text-slate-900">{item.customer_name || 'VALUED CARD HOLDER'}</p>
+                        <p className="text-[10px] text-slate-500 font-mono">{item.customer_mobile || item.mobile}</p>
                       </td>
-                      <td className="p-3.5 font-black text-white text-xs font-mono">
+                      <td className="p-3.5 font-black text-slate-900 text-xs font-mono">
                         ₹{Number(item.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </td>
-                      <td className="p-3.5 font-bold text-pink-400 text-xs font-mono">
+                      <td className="p-3.5 font-bold text-pink-600 text-xs font-mono">
                         +₹{getServiceCharge(item).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </td>
                       <td className="p-3.5 font-sans">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
                           {item.payment_mode || 'Cash'}
                         </span>
                       </td>
                       <td className="p-3.5 font-sans">
                         {item.status === 'success' || item.status === 'approved' ? (
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1 w-fit">
-                            <CheckCircle2 className="w-3 h-3" /> Success
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1 w-fit">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Success
                           </span>
                         ) : item.status === 'pending' ? (
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1 w-fit">
-                            <Clock className="w-3 h-3" /> Pending
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1 w-fit">
+                            <Clock className="w-3 h-3 text-amber-600" /> Pending
                           </span>
                         ) : (
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-1 w-fit">
-                            <AlertCircle className="w-3 h-3" /> Failed
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1 w-fit">
+                            <AlertCircle className="w-3 h-3 text-rose-600" /> Failed
                           </span>
                         )}
                       </td>
                       <td className="p-3.5 text-[11px]">
-                        <p className="text-slate-300 font-bold">{item.client_transaction_id || item.id}</p>
+                        <p className="text-slate-800 font-bold">{item.client_transaction_id || item.id}</p>
                         {item.bbps_txn_ref_id && (
-                          <p className="text-emerald-400 text-[10px]">BBPS: {item.bbps_txn_ref_id}</p>
+                          <p className="text-indigo-600 text-[10px] font-semibold">BBPS: {item.bbps_txn_ref_id}</p>
                         )}
                       </td>
                       <td className="p-3.5 font-sans">
                         <button
                           onClick={() => handleCheckStatus(item)}
                           disabled={isCheckingThis}
-                          className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-[11px] font-bold flex items-center gap-1.5 transition shadow-md disabled:opacity-50 whitespace-nowrap"
+                          className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-bold flex items-center gap-1.5 transition shadow-sm disabled:opacity-50 whitespace-nowrap"
                         >
                           {isCheckingThis ? (
                             <>
@@ -694,23 +772,23 @@ export const AdminLiveBillPayHistory: React.FC = () => {
 
       {/* LIVE STATUS RESULT MODAL */}
       {statusModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 text-white relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 text-slate-900 relative">
             
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-4">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-purple-500/10 text-purple-400 rounded-2xl border border-purple-500/20">
+                <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl border border-purple-200">
                   <Activity className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-base text-white">Live Biller Status Check</h3>
-                  <p className="text-[11px] text-slate-400">Direct query response from UsePay BBPS Biller Network</p>
+                  <h3 className="font-extrabold text-base text-slate-900">Live Biller Status Check</h3>
+                  <p className="text-[11px] text-slate-500">Direct query response from UsePay BBPS Biller Network</p>
                 </div>
               </div>
               <button
                 onClick={() => setStatusModal(null)}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-white bg-slate-800/50 hover:bg-slate-800 transition"
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 transition"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -727,16 +805,16 @@ export const AdminLiveBillPayHistory: React.FC = () => {
               return (
                 <div className="space-y-4">
                   {/* Status Banner */}
-                  <div className={`p-4 rounded-2xl border flex items-center gap-3 ${
+                  <div className={`p-4 rounded-xl border flex items-center gap-3 ${
                     isSuccess 
-                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' 
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
                       : isPending 
-                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-300' 
-                      : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                      ? 'bg-amber-50 border-amber-200 text-amber-800' 
+                      : 'bg-rose-50 border-rose-200 text-rose-800'
                   }`}>
-                    {isSuccess && <CheckCircle2 className="w-6 h-6 text-emerald-400 shrink-0" />}
-                    {isPending && <Clock className="w-6 h-6 text-amber-400 shrink-0 animate-pulse" />}
-                    {isFailed && <AlertCircle className="w-6 h-6 text-rose-400 shrink-0" />}
+                    {isSuccess && <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />}
+                    {isPending && <Clock className="w-6 h-6 text-amber-600 shrink-0 animate-pulse" />}
+                    {isFailed && <AlertCircle className="w-6 h-6 text-rose-600 shrink-0" />}
                     <div>
                       <h4 className="font-black text-sm uppercase tracking-wide">
                         {isSuccess && 'Payment Confirmed by Biller (HTTP 200)'}
@@ -751,14 +829,14 @@ export const AdminLiveBillPayHistory: React.FC = () => {
 
                   {/* Failure / Refund Info Message */}
                   {(resData.message || resData.refund_status) && (
-                    <div className="bg-rose-950/30 border border-rose-800/40 p-3.5 rounded-2xl text-xs space-y-1">
-                      {resData.message && <p className="text-rose-200 font-medium">{resData.message}</p>}
+                    <div className="bg-rose-50 border border-rose-200 p-3.5 rounded-xl text-xs space-y-1">
+                      {resData.message && <p className="text-rose-800 font-medium">{resData.message}</p>}
                       {resData.refund_status && (
-                        <div className="flex items-center gap-2 text-rose-400 font-bold pt-1 font-mono">
+                        <div className="flex items-center gap-2 text-rose-700 font-bold pt-1 font-mono">
                           <RotateCcw className="w-3.5 h-3.5" />
                           <span>Refund Status: {resData.refund_status}</span>
                           {resData.refunded_amount && (
-                            <span className="text-white"> (₹{resData.refunded_amount})</span>
+                            <span className="text-slate-900"> (₹{resData.refunded_amount})</span>
                           )}
                         </div>
                       )}
@@ -766,67 +844,67 @@ export const AdminLiveBillPayHistory: React.FC = () => {
                   )}
 
                   {/* Transaction Details Grid */}
-                  <div className="bg-slate-950 border border-slate-800/80 rounded-2xl p-4 text-xs font-mono space-y-2.5">
-                    <div className="flex justify-between items-center border-b border-slate-800/60 pb-2">
-                      <span className="text-slate-400 font-sans">Merchant / Firm:</span>
-                      <span className="font-bold text-white font-sans text-right">
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs font-mono space-y-2.5">
+                    <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                      <span className="text-slate-500 font-sans">Merchant / Firm:</span>
+                      <span className="font-bold text-slate-900 font-sans text-right">
                         {statusModal.item.firm_name ? `${statusModal.item.firm_name} (${statusModal.item.user_id})` : (statusModal.item.user_id || 'N/A')}
                       </span>
                     </div>
 
-                    <div className="flex justify-between items-center border-b border-slate-800/60 pb-2">
-                      <span className="text-slate-400 font-sans">Card (Last 4):</span>
-                      <span className="font-bold text-purple-300 font-mono">
+                    <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                      <span className="text-slate-500 font-sans">Card (Last 4):</span>
+                      <span className="font-bold text-purple-700 font-mono">
                         {getCardLast4(statusModal.item) ? `•••• ${getCardLast4(statusModal.item)}` : 'N/A'}
                       </span>
                     </div>
 
-                    <div className="flex justify-between items-center border-b border-slate-800/60 pb-2">
-                      <span className="text-slate-400 font-sans">Biller:</span>
-                      <span className="font-bold text-white font-sans">{statusModal.item.biller_name || statusModal.item.biller_id}</span>
+                    <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                      <span className="text-slate-500 font-sans">Biller:</span>
+                      <span className="font-bold text-slate-900 font-sans">{statusModal.item.biller_name || statusModal.item.biller_id}</span>
                     </div>
 
-                    <div className="flex justify-between items-center border-b border-slate-800/60 pb-2">
-                      <span className="text-slate-400 font-sans">Customer / Card Holder:</span>
-                      <span className="font-bold text-white font-sans">{statusModal.item.customer_name || 'VALUED CARD HOLDER'}</span>
+                    <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                      <span className="text-slate-500 font-sans">Customer / Card Holder:</span>
+                      <span className="font-bold text-slate-900 font-sans">{statusModal.item.customer_name || 'VALUED CARD HOLDER'}</span>
                     </div>
 
-                    <div className="flex justify-between items-center border-b border-slate-800/60 pb-2">
-                      <span className="text-slate-400 font-sans">Amount:</span>
-                      <span className="font-black text-emerald-400 text-sm">₹{Number(statusModal.item.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                      <span className="text-slate-500 font-sans">Amount:</span>
+                      <span className="font-black text-emerald-600 text-sm">₹{Number(statusModal.item.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                     </div>
 
-                    <div className="flex justify-between items-center border-b border-slate-800/60 pb-2">
-                      <span className="text-slate-400 font-sans">Service Charge (Slab):</span>
-                      <span className="font-bold text-pink-400 font-mono">+₹{getServiceCharge(statusModal.item).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                      <span className="text-slate-500 font-sans">Service Charge (Slab):</span>
+                      <span className="font-bold text-pink-600 font-mono">+₹{getServiceCharge(statusModal.item).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                     </div>
 
-                    <div className="flex justify-between items-center border-b border-slate-800/60 pb-2">
-                      <span className="text-slate-400 font-sans">Total Deducted:</span>
-                      <span className="font-black text-white font-mono">₹{(Number(statusModal.item.amount || 0) + getServiceCharge(statusModal.item)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                      <span className="text-slate-500 font-sans">Total Deducted:</span>
+                      <span className="font-black text-slate-900 font-mono">₹{(Number(statusModal.item.amount || 0) + getServiceCharge(statusModal.item)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                     </div>
 
-                    <div className="flex justify-between items-center border-b border-slate-800/60 pb-2">
-                      <span className="text-slate-400 font-sans">Client Txn ID:</span>
-                      <span className="font-bold text-slate-200">{resData.client_transaction_id || statusModal.item.client_transaction_id || 'N/A'}</span>
+                    <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                      <span className="text-slate-500 font-sans">Client Txn ID:</span>
+                      <span className="font-bold text-slate-800">{resData.client_transaction_id || statusModal.item.client_transaction_id || 'N/A'}</span>
                     </div>
 
-                    <div className="flex justify-between items-center border-b border-slate-800/60 pb-2">
-                      <span className="text-slate-400 font-sans">BBPS Txn Ref ID:</span>
-                      <span className="font-bold text-indigo-300">{resData.bbps_txn_ref_id || resData.transaction_id || statusModal.item.bbps_txn_ref_id || 'N/A'}</span>
+                    <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                      <span className="text-slate-500 font-sans">BBPS Txn Ref ID:</span>
+                      <span className="font-bold text-indigo-700">{resData.bbps_txn_ref_id || resData.transaction_id || statusModal.item.bbps_txn_ref_id || 'N/A'}</span>
                     </div>
 
                     {resData.approval_ref_number && (
-                      <div className="flex justify-between items-center border-b border-slate-800/60 pb-2">
-                        <span className="text-slate-400 font-sans">Approval Ref No:</span>
-                        <span className="font-bold text-emerald-300">{resData.approval_ref_number}</span>
+                      <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                        <span className="text-slate-500 font-sans">Approval Ref No:</span>
+                        <span className="font-bold text-emerald-700">{resData.approval_ref_number}</span>
                       </div>
                     )}
 
                     {resData.polled_at && (
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-400 font-sans">Polled At:</span>
-                        <span className="text-slate-400 text-[11px]">{new Date(resData.polled_at).toLocaleString('en-IN')}</span>
+                        <span className="text-slate-500 font-sans">Polled At:</span>
+                        <span className="text-slate-500 text-[11px]">{new Date(resData.polled_at).toLocaleString('en-IN')}</span>
                       </div>
                     )}
                   </div>
@@ -838,7 +916,7 @@ export const AdminLiveBillPayHistory: React.FC = () => {
             <div className="pt-2 flex justify-end">
               <button
                 onClick={() => setStatusModal(null)}
-                className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg transition"
+                className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm transition"
               >
                 Close & Refresh
               </button>

@@ -711,7 +711,7 @@ router.get('/request/list', verifyToken, async (req, res) => {
 
         const { data, error } = await supabase
           .from('qr_payment_requests')
-          .select('id, user_id, qr_master_id, amount, utr_number, mobile_number, status, charge_percent, charge_amount, net_amount, distributor_commission, super_distributor_commission, rejection_reason, processed_at, processed_by, created_at')
+          .select('*')
           .order('created_at', { ascending: false });
 
         if (!error && data) {
@@ -721,11 +721,15 @@ router.get('/request/list', verifyToken, async (req, res) => {
           const mappedFromDb = data.map(r => {
             const u = (db.users || []).find(u => u.id === r.user_id);
             const q = (db.qr_masters || []).find(qm => qm.id === r.qr_master_id);
+            const isReverted = r.status === 'reverted' || (r.status === 'rejected' && String(r.rejection_reason || '').startsWith('[REVERTED]'));
             return {
               ...r,
+              status: isReverted ? 'reverted' : r.status,
+              revert_reason: r.revert_reason || (String(r.rejection_reason || '').startsWith('[REVERTED]') ? r.rejection_reason.replace('[REVERTED]', '').trim() : null),
               user_name: u ? u.name : (r.user_name || 'Retailer User'),
               firm_name: u ? u.firm_name : (r.firm_name || 'N/A'),
               mobile_number: r.mobile_number || (u ? u.mobile_number : ''),
+              user_wallet_balance: u ? Number(u.wallet_balance || 0) : 0,
               distributor_id: u ? u.distributor_id : null,
               super_distributor_id: u ? u.super_distributor_id : null,
               qr_name: q ? q.name : (r.qr_name || 'Active QR'),
@@ -1194,6 +1198,275 @@ router.post('/request/:id/process', verifyToken, requireRoles(['admin']), async 
     console.error('Process QR Request Error:', error);
     return res.status(500).json({ success: false, message: 'Server error processing payment request.' });
   }
+});
+
+// -----------------------------------------------------------------------------
+// POST /api/qr/request/:id/revert (ADMIN ONLY - UNDO / REVERT ACCIDENTAL APPROVAL)
+// Method 2 Enforcement: Blocks revert if user does not have sufficient wallet balance
+// -----------------------------------------------------------------------------
+router.post('/request/:id/revert', verifyToken, requireRoles(['admin']), async (req, res) => {
+  try {
+    const reqId = req.params.id;
+    const { reason } = req.body;
+
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Revert reason is mandatory.'
+      });
+    }
+
+    // 1. Fetch Target Request
+    let targetReq = (db.qr_payment_requests || []).find(r => r.id === reqId);
+    if (!targetReq && supabase) {
+      try {
+        const { data } = await supabase.from('qr_payment_requests').select('*').eq('id', reqId).maybeSingle();
+        if (data) targetReq = data;
+      } catch (err) {
+        console.error('Supabase fetch request error:', err);
+      }
+    }
+
+    if (!targetReq) {
+      return res.status(404).json({ success: false, message: 'Payment request record not found.' });
+    }
+
+    if (targetReq.status !== 'approved') {
+      return res.status(400).json({
+        success: false,
+        message: `Only approved requests can be reverted. Current status is ${targetReq.status.toUpperCase()}.`
+      });
+    }
+
+    // 2. Fetch User & Current Wallet Balance
+    let user = (db.users || []).find(u => u.id === targetReq.user_id);
+    if (supabase) {
+      try {
+        const { data: uData } = await supabase.from('users_profiles').select('*').eq('id', targetReq.user_id).maybeSingle();
+        if (uData) {
+          if (user) {
+            Object.assign(user, uData);
+          } else {
+            user = uData;
+            if (!db.users) db.users = [];
+            db.users.push(uData);
+          }
+        }
+      } catch (uErr) {
+        console.error('Supabase fetch user error:', uErr);
+      }
+    }
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Associated retailer user account not found.' });
+    }
+
+    const netCreditAmt = parseFloat(
+      targetReq.net_amount !== undefined
+        ? targetReq.net_amount
+        : (targetReq.amount - (targetReq.charge_amount || 0))
+    );
+    const currentWalletBalance = parseFloat(user.wallet_balance || 0);
+
+    // -------------------------------------------------------------------------
+    // METHOD 2 STRICT ENFORCEMENT:
+    // Block Revert if retailer has insufficient balance!
+    // -------------------------------------------------------------------------
+    if (currentWalletBalance < netCreditAmt) {
+      return res.status(400).json({
+        success: false,
+        insufficient_balance: true,
+        message: `Insufficient balance! User currently has ₹${currentWalletBalance.toFixed(2)}, while ₹${netCreditAmt.toFixed(2)} is required to revert. Revert can only be processed after user adds sufficient balance.`,
+        available_balance: currentWalletBalance,
+        required_amount: netCreditAmt,
+        shortage_amount: parseFloat((netCreditAmt - currentWalletBalance).toFixed(2))
+      });
+    }
+
+    // 3. ATOMIC DEDUCTION FROM USER WALLET
+    const newWalletBalance = parseFloat((currentWalletBalance - netCreditAmt).toFixed(2));
+    user.wallet_balance = newWalletBalance;
+    user.updated_at = new Date().toISOString();
+
+    // 4. REVERSE HIERARCHY COMMISSIONS
+    let distUser = user.distributor_id ? (db.users || []).find(u => u.id === user.distributor_id) : null;
+    let superDistUser = (user.super_distributor_id || (distUser && distUser.super_distributor_id))
+      ? (db.users || []).find(u => u.id === (user.super_distributor_id || (distUser && distUser.super_distributor_id)))
+      : null;
+
+    const dsComm = parseFloat(targetReq.distributor_commission || 0);
+    if (distUser && dsComm > 0) {
+      distUser.wallet_balance = Math.max(0, parseFloat(((distUser.wallet_balance || 0) - dsComm).toFixed(2)));
+      distUser.commission_balance = Math.max(0, parseFloat(((distUser.commission_balance || 0) - dsComm).toFixed(2)));
+      distUser.updated_at = new Date().toISOString();
+    }
+
+    const msComm = parseFloat(targetReq.super_distributor_commission || 0);
+    if (superDistUser && msComm > 0) {
+      superDistUser.wallet_balance = Math.max(0, parseFloat(((superDistUser.wallet_balance || 0) - msComm).toFixed(2)));
+      superDistUser.commission_balance = Math.max(0, parseFloat(((superDistUser.commission_balance || 0) - msComm).toFixed(2)));
+      superDistUser.updated_at = new Date().toISOString();
+    }
+
+    // 5. UPDATE REQUEST RECORD
+    targetReq.status = 'reverted';
+    targetReq.revert_reason = reason.trim();
+    targetReq.reverted_at = new Date().toISOString();
+    targetReq.reverted_by = req.user.id;
+
+    // 6. RECORD REVERSAL TRANSACTION LOG
+    const txRecord = {
+      id: 'tx_rev_' + Date.now(),
+      user_id: user.id,
+      type: 'QR_REVERT',
+      amount: targetReq.amount,
+      service_charge: targetReq.charge_amount || 0,
+      net_amount: netCreditAmt,
+      recipient_account: `UTR: ${targetReq.utr_number}`,
+      recipient_name: `QR Approval Reverted: ${reason.trim()}`,
+      status: 'SUCCESS',
+      reference_number: 'ASY-REV-' + Date.now().toString().slice(-8),
+      created_at: new Date().toISOString()
+    };
+    if (!db.transactions) db.transactions = [];
+    db.transactions.unshift(txRecord);
+
+    // 7. SUPABASE DATABASE SYNC WITH SAFE FALLBACK
+    if (supabase) {
+      try {
+        const { error: sbReqErr } = await supabase.from('qr_payment_requests').update({
+          status: 'reverted',
+          rejection_reason: `[REVERTED] ${reason.trim()}`,
+          reverted_at: targetReq.reverted_at,
+          reverted_by: targetReq.reverted_by,
+          revert_reason: targetReq.revert_reason
+        }).eq('id', reqId);
+
+        if (sbReqErr) {
+          // If PostgreSQL CHECK constraint fails on 'reverted', fallback to 'rejected'
+          console.warn('Supabase reverted status update warning, trying fallback:', sbReqErr.message);
+          await supabase.from('qr_payment_requests').update({
+            status: 'rejected',
+            rejection_reason: `[REVERTED] ${reason.trim()}`,
+            processed_at: targetReq.reverted_at,
+            processed_by: targetReq.reverted_by
+          }).eq('id', reqId);
+        }
+
+        // Update Retailer wallet
+        await supabase.from('users_profiles').update({
+          wallet_balance: user.wallet_balance,
+          updated_at: user.updated_at
+        }).eq('id', user.id);
+
+        // Update Distributor if commission reversed
+        if (distUser && dsComm > 0) {
+          await supabase.from('users_profiles').update({
+            wallet_balance: distUser.wallet_balance,
+            commission_balance: distUser.commission_balance,
+            updated_at: distUser.updated_at
+          }).eq('id', distUser.id);
+        }
+
+        // Update Super Distributor if commission reversed
+        if (superDistUser && msComm > 0) {
+          await supabase.from('users_profiles').update({
+            wallet_balance: superDistUser.wallet_balance,
+            commission_balance: superDistUser.commission_balance,
+            updated_at: superDistUser.updated_at
+          }).eq('id', superDistUser.id);
+        }
+
+        // Insert reversal transaction
+        await supabase.from('transactions').insert([txRecord]).catch(() => {});
+      } catch (sbErr) {
+        console.error('Supabase Revert QR Sync Error:', sbErr);
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Request Reverted! ₹${netCreditAmt.toFixed(2)} deducted from ${user.name}'s wallet. New wallet balance: ₹${newWalletBalance.toFixed(2)}.`,
+      payment_request: targetReq,
+      updated_wallet: newWalletBalance
+    });
+  } catch (error) {
+    console.error('Revert QR Request Error:', error);
+    return res.status(500).json({ success: false, message: 'Server error reverting payment request.' });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// PATCH /api/qr/request/:id/note - Update Admin Internal Note (Admin Only)
+// -----------------------------------------------------------------------------
+router.patch('/request/:id/note', verifyToken, requireRoles(['admin']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { admin_note } = req.body;
+    const noteText = typeof admin_note === 'string' ? admin_note.trim() : '';
+
+    let reqIndex = (db.qr_payment_requests || []).findIndex(r => r.id === id);
+    let targetRequest = reqIndex !== -1 ? db.qr_payment_requests[reqIndex] : null;
+
+    if (supabase) {
+      try {
+        const { data } = await supabase.from('qr_payment_requests').select('*').eq('id', id).maybeSingle();
+        if (data && !targetRequest) {
+          targetRequest = data;
+        }
+      } catch (sbFetchErr) {
+        console.warn('Supabase fetch request error:', sbFetchErr.message);
+      }
+    }
+
+    if (!targetRequest) {
+      return res.status(404).json({ success: false, message: 'Payment request not found' });
+    }
+
+    // Update in-memory
+    if (reqIndex !== -1) {
+      db.qr_payment_requests[reqIndex].admin_note = noteText;
+    } else {
+      targetRequest.admin_note = noteText;
+      if (!db.qr_payment_requests) db.qr_payment_requests = [];
+      db.qr_payment_requests.push(targetRequest);
+    }
+
+    // Persist to Supabase
+    if (supabase) {
+      try {
+        const { error: sbErr } = await supabase
+          .from('qr_payment_requests')
+          .update({ admin_note: noteText })
+          .eq('id', id);
+
+        if (sbErr) {
+          console.warn('[PATCH /request/:id/note] Supabase Note Update Notice:', sbErr.message);
+        }
+      } catch (e) {
+        console.warn('[PATCH /request/:id/note] Supabase update exception:', e.message);
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Admin note updated successfully.',
+      admin_note: noteText,
+      payment_request: {
+        ...targetRequest,
+        admin_note: noteText
+      }
+    });
+  } catch (err) {
+    console.error('Update QR Request Note Error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to update admin note: ' + err.message });
+  }
+});
+
+// Also support POST for /request/:id/note
+router.post('/request/:id/note', verifyToken, requireRoles(['admin']), async (req, res) => {
+  req.url = `/request/${encodeURIComponent(req.params.id)}/note`;
+  return router.handle(req, res);
 });
 
 // GET Settings endpoint

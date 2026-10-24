@@ -13,6 +13,8 @@ export interface CreditCardBillRequest {
   user_mobile?: string;
   customer_name: string;
   card_number: string;
+  card_last_4?: string;
+  reference_id?: string;
   bank_name: string;
   amount: number;
   service_charge: number;

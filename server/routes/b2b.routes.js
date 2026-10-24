@@ -976,6 +976,16 @@ router.post('/fetch-bill', verifyToken, async (req, res) => {
         return await executeFetchWithRetry(attemptsLeft - 1);
       }
 
+      // Normalize additionalInfo array from nested billFetchResponse if needed
+      if (response.data?.data) {
+        const bfr = response.data.data.billFetchResponse;
+        if (bfr?.additionalInfo?.info && Array.isArray(bfr.additionalInfo.info)) {
+          if (!Array.isArray(response.data.data.additionalInfo) || response.data.data.additionalInfo.length === 0) {
+            response.data.data.additionalInfo = bfr.additionalInfo.info;
+          }
+        }
+      }
+
       return res.status(response.status).json(response.data);
     } catch (err) {
       console.error(`[UsePay Fetch-Bill Error Attempt ${3 - attemptsLeft}]:`, err.response?.data || err.message);

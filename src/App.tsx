@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from './store/authStore';
 import { useSettingsStore } from './store/settingsStore';
 import { userApi } from './services/api';
@@ -35,7 +35,11 @@ import { ManageTpinPage } from './components/security/ManageTpinPage';
 import { ChangeMpinPage } from './components/security/ChangeMpinPage';
 import { ChangePasswordPage } from './components/security/ChangePasswordPage';
 import type { UserRole } from './types/auth';
-import { Menu, LogOut, Wallet, Clock, ChevronDown, Key, ShieldCheck } from 'lucide-react';
+import { 
+  Menu, LogOut, Wallet, Clock, ChevronDown, ChevronRight, Key, ShieldCheck,
+  Zap, Bell, Settings, FileText, CreditCard, Landmark, X, SlidersHorizontal,
+  LayoutDashboard, Users, ArrowRightLeft, RefreshCw, Images, Sliders, KeyRound, Lock, QrCode
+} from 'lucide-react';
 
 export default function App() {
   const { user, isAuthenticated, logout, updateUser, sessionRemainingSeconds } = useAuthStore();
@@ -52,7 +56,7 @@ export default function App() {
       if (role === 'admin') return 'admin_payout';
       return instantPayoutEnabled ? 'payout_transfer' : 'users';
     }
-    if (p.includes('dashboard')) return 'dashboard';
+    if (p.includes('dashboard')) return role === 'admin' ? 'dashboard' : 'users';
     if (p.includes('bank-entry') || p.includes('bank_entry')) return 'bank_entry';
     if (p.includes('admin-bill-requests') || p.includes('admin_bill_requests')) return 'admin_bill_requests';
     if (p.includes('ccbiller')) return 'ccbiller';
@@ -88,7 +92,7 @@ export default function App() {
   };
 
   const getPathFromTab = (tab: string): string => {
-    if (tab === 'dashboard') return '/dashboard';
+    if (tab === 'dashboard' || tab === 'users') return '/dashboard';
     if (tab === 'manage_tpin') return '/manage-tpin';
     if (tab === 'change_mpin') return '/change-mpin';
     if (tab === 'change_password') return '/change-password';
@@ -107,7 +111,7 @@ export default function App() {
     if (tab === 'qr_master') return '/qr-master';
     if (tab === 'qr_requests') return '/qr-requests';
     if (tab === 'qr_gallery') return '/qr-gallery';
-    return '/users';
+    return '/dashboard';
   };
 
 
@@ -120,6 +124,66 @@ export default function App() {
     return getTabFromPath(window.location.pathname, user?.role);
   });
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [badgeCounts, setBadgeCounts] = useState<{ [key: string]: number }>({});
+
+  const moreMenuRef = useRef<HTMLDivElement>(null);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+  const notificationsRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns on outside click or Escape key
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node;
+      if (moreMenuRef.current && !moreMenuRef.current.contains(target)) {
+        setShowMoreMenu(false);
+      }
+      if (profileMenuRef.current && !profileMenuRef.current.contains(target)) {
+        setShowProfileMenu(false);
+      }
+      if (notificationsRef.current && !notificationsRef.current.contains(target)) {
+        setShowNotifications(false);
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowMoreMenu(false);
+        setShowProfileMenu(false);
+        setShowNotifications(false);
+        setSidebarOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
+  // Real-time polling for live request badge counts
+  useEffect(() => {
+    if (!isAuthenticated || user?.role !== 'admin') return;
+    const fetchBadgeCounts = async () => {
+      try {
+        const res = await userApi.getAdminBadgeCounts();
+        if (res.success && res.counts) {
+          setBadgeCounts(res.counts);
+        }
+      } catch {
+        // Silent catch for background poll
+      }
+    };
+    fetchBadgeCounts();
+    const interval = setInterval(fetchBadgeCounts, 3000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, user?.role]);
 
   // Auto-sync profile & wallet balance in real-time
   useEffect(() => {
@@ -239,11 +303,11 @@ export default function App() {
 
   const getRoleBadgeStyle = (role?: UserRole) => {
     switch (role) {
-      case 'admin': return 'bg-purple-500/20 text-purple-300 border-purple-500/40';
-      case 'super_distributor': return 'bg-amber-500/20 text-amber-300 border-amber-500/40';
-      case 'distributor': return 'bg-blue-500/20 text-blue-300 border-blue-500/40';
-      case 'user': return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
-      default: return 'bg-gray-500/20 text-gray-300 border-gray-500/40';
+      case 'admin': return 'bg-purple-50 text-purple-700 border-purple-200';
+      case 'super_distributor': return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'distributor': return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'user': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      default: return 'bg-slate-100 text-slate-700 border-slate-200';
     }
   };
 
@@ -292,6 +356,109 @@ export default function App() {
       default:
         return 'Dashboard';
     }
+  };
+
+  interface NavTabItem {
+    id: string;
+    label: string;
+    badgeKey?: string;
+    icon?: React.ElementType;
+    desc?: string;
+  }
+
+  // Navigation tabs for the Tilshift top capsule bar
+  const getNavTabs = (): { primary: NavTabItem[]; more: NavTabItem[] } => {
+    if (user?.role === 'admin') {
+      const primary: NavTabItem[] = [
+        { id: 'dashboard', label: 'Dashboard' },
+        { id: 'users', label: 'Users' },
+        { id: 'qr_requests', label: 'QR Requests', badgeKey: 'qr_requests' },
+        { id: 'qr_master', label: 'QR Master' },
+        { id: 'admin_bill_requests', label: 'CC Bills', badgeKey: 'admin_bill_requests' },
+        { id: 'live_bill_history', label: 'LiveBill History' },
+        { id: 'admin_payout', label: 'Payouts', badgeKey: 'admin_payout' },
+        { id: 'api_fund_request', label: 'API Top-Up' },
+      ];
+
+      const more: NavTabItem[] = [
+        { id: 'admin_kyc', label: 'KYC Verification', icon: ShieldCheck, badgeKey: 'admin_kyc', desc: 'Merchant identity verification' },
+        { id: 'admin_statement', label: 'Account Passbook', icon: FileText, desc: 'Ledger statements & transactions' },
+        { id: 'bank_entry', label: 'Bank Entry', icon: Landmark, desc: 'Bank accounts & deposit entries' },
+        { id: 'qr_gallery', label: 'QR Proof Gallery', icon: Images, desc: 'Approved UPI payment slips' },
+        { id: 'ccbiller', label: 'ccbiller', icon: Sliders, desc: 'Card switch configuration' },
+        { id: 'change_password', label: 'Security & Password', icon: Key, desc: 'Account access credentials' },
+      ];
+
+      return { primary, more };
+    }
+
+    if (user?.role === 'user') {
+      const primary: NavTabItem[] = [
+        { id: 'users', label: 'Dashboard' },
+        { id: 'qr_requests', label: 'QR Payments' },
+        { id: 'bill_request', label: 'CC Bill Pay' },
+        ...(liveBillPayEnabled ? [{ id: 'live_bill_pay', label: 'Live Bill Pay' }] : []),
+        ...(instantPayoutEnabled ? [{ id: 'payout_transfer', label: 'Instant Payout' }] : []),
+      ];
+
+      const more: NavTabItem[] = [
+        { id: 'user_statement', label: 'Account Passbook', icon: FileText, desc: 'Ledger statements & passbook' },
+        { id: 'manage_tpin', label: user?.tpin_set ? 'Manage TPIN' : 'Create TPIN', icon: Key, desc: 'Transaction security PIN' },
+        { id: 'change_mpin', label: 'Change MPIN', icon: KeyRound, desc: '6-digit mobile login PIN' },
+        { id: 'change_password', label: 'Security & Password', icon: Lock, desc: 'Account access credentials' },
+      ];
+
+      return { primary, more };
+    }
+
+    if (user?.role === 'distributor') {
+      const primary: NavTabItem[] = [
+        { id: 'users', label: 'Dashboard' },
+        { id: 'qr_requests', label: 'QR Payments' },
+        ...(instantPayoutEnabled ? [{ id: 'payout_transfer', label: 'Instant Payout' }] : []),
+      ];
+
+      const more: NavTabItem[] = [
+        { id: 'user_statement', label: 'Account Passbook', icon: FileText, desc: 'Commission ledger & passbook' },
+        { id: 'manage_tpin', label: user?.tpin_set ? 'Manage TPIN' : 'Create TPIN', icon: Key, desc: 'Transaction security PIN' },
+        { id: 'change_mpin', label: 'Change MPIN', icon: KeyRound, desc: '6-digit mobile login PIN' },
+        { id: 'change_password', label: 'Security & Password', icon: Lock, desc: 'Account access credentials' },
+      ];
+
+      return { primary, more };
+    }
+
+    if (user?.role === 'super_distributor') {
+      const primary: NavTabItem[] = [
+        { id: 'users', label: 'Dashboard' },
+        { id: 'qr_requests', label: 'QR Payments' },
+        ...(instantPayoutEnabled ? [{ id: 'payout_transfer', label: 'Instant Payout' }] : []),
+      ];
+
+      const more: NavTabItem[] = [
+        { id: 'user_statement', label: 'Account Passbook', icon: FileText, desc: 'Master ledger & passbook' },
+        { id: 'manage_tpin', label: user?.tpin_set ? 'Manage TPIN' : 'Create TPIN', icon: Key, desc: 'Transaction security PIN' },
+        { id: 'change_mpin', label: 'Change MPIN', icon: KeyRound, desc: '6-digit mobile login PIN' },
+        { id: 'change_password', label: 'Security & Password', icon: Lock, desc: 'Account access credentials' },
+      ];
+
+      return { primary, more };
+    }
+
+    const primary: NavTabItem[] = [
+      { id: 'users', label: 'Dashboard' },
+      { id: 'qr_requests', label: 'QR Payments' },
+      ...(instantPayoutEnabled ? [{ id: 'payout_transfer', label: 'Instant Payout' }] : []),
+    ];
+
+    const more: NavTabItem[] = [
+      { id: 'user_statement', label: 'Account Passbook', icon: FileText, desc: 'Ledger statements & transactions' },
+      { id: 'manage_tpin', label: user?.tpin_set ? 'Manage TPIN' : 'Create TPIN', icon: Key, desc: 'Transaction security PIN' },
+      { id: 'change_mpin', label: 'Change MPIN', icon: KeyRound, desc: '6-digit mobile login PIN' },
+      { id: 'change_password', label: 'Security & Password', icon: Lock, desc: 'Account access credentials' },
+    ];
+
+    return { primary, more };
   };
 
   const renderDashboardByRole = (role?: UserRole) => {
@@ -379,9 +546,14 @@ export default function App() {
     }
   }
 
+  const { primary: primaryTabs, more: moreTabs } = getNavTabs();
+  const activeMoreItem = moreTabs.find((t) => t.id === activeTab);
+  const isMoreActive = Boolean(activeMoreItem);
+  const moreBadgeCount = moreTabs.reduce((acc, tab) => acc + (tab.badgeKey ? (badgeCounts[tab.badgeKey] || 0) : 0), 0);
+
   return (
-    <div className="h-screen overflow-hidden bg-slate-950 text-slate-100 font-sans flex antialiased selection:bg-indigo-500 selection:text-white">
-      {/* 1. Left Full Height Sidebar (Top-to-Bottom 100vh) */}
+    <div className="h-screen overflow-hidden bg-white text-slate-800 font-sans flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+      {/* 1. Mobile Slide-Over Sidebar Drawer (lg:hidden) */}
       <Sidebar
         activeTab={activeTab}
         onTabChange={handleTabChange}
@@ -389,112 +561,305 @@ export default function App() {
         onClose={() => setSidebarOpen(false)}
       />
 
-      {/* 2. Right Main Layout Column (Header + Content) */}
-      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        {/* Top Navbar Header */}
-        <header className="h-16 shrink-0 bg-slate-900/90 border-b border-slate-800 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between z-30">
-          <div className="flex items-center gap-3 min-w-0">
-            {/* Mobile Hamburger Menu */}
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="lg:hidden p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 shrink-0"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
+      {/* 2. Tilshift Top Header Navigation Bar */}
+      <header className="h-20 shrink-0 bg-white border-b border-slate-200/80 px-4 sm:px-6 lg:px-8 flex items-center justify-between z-30 shadow-2xs relative">
+        
+        {/* LEFT: BRAND LOGO (Tilshift Style with Purple Lightning Circle) */}
+        <div className="flex items-center gap-3 shrink-0">
+          {/* Mobile Hamburger Menu Toggle */}
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="lg:hidden p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 shrink-0 cursor-pointer"
+            title="Toggle Menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
 
-            {/* Mobile Brand Logo */}
-            <div className="lg:hidden flex items-center shrink-0">
-              <img src="/logo.png" alt="AS EasySwipe" className="h-8 w-auto object-contain rounded-lg" />
-            </div>
-
-            {/* Active Page Title in Header */}
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse hidden sm:block shrink-0" />
-              <h1 className="text-base sm:text-lg font-black text-white tracking-tight truncate">
-                {getPageTitle(activeTab, user.role)}
-              </h1>
-            </div>
-          </div>
-
-          {/* Right Header Stats & Profile */}
-          <div className="flex items-center gap-3 shrink-0">
-            {/* Role Tag Badge (e.g. Super Admin HQ) */}
-            <span className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider border shadow-sm ${getRoleBadgeStyle(user.role)}`}>
+          {/* Brand Logo & Name */}
+          <div 
+            onClick={() => handleTabChange(user.role === 'admin' ? 'dashboard' : 'users')}
+            className="flex items-center gap-2.5 cursor-pointer group select-none py-0.5"
+            title="Just2Pay Home"
+          >
+            <img 
+              src="/logo.png?v=2" 
+              alt="Just2Pay" 
+              className="h-10 sm:h-12 w-auto object-contain group-hover:opacity-95 transition-opacity" 
+            />
+            <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-indigo-50 text-indigo-700 border border-indigo-200 shrink-0">
               {getRoleLabel(user.role)}
             </span>
+          </div>
+        </div>
 
-            {/* Main Wallet pill (Hidden for Admin) */}
-            {user.role !== 'admin' && (
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800">
-                <Wallet className="w-4 h-4 text-emerald-400" />
-                <div className="text-right">
-                  <p className="text-[9px] uppercase font-bold text-slate-400">Main Wallet</p>
-                  <p className="text-xs font-black text-emerald-400">
-                    ₹{Number(user.wallet_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Session Timer */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 text-xs font-mono">
-              <Clock className="w-3.5 h-3.5 text-indigo-400" />
-              <span>{formatTimer(sessionRemainingSeconds)}</span>
-            </div>
-
-            {/* User Profile Dropdown */}
-            <div className="relative">
+        {/* CENTER: TILSHIFT PILL CAPSULE NAVIGATION BAR */}
+        <nav 
+          style={{ background: 'linear-gradient(135deg, #FFB000 0%, #FF8500 50%, #FF5A00 100%)' }}
+          className="hidden lg:flex items-center p-1.5 rounded-full border border-orange-400/40 shadow-sm shadow-orange-500/20"
+        >
+          {primaryTabs.map((item) => {
+            const isActive = activeTab === item.id;
+            const badgeCount = item.badgeKey ? (badgeCounts[item.badgeKey] || 0) : 0;
+            return (
               <button
-                onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className="flex items-center gap-2 p-1 pl-2 rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-700 transition"
+                key={item.id}
+                onClick={() => {
+                  handleTabChange(item.id);
+                  setShowMoreMenu(false);
+                }}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider transition-all duration-200 flex items-center gap-1.5 cursor-pointer select-none whitespace-nowrap ${
+                  isActive
+                    ? 'bg-[#00265C] text-white shadow-sm'
+                    : 'text-[#00265C] hover:bg-white/20'
+                }`}
               >
-                <img
-                  src={user.profile_photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=6366f1&color=fff`}
-                  alt={user.name}
-                  className="w-7 h-7 rounded-lg object-cover"
-                />
-                <ChevronDown className="w-4 h-4 text-slate-400" />
+                <span>{item.label}</span>
+                {badgeCount > 0 && (
+                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${
+                    isActive ? 'bg-white/20 text-white' : 'bg-rose-500 text-white animate-pulse'
+                  }`}>
+                    {badgeCount}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+
+          {/* More Dropdown Pill */}
+          {moreTabs.length > 0 && (
+            <div ref={moreMenuRef} className="relative nav-dropdown-container">
+              <button
+                onClick={() => setShowMoreMenu(!showMoreMenu)}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider transition-all duration-200 flex items-center gap-1.5 cursor-pointer select-none whitespace-nowrap ${
+                  isMoreActive
+                    ? 'bg-[#00265C] text-white shadow-sm'
+                    : 'text-[#00265C] hover:bg-white/20'
+                }`}
+              >
+                <span>{isMoreActive ? activeMoreItem?.label : 'MORE'}</span>
+                {moreBadgeCount > 0 && !isMoreActive && (
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] font-extrabold bg-rose-500 text-white animate-pulse">
+                    {moreBadgeCount}
+                  </span>
+                )}
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                  isMoreActive ? 'text-white' : 'text-[#00265C]'
+                } ${showMoreMenu ? 'rotate-180' : ''}`} />
               </button>
 
-              {showProfileMenu && (
-                <div className="absolute right-0 mt-2 w-56 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95">
-                  <div className="px-4 py-2 border-b border-slate-800">
-                    <p className="text-xs font-bold text-white truncate">{user.name}</p>
-                    <p className="text-[10px] text-slate-400 truncate">{user.email || user.mobile_number}</p>
+              {/* More Dropdown Popover */}
+              {showMoreMenu && (
+                <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-slate-200 rounded-3xl shadow-2xl p-2.5 z-50 animate-in fade-in zoom-in-95">
+                  <div className="px-3 py-1.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                    Additional Modules
                   </div>
-
-                  {user.role !== 'admin' && (
-                    <button
-                      onClick={() => {
-                        handleTabChange('manage_tpin');
-                        setShowProfileMenu(false);
-                      }}
-                      className="w-full text-left px-4 py-2 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 flex items-center gap-2 cursor-pointer"
-                    >
-                      <Key className="w-4 h-4 text-emerald-400" />
-                      <span>{user.tpin_set ? 'Manage TPIN' : 'Create TPIN'}</span>
-                    </button>
-                  )}
-
-                  <div className="border-t border-slate-800 my-1" />
-
-                  <button
-                    onClick={() => {
-                      setShowProfileMenu(false);
-                      logout();
-                    }}
-                    className="w-full text-left px-4 py-2 text-xs font-bold text-rose-400 hover:bg-rose-500/10 flex items-center gap-2"
-                  >
-                    <LogOut className="w-4 h-4" /> Log Out
-                  </button>
+                  <div className="space-y-1">
+                    {moreTabs.map((sub) => {
+                      const SubIcon = sub.icon;
+                      const isSubActive = activeTab === sub.id;
+                      const subBadge = sub.badgeKey ? (badgeCounts[sub.badgeKey] || 0) : 0;
+                      return (
+                        <button
+                          key={sub.id}
+                          onClick={() => {
+                            handleTabChange(sub.id);
+                            setShowMoreMenu(false);
+                          }}
+                          className={`w-full text-left p-2.5 rounded-2xl flex items-center gap-3 transition cursor-pointer ${
+                            isSubActive
+                              ? 'bg-indigo-50/80 text-indigo-700 font-bold border border-indigo-100'
+                              : 'hover:bg-slate-50 text-slate-700'
+                          }`}
+                        >
+                          {SubIcon && (
+                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                              isSubActive ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'
+                            }`}>
+                              <SubIcon className="w-4 h-4" />
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold truncate">{sub.label}</span>
+                              {subBadge > 0 && (
+                                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500 text-white animate-pulse">
+                                  {subBadge}
+                                </span>
+                              )}
+                            </div>
+                            {sub.desc && (
+                              <div className="text-[10px] text-slate-400 truncate">{sub.desc}</div>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
-          </div>
-        </header>
+          )}
+        </nav>
 
-        {/* Main Body Layout */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-slate-950">
+        {/* RIGHT: CONTROLS & USER PROFILE (Matching Screenshot: Bell, Gear, Avatar+Name) */}
+        <div className="flex items-center gap-3 shrink-0">
+          {/* Session Timer Pill */}
+          <div className="hidden 2xl:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 text-xs font-bold font-mono">
+            <Clock className="w-3.5 h-3.5 text-slate-400" />
+            <span>{formatTimer(sessionRemainingSeconds)}</span>
+          </div>
+
+          {/* Main Wallet pill (Retailer / Dist only) */}
+          {user.role !== 'admin' && (
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200">
+              <Wallet className="w-4 h-4 text-emerald-600" />
+              <div className="text-right">
+                <p className="text-[9px] uppercase font-bold text-slate-500">Main Wallet</p>
+                <p className="text-xs font-black font-mono text-emerald-700">
+                  ₹{user.wallet_balance ? Number(user.wallet_balance).toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '0.00'}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* 1. Notification Bell with Red Dot */}
+          <div ref={notificationsRef} className="relative nav-dropdown-container">
+            <button
+              onClick={() => {
+                setShowNotifications(!showNotifications);
+                setShowProfileMenu(false);
+                setShowMoreMenu(false);
+              }}
+              className="w-10 h-10 rounded-full bg-white border border-slate-200/90 hover:bg-slate-50 flex items-center justify-center text-slate-700 shadow-2xs relative transition cursor-pointer"
+              title="Notifications"
+            >
+              <Bell className="w-4 h-4" />
+              {Object.values(badgeCounts).reduce((a, b) => a + b, 0) > 0 && (
+                <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white animate-pulse" />
+              )}
+            </button>
+
+            {/* Notification Dropdown */}
+            {showNotifications && (
+              <div className="absolute right-0 mt-3 w-72 bg-white border border-slate-200 rounded-3xl shadow-xl p-3.5 z-50 animate-in fade-in zoom-in-95">
+                <h4 className="text-xs font-black text-slate-900 px-1 py-1">Pending Queue Alerts</h4>
+                <div className="space-y-1.5 mt-2 text-xs">
+                  <div 
+                    onClick={() => { handleTabChange('admin_kyc'); setShowNotifications(false); }}
+                    className="p-2.5 rounded-2xl bg-slate-50 hover:bg-indigo-50 flex justify-between items-center cursor-pointer"
+                  >
+                    <span className="text-slate-700 font-medium">Pending KYC Submissions</span>
+                    <span className="font-bold text-emerald-600 font-mono">{badgeCounts['admin_kyc'] || 0}</span>
+                  </div>
+                  <div 
+                    onClick={() => { handleTabChange('qr_requests'); setShowNotifications(false); }}
+                    className="p-2.5 rounded-2xl bg-slate-50 hover:bg-indigo-50 flex justify-between items-center cursor-pointer"
+                  >
+                    <span className="text-slate-700 font-medium">Pending QR Loads</span>
+                    <span className="font-bold text-indigo-600 font-mono">{badgeCounts['qr_requests'] || 0}</span>
+                  </div>
+                  <div 
+                    onClick={() => { handleTabChange('admin_bill_requests'); setShowNotifications(false); }}
+                    className="p-2.5 rounded-2xl bg-slate-50 hover:bg-indigo-50 flex justify-between items-center cursor-pointer"
+                  >
+                    <span className="text-slate-700 font-medium">Pending CC Bills</span>
+                    <span className="font-bold text-amber-600 font-mono">{badgeCounts['admin_bill_requests'] || 0}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 2. Settings Gear Button */}
+          <button
+            onClick={() => handleTabChange('change_password')}
+            className="w-10 h-10 rounded-full bg-white border border-slate-200/90 hover:bg-slate-50 flex items-center justify-center text-slate-700 shadow-2xs transition cursor-pointer"
+            title="Security & System Settings"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+
+          {/* 3. User Profile Avatar Widget (Matching Screenshot: Avatar + Name + Subtext) */}
+          <div ref={profileMenuRef} className="relative nav-dropdown-container">
+            <button
+              onClick={() => {
+                setShowProfileMenu(!showProfileMenu);
+                setShowNotifications(false);
+                setShowMoreMenu(false);
+              }}
+              className="flex items-center gap-3 p-1 pr-2 rounded-full hover:bg-slate-50 border border-transparent hover:border-slate-200/60 transition cursor-pointer group"
+            >
+              <img
+                src={user.profile_photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'Admin')}&background=6366f1&color=fff`}
+                alt={user.name}
+                className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-100 group-hover:scale-105 transition"
+              />
+              <div className="hidden xl:flex flex-col text-left">
+                <span className="text-xs font-black text-slate-900 leading-tight">
+                  {user.name || 'Super Admin HQ'}
+                </span>
+                <span className="text-[10px] text-slate-400 font-medium truncate max-w-[140px]">
+                  {user.email || user.mobile_number || 'admin@aseasyswipe.com'}
+                </span>
+              </div>
+            </button>
+
+            {/* Profile Dropdown Menu */}
+            {showProfileMenu && (
+              <div className="absolute right-0 mt-3 w-56 bg-white border border-slate-200 rounded-3xl shadow-xl py-2 z-50 animate-in fade-in zoom-in-95">
+                <div className="px-4 py-2 border-b border-slate-100">
+                  <p className="text-xs font-bold text-slate-900 truncate">{user.name}</p>
+                  <p className="text-[10px] text-slate-500 truncate">{user.email || user.mobile_number}</p>
+                  <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    {getRoleLabel(user.role)}
+                  </span>
+                </div>
+
+                {user.role !== 'admin' && (
+                  <button
+                    onClick={() => {
+                      handleTabChange('manage_tpin');
+                      setShowProfileMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-2.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 flex items-center gap-2 cursor-pointer"
+                  >
+                    <Key className="w-4 h-4 text-emerald-600" />
+                    <span>{user.tpin_set ? 'Manage TPIN' : 'Create TPIN'}</span>
+                  </button>
+                )}
+
+                <button
+                  onClick={() => {
+                    handleTabChange('change_password');
+                    setShowProfileMenu(false);
+                  }}
+                  className="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                >
+                  <Key className="w-4 h-4 text-slate-400" />
+                  <span>Change Password</span>
+                </button>
+
+                <div className="border-t border-slate-100 my-1" />
+
+                <button
+                  onClick={() => {
+                    setShowProfileMenu(false);
+                    logout();
+                  }}
+                  className="w-full text-left px-4 py-2.5 text-xs font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4" /> Log Out Session
+                </button>
+              </div>
+            )}
+          </div>
+
+        </div>
+
+      </header>
+
+      {/* 3. Master Content Area (Full screen width) */}
+      <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-white">
           {activeTab === 'dashboard' && (
             <ProtectedRoute allowedRoles={['admin']}>
               <AdminOverviewDashboard />
@@ -575,7 +940,6 @@ export default function App() {
           {activeTab === 'users' && renderDashboardByRole(user.role)}
           {activeTab !== 'dashboard' && activeTab !== 'admin_kyc' && activeTab !== 'admin_payout' && activeTab !== 'api_fund_request' && activeTab !== 'admin_statement' && activeTab !== 'user_statement' && activeTab !== 'payout_transfer' && activeTab !== 'bank_entry' && activeTab !== 'admin_bill_requests' && activeTab !== 'live_bill_history' && activeTab !== 'ccbiller' && activeTab !== 'live_bill_pay' && activeTab !== 'bill_request' && activeTab !== 'qr_master' && activeTab !== 'qr_requests' && activeTab !== 'qr_gallery' && activeTab !== 'manage_tpin' && activeTab !== 'change_mpin' && activeTab !== 'change_password' && activeTab !== 'users' && renderDashboardByRole(user.role)}
         </main>
-      </div>
     </div>
   );
 }

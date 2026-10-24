@@ -29,7 +29,7 @@ export const compileUserStatement = async (userId, options = {}) => {
 
   const rawEntries = [];
 
-  // 2. Fetch QR Payment Requests (Approved Topups = CREDIT)
+  // 2. Fetch QR Payment Requests (Approved Topups = CREDIT, Reverted = CREDIT + DEBIT)
   let qrRequests = [];
   if (supabase) {
     try {
@@ -37,13 +37,13 @@ export const compileUserStatement = async (userId, options = {}) => {
         .from('qr_payment_requests')
         .select('*')
         .eq('user_id', userId)
-        .eq('status', 'approved');
+        .in('status', ['approved', 'reverted']);
       if (Array.isArray(data)) qrRequests = data;
     } catch {}
   }
   if (qrRequests.length === 0) {
     qrRequests = (db.qr_payment_requests || []).filter(
-      r => r.user_id === userId && r.status === 'approved'
+      r => r.user_id === userId && (r.status === 'approved' || r.status === 'reverted' || (r.status === 'rejected' && String(r.rejection_reason || '').startsWith('[REVERTED]')))
     );
   }
 
@@ -52,7 +52,9 @@ export const compileUserStatement = async (userId, options = {}) => {
     const fee = parseFloat(qr.charge_amount || 0);
     const net = parseFloat(qr.net_amount || (gross - fee));
     const feePct = qr.charge_percent ? `${qr.charge_percent}%` : '';
+    const isReverted = qr.status === 'reverted' || (qr.status === 'rejected' && String(qr.rejection_reason || '').startsWith('[REVERTED]'));
 
+    // 1. Original Credit Entry
     rawEntries.push({
       id: `stmt_qr_${qr.id}`,
       original_id: qr.id,
@@ -62,13 +64,34 @@ export const compileUserStatement = async (userId, options = {}) => {
       amount: gross,
       charge_amount: fee,
       net_amount: net,
-      title: 'QR Add Money - UPI Settlement',
-      narration: `QR Add Money via UPI (${qr.mobile_number || 'Mobile'})`,
+      title: isReverted ? 'QR Add Money (Reverted Later)' : 'QR Add Money - UPI Settlement',
+      narration: `QR Add Money via UPI (${qr.mobile_number || 'Mobile'})${isReverted ? ' [Reverted]' : ''}`,
       math_breakdown: `Request: ₹${gross.toFixed(2)} - QR Charge ${feePct ? `(${feePct})` : ''}: ₹${fee.toFixed(2)} = Net Credited: ₹${net.toFixed(2)}`,
       reference_id: qr.utr_number || qr.id,
-      status: 'SUCCESS',
+      status: isReverted ? 'REVERTED' : 'SUCCESS',
       created_at: qr.processed_at || qr.created_at
     });
+
+    // 2. If Reverted, record matching DEBIT reversal entry in the ledger
+    if (isReverted) {
+      const revertReason = qr.revert_reason || (String(qr.rejection_reason || '').startsWith('[REVERTED]') ? qr.rejection_reason.replace('[REVERTED]', '').trim() : 'Reverted by Admin');
+      rawEntries.push({
+        id: `stmt_qr_rev_${qr.id}`,
+        original_id: qr.id,
+        user_id: userId,
+        type: 'DEBIT',
+        category: 'REVERSAL',
+        amount: gross,
+        charge_amount: 0,
+        net_amount: net,
+        title: 'QR Deposit Reversal (Admin Undo)',
+        narration: `Reversal of UTR ${qr.utr_number || qr.id} - ${revertReason}`,
+        math_breakdown: `Reversal Deduction: -₹${net.toFixed(2)} (Reason: ${revertReason})`,
+        reference_id: qr.utr_number || qr.id,
+        status: 'SUCCESS',
+        created_at: qr.reverted_at || qr.processed_at || qr.created_at
+      });
+    }
   }
 
   // 3. Fetch Payout Transfers (DEBIT for transfer + CREDIT for auto-refunds)
