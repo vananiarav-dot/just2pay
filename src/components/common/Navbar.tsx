@@ -51,7 +51,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         
         <div className="flex items-center space-x-3">
-          <img src="/logo.png?v=2" alt="Just2Pay" className="h-10 w-auto object-contain" />
+          <img src="/just2pay-logo.png" alt="Just2Pay" className="h-10 w-auto object-contain" />
           <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs">
             {getRoleLabel(user?.role)}
           </span>

@@ -105,21 +105,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin }) =
           {/* Logo */}
           <div 
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="flex items-center gap-3 cursor-pointer group"
+            className="flex items-center cursor-pointer group"
           >
-            <div className="relative w-11 h-11 rounded-2xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 p-[2px] shadow-lg shadow-cyan-500/25 group-hover:shadow-cyan-500/40 transition-all duration-300">
-              <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
-                <Zap className="w-6 h-6 text-cyan-400 fill-cyan-400/20 group-hover:scale-110 transition duration-300" />
-              </div>
-            </div>
-            <div className="flex flex-col">
-              <div className="flex items-center tracking-tight">
-                <span className="text-2xl font-black text-white">Just</span>
-                <span className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">2Pay</span>
-              </div>
-              <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">
-                Next-Gen Fintech Portal
-              </span>
+            <div className="bg-white/95 rounded-2xl px-4 py-2 shadow-lg backdrop-blur-md border border-white/30 group-hover:scale-105 transition-all duration-300">
+              <img 
+                src="/just2pay-logo.png" 
+                alt="Just2Pay" 
+                className="h-8 sm:h-9 w-auto object-contain select-none" 
+              />
             </div>
           </div>
 
@@ -355,8 +348,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin }) =
                     </div>
 
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-10 h-10 rounded-xl bg-slate-950 border border-cyan-400/50 flex items-center justify-center shadow-md">
-                        <Zap className="w-5 h-5 text-cyan-400" />
+                      <div className="w-11 h-11 rounded-xl bg-white border border-slate-200 flex items-center justify-center shadow-md p-1">
+                        <img src="/just2pay-logo.png" alt="Just2Pay" className="w-full h-full object-contain" />
                       </div>
                     </div>
                   </div>
@@ -965,16 +958,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin }) =
             
             {/* Col 1: Brand */}
             <div className="lg:col-span-2 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 p-[2px]">
-                  <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
-                    <Zap className="w-5 h-5 text-cyan-400" />
-                  </div>
-                </div>
-                <div className="flex items-center tracking-tight">
-                  <span className="text-2xl font-black text-white">Just</span>
-                  <span className="text-2xl font-black text-cyan-400">2Pay</span>
-                </div>
+              <div className="inline-block bg-white/95 rounded-2xl px-4 py-2 shadow-lg backdrop-blur-md border border-white/30">
+                <img 
+                  src="/just2pay-logo.png" 
+                  alt="Just2Pay" 
+                  className="h-8 sm:h-9 w-auto object-contain select-none" 
+                />
               </div>
               <p className="text-slate-400 text-sm leading-relaxed max-w-sm">
                 Next-generation B2B fintech platform providing high-speed Dynamic QR collections, Credit Card bill payments, instant 24x7 IMPS payouts, and multi-tier commission settlements.

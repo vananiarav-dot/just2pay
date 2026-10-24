@@ -226,8 +226,8 @@ export const LoginSplitScreen: React.FC<LoginSplitScreenProps> = ({ onOpenResetP
             
             {/* Top Brand Logo Center Highlighted */}
             <div className="flex flex-col items-center text-center mb-6">
-              <div className="mb-3 hover:scale-105 transition-transform duration-200">
-                <Just2PayLogo variant="light" size="md" showTagline={false} />
+              <div className="mb-4 hover:scale-105 transition-transform duration-200">
+                <Just2PayLogo variant="light" size="lg" showTagline={false} />
               </div>
 
               {loginStep === 'password' ? (

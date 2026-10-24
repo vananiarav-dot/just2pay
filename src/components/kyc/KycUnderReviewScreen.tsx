@@ -48,7 +48,7 @@ export const KycUnderReviewScreen: React.FC<KycUnderReviewScreenProps> = ({ user
       {/* TOP HEADER */}
       <header className="h-16 shrink-0 bg-white/95 border-b border-slate-200 backdrop-blur-md px-4 sm:px-8 flex items-center justify-between sticky top-0 z-40 shadow-2xs">
         <div className="flex items-center gap-3">
-          <img src="/logo.png" alt="Just2Pay" className="h-8 w-auto object-contain rounded-lg shadow-xs" />
+          <img src="/just2pay-logo.png" alt="Just2Pay" className="h-8 w-auto object-contain rounded-lg shadow-xs" />
           <div className="hidden sm:block">
             <h1 className="text-sm font-black text-slate-900 tracking-tight flex items-center gap-1.5">
               <span>Just2Pay</span>

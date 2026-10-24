@@ -274,7 +274,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             title="Overview & Earnings"
           >
             <img 
-              src="/logo.png" 
+              src="/just2pay-logo.png" 
               alt="Just2Pay" 
               className="w-full max-h-12 object-contain select-none p-[3px]"
             />

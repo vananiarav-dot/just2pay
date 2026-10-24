@@ -600,7 +600,7 @@ export const QRPaymentRequests: React.FC = () => {
                     Official QR
                   </span>
                 </div>
-                <img src="/logo.png?v=2" alt="Just2Pay" className="h-9 sm:h-10 w-auto object-contain mx-auto mt-1 mb-3.5 sm:mb-4" />
+                <img src="/just2pay-logo.png" alt="Just2Pay" className="h-9 sm:h-10 w-auto object-contain mx-auto mt-1 mb-3.5 sm:mb-4" />
 
                 {/* QR CODE STANDEE FRAME WITH ROYAL BLUE BORDER */}
                 <div className="relative group z-10 pt-1">

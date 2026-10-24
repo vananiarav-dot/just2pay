@@ -582,7 +582,7 @@ export default function App() {
             title="Just2Pay Home"
           >
             <img 
-              src="/logo.png?v=2" 
+              src="/just2pay-logo.png" 
               alt="Just2Pay" 
               className="h-10 sm:h-12 w-auto object-contain group-hover:opacity-95 transition-opacity" 
             />
