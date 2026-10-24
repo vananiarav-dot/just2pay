@@ -130,11 +130,6 @@ export const LoginSplitScreen: React.FC<LoginSplitScreenProps> = ({ onOpenResetP
             <div className="absolute -top-24 -right-24 w-64 h-64 bg-cyan-400/20 rounded-full blur-3xl pointer-events-none"></div>
             <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
 
-            {/* Logo on Left Container */}
-            <div className="mb-8">
-              <Just2PayLogo variant="dark" size="lg" showTagline={true} />
-            </div>
-
             {/* Three Animated 3D Floating Feature Tiles */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
               
