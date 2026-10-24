@@ -1,0 +1,23 @@
+# DigitalOcean Nginx Reverse Proxy Configuration for Just2Pay
+# Place in: /etc/nginx/sites-available/just2pay
+# Enable with: sudo ln -s /etc/nginx/sites-available/just2pay /etc/nginx/sites-enabled/
+
+server {
+    listen 80;
+    server_name your-domain.com www.your-domain.com; # અથવા જો domain ન હોય તો ડ્રોપલેટનો IP Address લખો
+
+    # Maximum file upload size (QR receipts, KYC docs)
+    client_max_body_size 50M;
+
+    location / {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
