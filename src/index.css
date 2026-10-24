@@ -53,6 +53,34 @@
   animation: floatParticle 8s ease-in-out infinite;
 }
 
+@keyframes floatUpAndDown {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes floatSlowReverse {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(8px); }
+}
+
+@keyframes laserScan {
+  0% { top: 0%; opacity: 0.8; }
+  50% { opacity: 1; }
+  100% { top: 100%; opacity: 0.2; }
+}
+
+.animate-float-card {
+  animation: floatUpAndDown 4s ease-in-out infinite;
+}
+
+.animate-float-card-reverse {
+  animation: floatSlowReverse 5s ease-in-out infinite;
+}
+
+.animate-scan-laser {
+  animation: laserScan 2.5s ease-in-out infinite;
+}
+
 /* Custom Scrollbar - Light Fintech Style */
 ::-webkit-scrollbar {
   width: 6px;
