@@ -386,11 +386,12 @@ export const AdminOverviewDashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* 1. QR PAYMENT GATEWAY DESK */}
-        <div className="bg-white border border-slate-200/90 rounded-[28px] p-6 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between group">
-          <div>
+        <div className="bg-gradient-to-br from-emerald-50/90 via-teal-50/30 to-white border border-emerald-200/90 rounded-[28px] p-6 shadow-xs hover:shadow-md hover:border-emerald-300 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
+          <div className="absolute -top-12 -right-12 w-32 h-32 bg-emerald-200/25 rounded-full blur-2xl pointer-events-none" />
+          <div className="relative z-10">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shadow-xs">
+                <div className="w-11 h-11 rounded-2xl bg-white text-emerald-600 border border-emerald-200/90 flex items-center justify-center shadow-xs">
                   <QrCode className="w-5 h-5" />
                 </div>
                 <div>
@@ -398,7 +399,7 @@ export const AdminOverviewDashboard: React.FC = () => {
                   <p className="text-[11px] font-semibold text-slate-400">Merchant Collections</p>
                 </div>
               </div>
-              <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 font-extrabold text-[10px]">
+              <span className="px-2.5 py-1 rounded-full bg-emerald-100/80 text-emerald-800 border border-emerald-200 font-extrabold text-[10px]">
                 Instant UPI
               </span>
             </div>
@@ -410,15 +411,15 @@ export const AdminOverviewDashboard: React.FC = () => {
               <div className="text-2xl sm:text-3xl font-black text-slate-900 font-mono tracking-tight mt-0.5">
                 ₹{totalApprovedAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
-              <div className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
+              <div className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-full bg-white/90 text-emerald-700 border border-emerald-200/80 text-xs font-semibold shadow-2xs">
                 <ArrowUpRight className="w-3.5 h-3.5 text-emerald-600" />
                 <span>{approvedRequests.length} Settled UPI Order(s)</span>
               </div>
             </div>
           </div>
 
-          <div className="mt-5 pt-4 border-t border-slate-100">
-            <div className="bg-slate-50/90 rounded-2xl p-3.5 border border-slate-100 flex items-center justify-between">
+          <div className="mt-5 pt-4 border-t border-emerald-100/80 relative z-10">
+            <div className="bg-white/85 backdrop-blur-xs rounded-2xl p-3.5 border border-emerald-100/90 flex items-center justify-between shadow-2xs">
               <div>
                 <p className="text-[10px] uppercase font-bold text-slate-500">Inflow Settlement</p>
                 <p className="font-bold text-emerald-700 text-xs mt-0.5 flex items-center gap-1">
@@ -436,11 +437,12 @@ export const AdminOverviewDashboard: React.FC = () => {
         </div>
 
         {/* 2. CREDIT CARD BILL DESK */}
-        <div className="bg-white border border-slate-200/90 rounded-[28px] p-6 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between group">
-          <div>
+        <div className="bg-gradient-to-br from-pink-50/90 via-rose-50/30 to-white border border-pink-200/90 rounded-[28px] p-6 shadow-xs hover:shadow-md hover:border-pink-300 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
+          <div className="absolute -top-12 -right-12 w-32 h-32 bg-pink-200/25 rounded-full blur-2xl pointer-events-none" />
+          <div className="relative z-10">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-pink-50 text-pink-600 border border-pink-100 flex items-center justify-center shadow-xs">
+                <div className="w-11 h-11 rounded-2xl bg-white text-pink-600 border border-pink-200/90 flex items-center justify-center shadow-xs">
                   <CreditCard className="w-5 h-5" />
                 </div>
                 <div>
@@ -448,7 +450,7 @@ export const AdminOverviewDashboard: React.FC = () => {
                   <p className="text-[11px] font-semibold text-slate-400">BBPS & Offline Utility</p>
                 </div>
               </div>
-              <span className="px-2.5 py-1 rounded-full bg-pink-50 text-pink-700 border border-pink-100 font-extrabold text-[10px]">
+              <span className="px-2.5 py-1 rounded-full bg-pink-100/80 text-pink-800 border border-pink-200 font-extrabold text-[10px]">
                 Dual Switch
               </span>
             </div>
@@ -460,29 +462,29 @@ export const AdminOverviewDashboard: React.FC = () => {
               <div className="text-2xl sm:text-3xl font-black text-slate-900 font-mono tracking-tight mt-0.5">
                 ₹{totalApprovedBillAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
-              <div className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-full bg-pink-50 text-pink-700 text-xs font-semibold">
+              <div className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-full bg-white/90 text-pink-700 border border-pink-200/80 text-xs font-semibold shadow-2xs">
                 <Receipt className="w-3.5 h-3.5 text-pink-600" />
                 <span>Service Fee: ₹{totalBillServiceCharge.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
             </div>
           </div>
 
-          <div className="mt-5 pt-4 border-t border-slate-100 space-y-2">
+          <div className="mt-5 pt-4 border-t border-pink-100/80 space-y-2 relative z-10">
             <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="bg-slate-50/90 p-3 rounded-2xl border border-slate-100">
+              <div className="bg-white/85 backdrop-blur-xs p-3 rounded-2xl border border-pink-100/90 shadow-2xs">
                 <div className="flex items-center justify-between text-[10px] uppercase font-bold text-slate-500">
                   <span>Offline Vol</span>
-                  <span className="text-pink-600">Fee: ₹{offlineBillServiceCharge.toFixed(0)}</span>
+                  <span className="text-pink-600 font-bold">Fee: ₹{offlineBillServiceCharge.toFixed(0)}</span>
                 </div>
                 <p className="font-bold font-mono text-slate-900 text-sm mt-1">
                   ₹{offlineBillVolume.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                 </p>
               </div>
 
-              <div className="bg-slate-50/90 p-3 rounded-2xl border border-slate-100">
+              <div className="bg-white/85 backdrop-blur-xs p-3 rounded-2xl border border-pink-100/90 shadow-2xs">
                 <div className="flex items-center justify-between text-[10px] uppercase font-bold text-slate-500">
                   <span>Live BBPS</span>
-                  <span className="text-emerald-600">Fee: ₹{liveBillServiceCharge.toFixed(0)}</span>
+                  <span className="text-emerald-600 font-bold">Fee: ₹{liveBillServiceCharge.toFixed(0)}</span>
                 </div>
                 <p className="font-bold font-mono text-slate-900 text-sm mt-1">
                   ₹{liveBillVolume.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
@@ -507,11 +509,12 @@ export const AdminOverviewDashboard: React.FC = () => {
         </div>
 
         {/* 3. INSTANT BANK PAYOUT ENGINE */}
-        <div className="bg-white border border-slate-200/90 rounded-[28px] p-6 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between group">
-          <div>
+        <div className="bg-gradient-to-br from-blue-50/90 via-sky-50/30 to-white border border-blue-200/90 rounded-[28px] p-6 shadow-xs hover:shadow-md hover:border-blue-300 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
+          <div className="absolute -top-12 -right-12 w-32 h-32 bg-blue-200/25 rounded-full blur-2xl pointer-events-none" />
+          <div className="relative z-10">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shadow-xs">
+                <div className="w-11 h-11 rounded-2xl bg-white text-blue-600 border border-blue-200/90 flex items-center justify-center shadow-xs">
                   <ArrowRightLeft className="w-5 h-5" />
                 </div>
                 <div>
@@ -519,7 +522,7 @@ export const AdminOverviewDashboard: React.FC = () => {
                   <p className="text-[11px] font-semibold text-slate-400">Direct IMPS Transfers</p>
                 </div>
               </div>
-              <span className="px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100 font-extrabold text-[10px]">
+              <span className="px-2.5 py-1 rounded-full bg-blue-100/80 text-blue-800 border border-blue-200 font-extrabold text-[10px]">
                 NPCI 24x7
               </span>
             </div>
@@ -531,15 +534,15 @@ export const AdminOverviewDashboard: React.FC = () => {
               <div className="text-2xl sm:text-3xl font-black text-slate-900 font-mono tracking-tight mt-0.5">
                 ₹{totalPayoutVolume.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
-              <div className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
+              <div className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-full bg-white/90 text-blue-700 border border-blue-200/80 text-xs font-semibold shadow-2xs">
                 <ArrowUpRight className="w-3.5 h-3.5 text-blue-600" />
                 <span>{successfulPayouts.length} Settled Bank Transfer(s)</span>
               </div>
             </div>
           </div>
 
-          <div className="mt-5 pt-4 border-t border-slate-100">
-            <div className="bg-slate-50/90 rounded-2xl p-3.5 border border-slate-100 flex items-center justify-between">
+          <div className="mt-5 pt-4 border-t border-blue-100/80 relative z-10">
+            <div className="bg-white/85 backdrop-blur-xs rounded-2xl p-3.5 border border-blue-100/90 flex items-center justify-between shadow-2xs">
               <div>
                 <p className="text-[10px] uppercase font-bold text-slate-500">Payout Slab Charges</p>
                 <p className="font-bold font-mono text-teal-700 text-sm mt-0.5">
