@@ -38,8 +38,13 @@ import type { UserRole } from './types/auth';
 import { 
   Menu, LogOut, Wallet, Clock, ChevronDown, ChevronRight, Key, ShieldCheck,
   Zap, Bell, Settings, FileText, CreditCard, Landmark, X, SlidersHorizontal,
-  LayoutDashboard, Users, ArrowRightLeft, RefreshCw, Images, Sliders, KeyRound, Lock, QrCode
+  LayoutDashboard, Users, ArrowRightLeft, RefreshCw, Images, Sliders, KeyRound, Lock, QrCode,
+  Volume2, VolumeX
 } from 'lucide-react';
+import { AdminSoundSettingsModal } from './components/common/AdminSoundSettingsModal';
+import { AdminSoundToastContainer } from './components/common/AdminSoundToastContainer';
+import { useAdminSoundAlerts } from './hooks/useAdminSoundAlerts';
+import { getStoredSoundSettings, type AdminSoundSettings } from './utils/soundNotification';
 
 export default function App() {
   const { user, isAuthenticated, logout, updateUser, sessionRemainingSeconds } = useAuthStore();
@@ -127,6 +132,23 @@ export default function App() {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [badgeCounts, setBadgeCounts] = useState<{ [key: string]: number }>({});
+  const [showSoundSettingsModal, setShowSoundSettingsModal] = useState(false);
+  const [soundSettings, setSoundSettings] = useState<AdminSoundSettings>(getStoredSoundSettings);
+
+  useEffect(() => {
+    const handleSettingsChange = (e: any) => {
+      if (e.detail) setSoundSettings(e.detail);
+    };
+    window.addEventListener('just2pay_sound_settings_changed', handleSettingsChange);
+    return () => window.removeEventListener('just2pay_sound_settings_changed', handleSettingsChange);
+  }, []);
+
+  const { toasts, dismissToast, handleToastClick, checkBadgeCountIncrease } = useAdminSoundAlerts(
+    Boolean(isAuthenticated && user?.role === 'admin'),
+    (tabKey) => {
+      handleTabChange(tabKey);
+    }
+  );
 
   const moreMenuRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
@@ -135,14 +157,13 @@ export default function App() {
   // Close dropdowns on outside click or Escape key
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
-      const target = e.target as Node;
-      if (moreMenuRef.current && !moreMenuRef.current.contains(target)) {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target as Node)) {
         setShowMoreMenu(false);
       }
-      if (profileMenuRef.current && !profileMenuRef.current.contains(target)) {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
         setShowProfileMenu(false);
       }
-      if (notificationsRef.current && !notificationsRef.current.contains(target)) {
+      if (notificationsRef.current && !notificationsRef.current.contains(e.target as Node)) {
         setShowNotifications(false);
       }
     };
@@ -175,6 +196,7 @@ export default function App() {
         const res = await userApi.getAdminBadgeCounts();
         if (res.success && res.counts) {
           setBadgeCounts(res.counts);
+          checkBadgeCountIncrease(res.counts);
         }
       } catch {
         // Silent catch for background poll
@@ -183,7 +205,7 @@ export default function App() {
     fetchBadgeCounts();
     const interval = setInterval(fetchBadgeCounts, 3000);
     return () => clearInterval(interval);
-  }, [isAuthenticated, user?.role]);
+  }, [isAuthenticated, user?.role, checkBadgeCountIncrease]);
 
   // Auto-sync profile & wallet balance in real-time
   useEffect(() => {
@@ -720,6 +742,30 @@ export default function App() {
             </div>
           )}
 
+          {/* 0. Audio Alert Settings (Admin Only) */}
+          {user?.role === 'admin' && (
+            <button
+              type="button"
+              onClick={() => {
+                setShowSoundSettingsModal(true);
+                setShowNotifications(false);
+                setShowProfileMenu(false);
+                setShowMoreMenu(false);
+              }}
+              className="w-10 h-10 rounded-full bg-white border border-slate-200/90 hover:bg-slate-50 flex items-center justify-center text-slate-700 shadow-2xs relative transition cursor-pointer"
+              title="Audio Notification Settings"
+            >
+              {soundSettings.enabled ? (
+                <Volume2 className="w-4 h-4 text-indigo-600" />
+              ) : (
+                <VolumeX className="w-4 h-4 text-slate-400" />
+              )}
+              {soundSettings.enabled && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              )}
+            </button>
+          )}
+
           {/* 1. Notification Bell with Count Badge */}
           {(() => {
             const totalPendingAlerts = (badgeCounts['qr_requests'] || 0) +
@@ -1019,6 +1065,23 @@ export default function App() {
           {activeTab === 'users' && renderDashboardByRole(user.role)}
           {activeTab !== 'dashboard' && activeTab !== 'admin_kyc' && activeTab !== 'admin_payout' && activeTab !== 'api_fund_request' && activeTab !== 'admin_statement' && activeTab !== 'user_statement' && activeTab !== 'payout_transfer' && activeTab !== 'bank_entry' && activeTab !== 'admin_bill_requests' && activeTab !== 'live_bill_history' && activeTab !== 'ccbiller' && activeTab !== 'live_bill_pay' && activeTab !== 'bill_request' && activeTab !== 'qr_master' && activeTab !== 'qr_requests' && activeTab !== 'qr_gallery' && activeTab !== 'manage_tpin' && activeTab !== 'change_mpin' && activeTab !== 'change_password' && activeTab !== 'users' && renderDashboardByRole(user.role)}
         </main>
+
+        {/* Floating Sound Toast Container (Admin Only) */}
+        {user?.role === 'admin' && (
+          <AdminSoundToastContainer
+            toasts={toasts}
+            onDismiss={dismissToast}
+            onClickToast={handleToastClick}
+          />
+        )}
+
+        {/* Audio Alert Settings Modal (Admin Only) */}
+        {user?.role === 'admin' && (
+          <AdminSoundSettingsModal
+            isOpen={showSoundSettingsModal}
+            onClose={() => setShowSoundSettingsModal(false)}
+          />
+        )}
     </div>
   );
 }
