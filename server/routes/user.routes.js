@@ -101,20 +101,23 @@ router.get('/admin-badge-counts', verifyToken, async (req, res) => {
     let ccBillPendingCount = 0;
     let kycPendingCount = 0;
     let payoutPendingCount = 0;
+    let fundPendingCount = 0;
 
     if (supabase) {
       try {
-        const [qrRes, ccRes, kycRes, poRes, uKycRes] = await Promise.all([
+        const [qrRes, ccRes, kycRes, poRes, uKycRes, fundRes] = await Promise.all([
           supabase.from('qr_payment_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
           supabase.from('credit_card_bill_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
           supabase.from('kyc_verifications').select('id', { count: 'exact', head: true }).in('status', ['under_review', 'pending']),
           supabase.from('payout_transactions').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-          supabase.from('users_profiles').select('id', { count: 'exact', head: true }).in('kyc_status', ['under_review', 'pending'])
+          supabase.from('users_profiles').select('id', { count: 'exact', head: true }).in('kyc_status', ['under_review', 'pending']),
+          supabase.from('api_fund_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending')
         ]);
         qrPendingCount = qrRes.count || 0;
         ccBillPendingCount = ccRes.count || 0;
         kycPendingCount = Math.max(kycRes.count || 0, uKycRes.count || 0);
         payoutPendingCount = poRes.count || 0;
+        fundPendingCount = fundRes.count || 0;
       } catch (sbErr) {
         qrPendingCount = (db.qr_payment_requests || []).filter(r => r.status === 'pending').length;
         ccBillPendingCount = (db.credit_card_bill_requests || db.bill_requests || []).filter(r => r.status === 'pending').length;
@@ -122,6 +125,7 @@ router.get('/admin-badge-counts', verifyToken, async (req, res) => {
         const memUserKycCount = (db.users || []).filter(u => u.kyc_status === 'under_review' || u.kyc_status === 'pending').length;
         kycPendingCount = Math.max(memKycCount, memUserKycCount);
         payoutPendingCount = (db.payout_transactions || []).filter(p => p.status === 'pending').length;
+        fundPendingCount = (db.api_fund_requests || []).filter(f => f.status === 'pending').length;
       }
     } else {
       qrPendingCount = (db.qr_payment_requests || []).filter(r => r.status === 'pending').length;
@@ -130,6 +134,7 @@ router.get('/admin-badge-counts', verifyToken, async (req, res) => {
       const memUserKycCount = (db.users || []).filter(u => u.kyc_status === 'under_review' || u.kyc_status === 'pending').length;
       kycPendingCount = Math.max(memKycCount, memUserKycCount);
       payoutPendingCount = (db.payout_transactions || []).filter(p => p.status === 'pending').length;
+      fundPendingCount = (db.api_fund_requests || []).filter(f => f.status === 'pending').length;
     }
 
     return res.json({
@@ -139,7 +144,8 @@ router.get('/admin-badge-counts', verifyToken, async (req, res) => {
         admin_bill_requests: ccBillPendingCount,
         admin_kyc: kycPendingCount,
         admin_payout: payoutPendingCount,
-        total: qrPendingCount + ccBillPendingCount + kycPendingCount + payoutPendingCount
+        api_fund_request: fundPendingCount,
+        total: qrPendingCount + ccBillPendingCount + kycPendingCount + payoutPendingCount + fundPendingCount
       }
     });
   } catch (err) {

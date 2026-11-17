@@ -117,7 +117,7 @@ export const AdminLiveBillPayHistory: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'success' | 'pending' | 'failed'>('all');
-  const [dateFilter, setDateFilter] = useState<'ALL' | 'TODAY' | 'YESTERDAY' | 'LAST_7_DAYS' | 'LAST_30_DAYS' | 'THIS_MONTH' | 'CUSTOM'>('ALL');
+  const [dateFilter, setDateFilter] = useState<'ALL' | 'TODAY' | 'YESTERDAY' | 'LAST_7_DAYS' | 'LAST_30_DAYS' | 'THIS_MONTH' | 'CUSTOM'>('TODAY');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [checkingStatusId, setCheckingStatusId] = useState<string | null>(null);
@@ -209,7 +209,7 @@ export const AdminLiveBillPayHistory: React.FC = () => {
   const isAnyFilterActive = Boolean(
     searchQuery.trim() ||
     statusFilter !== 'all' ||
-    dateFilter !== 'ALL' ||
+    dateFilter !== 'TODAY' ||
     customStartDate ||
     customEndDate
   );
@@ -217,13 +217,13 @@ export const AdminLiveBillPayHistory: React.FC = () => {
   const handleClearFilters = () => {
     setSearchQuery('');
     setStatusFilter('all');
-    setDateFilter('ALL');
+    setDateFilter('TODAY');
     setCustomStartDate('');
     setCustomEndDate('');
   };
 
-  // Filter Logic
-  const filteredHistory = historyList.filter(item => {
+  // Base history filtered by Date and Search (used for Top Metrics Summary Cards)
+  const summaryBaseHistory = historyList.filter(item => {
     // 1. Date Filter
     if (dateFilter !== 'ALL') {
       if (!item.created_at) return false;
@@ -264,17 +264,7 @@ export const AdminLiveBillPayHistory: React.FC = () => {
       }
     }
 
-    // 2. Status Filter
-    const itemStatus = (item.status || '').toLowerCase();
-    const isSuccess = itemStatus === 'success' || itemStatus === 'approved';
-    const isPending = itemStatus === 'pending';
-    const isFailed = itemStatus === 'failed' || itemStatus === 'rejected';
-
-    if (statusFilter === 'success' && !isSuccess) return false;
-    if (statusFilter === 'pending' && !isPending) return false;
-    if (statusFilter === 'failed' && !isFailed) return false;
-
-    // 3. Search Query
+    // 2. Search Query
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
       const card4 = getCardLast4(item);
@@ -295,14 +285,28 @@ export const AdminLiveBillPayHistory: React.FC = () => {
     return true;
   });
 
-  // Calculate Metrics
-  const totalRequests = historyList.length;
-  const totalVolume = historyList.reduce(
+  // Table rows: further filtered by Status
+  const filteredHistory = summaryBaseHistory.filter(item => {
+    const itemStatus = (item.status || '').toLowerCase();
+    const isSuccess = itemStatus === 'success' || itemStatus === 'approved';
+    const isPending = itemStatus === 'pending';
+    const isFailed = itemStatus === 'failed' || itemStatus === 'rejected';
+
+    if (statusFilter === 'success' && !isSuccess) return false;
+    if (statusFilter === 'pending' && !isPending) return false;
+    if (statusFilter === 'failed' && !isFailed) return false;
+
+    return true;
+  });
+
+  // Calculate Metrics dynamically from selected range
+  const totalRequests = summaryBaseHistory.length;
+  const totalVolume = summaryBaseHistory.reduce(
     (sum, item) => sum + (parseFloat(item.amount) || 0), 
     0
   );
 
-  const successTransactions = historyList.filter(
+  const successTransactions = summaryBaseHistory.filter(
     i => (i.status || '').toLowerCase() === 'success' || (i.status || '').toLowerCase() === 'approved'
   );
   const successVolume = successTransactions.reduce(
@@ -316,7 +320,7 @@ export const AdminLiveBillPayHistory: React.FC = () => {
     0
   );
 
-  const pendingTransactions = historyList.filter(
+  const pendingTransactions = summaryBaseHistory.filter(
     i => (i.status || '').toLowerCase() === 'pending'
   );
   const pendingVolume = pendingTransactions.reduce(
@@ -325,7 +329,7 @@ export const AdminLiveBillPayHistory: React.FC = () => {
   );
   const pendingCount = pendingTransactions.length;
 
-  const failedTransactions = historyList.filter(
+  const failedTransactions = summaryBaseHistory.filter(
     i => (i.status || '').toLowerCase() === 'failed' || (i.status || '').toLowerCase() === 'rejected'
   );
   const failedVolume = failedTransactions.reduce(
@@ -586,13 +590,13 @@ export const AdminLiveBillPayHistory: React.FC = () => {
               onChange={(e) => setDateFilter(e.target.value as any)}
               className="bg-transparent text-slate-800 text-xs focus:outline-none cursor-pointer pr-2 font-medium"
             >
-              <option value="ALL">All Time</option>
               <option value="TODAY">Today</option>
               <option value="YESTERDAY">Yesterday</option>
               <option value="LAST_7_DAYS">Last 7 Days</option>
               <option value="LAST_30_DAYS">Last 30 Days</option>
               <option value="THIS_MONTH">This Month</option>
               <option value="CUSTOM">Custom Range</option>
+              <option value="ALL">All Time</option>
             </select>
           </div>
 

@@ -24,7 +24,7 @@ export const AdminPayoutManagement: React.FC = () => {
   const [verificationsLoading, setVerificationsLoading] = useState<boolean>(false);
   const [verifSearchTerm, setVerifSearchTerm] = useState<string>('');
   const [verifStatusFilter, setVerifStatusFilter] = useState<string>('all');
-  const [verifDateFilter, setVerifDateFilter] = useState<'ALL' | 'TODAY' | 'YESTERDAY' | 'LAST_7_DAYS' | 'LAST_30_DAYS' | 'THIS_MONTH' | 'CUSTOM'>('ALL');
+  const [verifDateFilter, setVerifDateFilter] = useState<'ALL' | 'TODAY' | 'YESTERDAY' | 'LAST_7_DAYS' | 'LAST_30_DAYS' | 'THIS_MONTH' | 'CUSTOM'>('TODAY');
   const [verifCustomStartDate, setVerifCustomStartDate] = useState<string>('');
   const [verifCustomEndDate, setVerifCustomEndDate] = useState<string>('');
 
@@ -54,7 +54,7 @@ export const AdminPayoutManagement: React.FC = () => {
   const [txnsLoading, setTxnsLoading] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [dateFilter, setDateFilter] = useState<'ALL' | 'TODAY' | 'YESTERDAY' | 'LAST_7_DAYS' | 'LAST_30_DAYS' | 'THIS_MONTH' | 'CUSTOM'>('ALL');
+  const [dateFilter, setDateFilter] = useState<'ALL' | 'TODAY' | 'YESTERDAY' | 'LAST_7_DAYS' | 'LAST_30_DAYS' | 'THIS_MONTH' | 'CUSTOM'>('TODAY');
   const [customStartDate, setCustomStartDate] = useState<string>('');
   const [customEndDate, setCustomEndDate] = useState<string>('');
   const [checkingOrderId, setCheckingOrderId] = useState<string | null>(null);
@@ -400,7 +400,7 @@ export const AdminPayoutManagement: React.FC = () => {
   const isAnyFilterActive = Boolean(
     searchTerm.trim() ||
     statusFilter !== 'all' ||
-    dateFilter !== 'ALL' ||
+    dateFilter !== 'TODAY' ||
     customStartDate ||
     customEndDate
   );
@@ -408,12 +408,13 @@ export const AdminPayoutManagement: React.FC = () => {
   const handleClearFilters = () => {
     setSearchTerm('');
     setStatusFilter('all');
-    setDateFilter('ALL');
+    setDateFilter('TODAY');
     setCustomStartDate('');
     setCustomEndDate('');
   };
 
-  const filteredTxns = transactions.filter((t) => {
+  // Base transactions filtered by Date and Search (used for Top Metrics Summary Cards)
+  const summaryBaseTxns = transactions.filter((t) => {
     // 1. Date Filter
     if (dateFilter !== 'ALL') {
       if (!t.created_at) return false;
@@ -454,11 +455,7 @@ export const AdminPayoutManagement: React.FC = () => {
       }
     }
 
-    // 2. Status Filter
-    const matchesStatus = statusFilter === 'all' || t.status === statusFilter;
-    if (!matchesStatus) return false;
-
-    // 3. Search Query
+    // 2. Search Query
     if (searchTerm.trim()) {
       const q = searchTerm.trim().toLowerCase();
       const matchesSearch =
@@ -474,14 +471,19 @@ export const AdminPayoutManagement: React.FC = () => {
     return true;
   });
 
-  // Payout Transaction Metrics
-  const totalPayoutTxns = transactions.length;
-  const totalPayoutVolume = transactions.reduce(
+  // Table rows: further filtered by Status
+  const filteredTxns = summaryBaseTxns.filter((t) => {
+    return statusFilter === 'all' || t.status === statusFilter;
+  });
+
+  // Payout Transaction Metrics calculated dynamically from selected range
+  const totalPayoutTxns = summaryBaseTxns.length;
+  const totalPayoutVolume = summaryBaseTxns.reduce(
     (sum, t) => sum + (parseFloat(String(t.amount)) || 0),
     0
   );
 
-  const successTxns = transactions.filter(t => t.status === 'success');
+  const successTxns = summaryBaseTxns.filter(t => t.status === 'success');
   const successTxnCount = successTxns.length;
   const successPayoutVolume = successTxns.reduce(
     (sum, t) => sum + (parseFloat(String(t.amount)) || 0),
@@ -492,14 +494,14 @@ export const AdminPayoutManagement: React.FC = () => {
     0
   );
 
-  const pendingTxns = transactions.filter(t => t.status === 'pending');
+  const pendingTxns = summaryBaseTxns.filter(t => t.status === 'pending');
   const pendingTxnCount = pendingTxns.length;
   const pendingPayoutVolume = pendingTxns.reduce(
     (sum, t) => sum + (parseFloat(String(t.amount)) || 0),
     0
   );
 
-  const failedTxns = transactions.filter(t => t.status === 'failed');
+  const failedTxns = summaryBaseTxns.filter(t => t.status === 'failed');
   const failedTxnCount = failedTxns.length;
   const failedPayoutVolume = failedTxns.reduce(
     (sum, t) => sum + (parseFloat(String(t.amount)) || 0),
@@ -1001,13 +1003,13 @@ export const AdminPayoutManagement: React.FC = () => {
                 onChange={(e) => setDateFilter(e.target.value as any)}
                 className="bg-transparent text-slate-800 text-xs focus:outline-none cursor-pointer pr-2 font-medium"
               >
-                <option value="ALL">All Time</option>
                 <option value="TODAY">Today</option>
                 <option value="YESTERDAY">Yesterday</option>
                 <option value="LAST_7_DAYS">Last 7 Days</option>
                 <option value="LAST_30_DAYS">Last 30 Days</option>
                 <option value="THIS_MONTH">This Month</option>
                 <option value="CUSTOM">Custom Range</option>
+                <option value="ALL">All Time</option>
               </select>
             </div>
 

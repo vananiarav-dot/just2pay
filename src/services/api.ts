@@ -120,6 +120,7 @@ export const userApi = {
       admin_bill_requests: number;
       admin_kyc: number;
       admin_payout?: number;
+      api_fund_request?: number;
       total: number;
     };
   }> => {
@@ -194,7 +195,7 @@ export const qrApi = {
     return response.data;
   },
 
-  updateSettings: async (data: { user_qr_visible?: boolean; qr_request_section_enabled?: boolean }) => {
+  updateSettings: async (data: { user_qr_visible?: boolean; qr_request_section_enabled?: boolean; min_wallet_balance?: number }) => {
     const response = await apiClient.post('/qr/settings', data);
     return response.data;
   },

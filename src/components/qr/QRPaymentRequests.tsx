@@ -63,7 +63,7 @@ export const QRPaymentRequests: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [utrFilter, setUtrFilter] = useState('');
-  const [dateFilter, setDateFilter] = useState<'ALL' | 'TODAY' | 'YESTERDAY' | 'LAST_7_DAYS' | 'LAST_30_DAYS' | 'THIS_MONTH' | 'CUSTOM'>('ALL');
+  const [dateFilter, setDateFilter] = useState<'ALL' | 'TODAY' | 'YESTERDAY' | 'LAST_7_DAYS' | 'LAST_30_DAYS' | 'THIS_MONTH' | 'CUSTOM'>('TODAY');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
 
@@ -399,7 +399,7 @@ export const QRPaymentRequests: React.FC = () => {
     searchTerm.trim() ||
     utrFilter.trim() ||
     statusFilter !== 'ALL' ||
-    dateFilter !== 'ALL' ||
+    dateFilter !== 'TODAY' ||
     customStartDate ||
     customEndDate
   );
@@ -408,12 +408,13 @@ export const QRPaymentRequests: React.FC = () => {
     setSearchTerm('');
     setUtrFilter('');
     setStatusFilter('ALL');
-    setDateFilter('ALL');
+    setDateFilter('TODAY');
     setCustomStartDate('');
     setCustomEndDate('');
   };
 
-  const filteredRequests = requestsList.filter(r => {
+  // Base requests filtered by Date Range, UTR number, and Keyword Search (used for Top Summary Metrics)
+  const summaryBaseRequests = requestsList.filter(r => {
     // 1. Date Filter
     if (dateFilter !== 'ALL') {
       if (!r.created_at) return false;
@@ -462,12 +463,7 @@ export const QRPaymentRequests: React.FC = () => {
       }
     }
 
-    // 3. Status Filter
-    if (statusFilter !== 'ALL') {
-      if (r.status !== statusFilter) return false;
-    }
-
-    // 4. Admin & Channel Partner Search (User, Firm, Mobile, QR Name)
+    // 3. Admin & Channel Partner Search (User, Firm, Mobile, QR Name)
     if ((isAdmin || isChannelPartner) && searchTerm.trim()) {
       const q = searchTerm.trim().toLowerCase();
       const matches =
@@ -482,24 +478,34 @@ export const QRPaymentRequests: React.FC = () => {
     return true;
   });
 
-  const pendingRequests = requestsList.filter(r => r.status === 'pending');
-  const approvedRequests = requestsList.filter(r => r.status === 'approved');
-  const rejectedRequests = requestsList.filter(r => r.status === 'rejected');
-  const revertedRequests = requestsList.filter(r => r.status === 'reverted');
+  // Table rows: further filtered by Status
+  const filteredRequests = summaryBaseRequests.filter(r => {
+    if (statusFilter !== 'ALL') {
+      if (r.status !== statusFilter) return false;
+    }
+    return true;
+  });
+
+  // Summary Metrics calculated dynamically from filtered range
+  const totalSummaryCount = summaryBaseRequests.length;
+  const pendingRequests = summaryBaseRequests.filter(r => r.status === 'pending');
+  const approvedRequests = summaryBaseRequests.filter(r => r.status === 'approved');
+  const rejectedRequests = summaryBaseRequests.filter(r => r.status === 'rejected');
+  const revertedRequests = summaryBaseRequests.filter(r => r.status === 'reverted');
 
   const pendingCount = pendingRequests.length;
   const approvedCount = approvedRequests.length;
   const rejectedCount = rejectedRequests.length;
   const revertedCount = revertedRequests.length;
 
-  const totalRequestedVolume = requestsList.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+  const totalRequestedVolume = summaryBaseRequests.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
   const totalApprovedAmount = approvedRequests.reduce((sum, r) => sum + (Number(r.net_amount) || 0), 0);
   const totalApprovedRequestedAmount = approvedRequests.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
   const totalApprovedAdminCommission = approvedRequests.reduce((sum, r) => sum + (Number(r.admin_commission) || 0), 0);
   const totalPendingAmount = pendingRequests.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
   const totalRejectedAmount = rejectedRequests.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
 
-  const totalCommissionEarned = requestsList
+  const totalCommissionEarned = summaryBaseRequests
     .filter(r => r.status === 'approved')
     .reduce((sum, r) => {
       if (isSuperDistributor) {
@@ -858,7 +864,7 @@ export const QRPaymentRequests: React.FC = () => {
             </div>
             <div className="mt-2.5">
               <div className="flex items-baseline justify-between gap-2">
-                <p className="text-2xl font-black text-slate-900">{requestsList.length}</p>
+                <p className="text-2xl font-black text-slate-900">{totalSummaryCount}</p>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
                   Vol: ₹{totalRequestedVolume.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </span>
@@ -1042,13 +1048,13 @@ export const QRPaymentRequests: React.FC = () => {
                 onChange={(e) => setDateFilter(e.target.value as any)}
                 className="bg-transparent text-slate-800 text-xs focus:outline-none cursor-pointer pr-2 font-medium"
               >
-                <option value="ALL">All Time</option>
                 <option value="TODAY">Today</option>
                 <option value="YESTERDAY">Yesterday</option>
                 <option value="LAST_7_DAYS">Last 7 Days</option>
                 <option value="LAST_30_DAYS">Last 30 Days</option>
                 <option value="THIS_MONTH">This Month</option>
                 <option value="CUSTOM">Custom Range</option>
+                <option value="ALL">All Time</option>
               </select>
             </div>
 

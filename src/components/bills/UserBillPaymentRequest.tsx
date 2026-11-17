@@ -28,7 +28,7 @@ import {
 
 export const UserBillPaymentRequest: React.FC = () => {
   const { user, updateUser } = useAuthStore();
-  const { ccBillPayEnabled } = useSettingsStore();
+  const { ccBillPayEnabled, minWalletBalance } = useSettingsStore();
   
   // Data lists
   const [banks, setBanks] = useState<BankAccount[]>([]);
@@ -273,9 +273,13 @@ export const UserBillPaymentRequest: React.FC = () => {
 
     const totalDeduction = numAmt + calculatedCharge;
     const currentBalance = Number(user?.wallet_balance || 0);
+    const minReserve = minWalletBalance !== undefined ? minWalletBalance : 200;
 
-    if (currentBalance < totalDeduction) {
-      showNotice('error', `Insufficient Balance! Required: ₹${totalDeduction.toLocaleString('en-IN')}, Available: ₹${currentBalance.toLocaleString('en-IN')}`);
+    if (currentBalance - totalDeduction < minReserve) {
+      showNotice(
+        'error',
+        `Insufficient Wallet Balance! A mandatory minimum reserve balance of ₹${minReserve.toFixed(2)} must be maintained in your wallet. Required: ₹${totalDeduction.toLocaleString('en-IN')} + ₹${minReserve.toFixed(2)} reserve = ₹${(totalDeduction + minReserve).toLocaleString('en-IN')}, Available: ₹${currentBalance.toLocaleString('en-IN')}.`
+      );
       return;
     }
 

@@ -38,7 +38,7 @@ export const AdminBillRequestsManagement: React.FC = () => {
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
-  const [dateFilter, setDateFilter] = useState<'ALL' | 'TODAY' | 'YESTERDAY' | 'LAST_7_DAYS' | 'LAST_30_DAYS' | 'THIS_MONTH' | 'CUSTOM'>('ALL');
+  const [dateFilter, setDateFilter] = useState<'ALL' | 'TODAY' | 'YESTERDAY' | 'LAST_7_DAYS' | 'LAST_30_DAYS' | 'THIS_MONTH' | 'CUSTOM'>('TODAY');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
 
@@ -247,7 +247,7 @@ export const AdminBillRequestsManagement: React.FC = () => {
   const isAnyFilterActive = Boolean(
     searchQuery.trim() ||
     filterStatus !== 'all' ||
-    dateFilter !== 'ALL' ||
+    dateFilter !== 'TODAY' ||
     customStartDate ||
     customEndDate
   );
@@ -255,12 +255,13 @@ export const AdminBillRequestsManagement: React.FC = () => {
   const handleClearFilters = () => {
     setSearchQuery('');
     setFilterStatus('all');
-    setDateFilter('ALL');
+    setDateFilter('TODAY');
     setCustomStartDate('');
     setCustomEndDate('');
   };
 
-  const filteredRequests = requests.filter(req => {
+  // Base requests filtered by Date and Search (used for Top Metrics Summary Cards)
+  const summaryBaseRequests = requests.filter(req => {
     // 1. Date Filter
     if (dateFilter !== 'ALL') {
       if (!req.created_at) return false;
@@ -301,12 +302,7 @@ export const AdminBillRequestsManagement: React.FC = () => {
       }
     }
 
-    // 2. Status Filter
-    if (filterStatus !== 'all' && req.status !== filterStatus) {
-      return false;
-    }
-
-    // 3. Search Query
+    // 2. Search Query
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
       const matchesSearch =
@@ -322,15 +318,25 @@ export const AdminBillRequestsManagement: React.FC = () => {
     return true;
   });
 
-  const pendingRequests = requests.filter(r => r.status === 'pending');
-  const approvedRequests = requests.filter(r => r.status === 'approved');
-  const rejectedRequests = requests.filter(r => r.status === 'rejected');
+  // Table rows: further filtered by Status
+  const filteredRequests = summaryBaseRequests.filter(req => {
+    if (filterStatus !== 'all' && req.status !== filterStatus) {
+      return false;
+    }
+    return true;
+  });
+
+  // Calculate Metrics dynamically from selected range
+  const totalSummaryCount = summaryBaseRequests.length;
+  const pendingRequests = summaryBaseRequests.filter(r => r.status === 'pending');
+  const approvedRequests = summaryBaseRequests.filter(r => r.status === 'approved');
+  const rejectedRequests = summaryBaseRequests.filter(r => r.status === 'rejected');
 
   const pendingCount = pendingRequests.length;
   const approvedCount = approvedRequests.length;
   const rejectedCount = rejectedRequests.length;
 
-  const totalVolume = requests.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+  const totalVolume = summaryBaseRequests.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
   const totalApprovedBillAmount = approvedRequests.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
   const totalApprovedChargeAmount = approvedRequests.reduce((sum, r) => sum + (Number(r.service_charge) || 0), 0);
   const totalPendingBillAmount = pendingRequests.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
@@ -473,7 +479,7 @@ export const AdminBillRequestsManagement: React.FC = () => {
           </div>
           <div className="mt-2.5">
             <div className="flex items-baseline justify-between gap-2">
-              <p className="text-2xl font-black text-slate-900">{requests.length}</p>
+              <p className="text-2xl font-black text-slate-900">{totalSummaryCount}</p>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
                 Vol: ₹{totalVolume.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </span>
@@ -619,8 +625,8 @@ export const AdminBillRequestsManagement: React.FC = () => {
               onChange={(e) => setDateFilter(e.target.value as any)}
               className="bg-transparent text-slate-800 text-xs focus:outline-none cursor-pointer pr-2 font-medium"
             >
-              <option value="ALL">All Time</option>
               <option value="TODAY">Today</option>
+              <option value="ALL">All Time</option>
               <option value="YESTERDAY">Yesterday</option>
               <option value="LAST_7_DAYS">Last 7 Days</option>
               <option value="LAST_30_DAYS">Last 30 Days</option>

@@ -6,7 +6,9 @@ export type StatementCategory =
   | 'CC_BILL' 
   | 'BBPS_BILL' 
   | 'REFUND' 
-  | 'MANUAL_ADJUST';
+  | 'MANUAL_ADJUST'
+  | 'VERIFICATION'
+  | 'REVERSAL';
 
 export interface StatementEntry {
   id: string;

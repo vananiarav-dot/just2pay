@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { qrApi } from '../../services/api';
 import { supabase } from '../../lib/supabase';
+import { useSettingsStore } from '../../store/settingsStore';
 import type { QrMaster, QrPaymentRequest } from '../../types/qr';
 import { 
   QrCode, Plus, Power, RefreshCw, Copy, Check, Eye, Trash2, 
   Upload, Building2, Phone, Percent, Edit, AlertCircle, CheckCircle2, Star,
-  ChevronDown, FileText
+  ChevronDown, FileText, Wallet
 } from 'lucide-react';
 
 export const QRMasterManagement: React.FC = () => {
@@ -27,9 +28,11 @@ export const QRMasterManagement: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // System Controls State (2 Toggle Buttons)
+  // System Controls State (2 Toggle Buttons + Min Wallet Balance)
   const [userQrVisible, setUserQrVisible] = useState(true);
   const [qrRequestSectionEnabled, setQrRequestSectionEnabled] = useState(true);
+  const [minWalletBalance, setMinWalletBalance] = useState('200');
+  const [savingMinBal, setSavingMinBal] = useState(false);
   const [updatingSettings, setUpdatingSettings] = useState(false);
 
   // Set QR Tab States (Image 2 Design)
@@ -58,11 +61,34 @@ export const QRMasterManagement: React.FC = () => {
       if (setRes.success && setRes.settings) {
         setUserQrVisible(setRes.settings.user_qr_visible !== false);
         setQrRequestSectionEnabled(setRes.settings.qr_request_section_enabled !== false);
+        if (setRes.settings.min_wallet_balance !== undefined) {
+          setMinWalletBalance(String(setRes.settings.min_wallet_balance));
+        }
       }
     } catch (err) {
       console.error('Fetch QR List Error:', err);
     } finally {
       if (isInitial) setLoading(false);
+    }
+  };
+
+  const handleSaveMinWalletBalance = async () => {
+    const num = parseFloat(minWalletBalance);
+    if (isNaN(num) || num < 0) {
+      alert('Please enter a valid positive minimum wallet balance amount.');
+      return;
+    }
+    setSavingMinBal(true);
+    try {
+      await qrApi.updateSettings({ min_wallet_balance: num });
+      useSettingsStore.getState().setMinWalletBalance(num);
+      setSuccessMessage(`Minimum wallet reserve balance updated to ₹${num.toFixed(2)}.`);
+      setTimeout(() => setSuccessMessage(null), 4000);
+    } catch (err: any) {
+      console.error('Update min wallet balance error:', err);
+      alert('Failed to update minimum wallet balance.');
+    } finally {
+      setSavingMinBal(false);
     }
   };
 
@@ -320,6 +346,41 @@ export const QRMasterManagement: React.FC = () => {
             >
               <span className="w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-300" />
             </button>
+          </div>
+
+          {/* CONTROL 3: MINIMUM WALLET RESERVE BALANCE */}
+          <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-2xl border bg-white border-slate-200 shadow-xs">
+            <div className="flex items-center gap-1.5">
+              <Wallet className="w-4 h-4 text-purple-600" />
+              <div className="flex flex-col">
+                <span className="text-xs font-extrabold text-slate-800 leading-tight">Min Reserve</span>
+                <span className="text-[9px] font-black uppercase tracking-wider text-purple-600">Wallet Floor</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <div className="relative">
+                <span className="absolute left-2 top-1.5 text-xs font-bold text-slate-400">₹</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="10"
+                  value={minWalletBalance}
+                  onChange={(e) => setMinWalletBalance(e.target.value)}
+                  disabled={updatingSettings || savingMinBal}
+                  className="w-20 pl-5 pr-2 py-1 text-xs font-bold font-mono text-slate-800 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  placeholder="200"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleSaveMinWalletBalance}
+                disabled={updatingSettings || savingMinBal}
+                className="px-2.5 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold transition shadow-xs disabled:opacity-50 cursor-pointer"
+              >
+                {savingMinBal ? <RefreshCw className="w-3 h-3 animate-spin" /> : 'Save'}
+              </button>
+            </div>
           </div>
         </div>
       </div>

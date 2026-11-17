@@ -5,6 +5,20 @@ import { verifyToken, requireRoles } from '../middleware/auth.js';
 
 const router = express.Router();
 
+// Helper to determine if an entry represents an actual wallet balance impact in the ledger
+export const entryAffectsBalance = (entry) => {
+  if (!entry) return false;
+  if (entry.type === 'CREDIT') {
+    return entry.status === 'SUCCESS' || entry.status === 'REFUNDED' || entry.status === 'REVERTED';
+  }
+  if (entry.type === 'DEBIT') {
+    if (entry.status === 'SUCCESS' || entry.status === 'PENDING') return true;
+    if (entry.has_refund) return true; // Debited upfront and subsequently refunded
+    return false;
+  }
+  return false;
+};
+
 // Helper: Compile Unified Account Statement for a User
 export const compileUserStatement = async (userId, options = {}) => {
   const { startDate, endDate, type, category, search } = options;
@@ -29,22 +43,19 @@ export const compileUserStatement = async (userId, options = {}) => {
 
   const rawEntries = [];
 
-  // 2. Fetch QR Payment Requests (Approved Topups = CREDIT, Reverted = CREDIT + DEBIT)
+  // 2. Fetch QR Payment Requests (All states: Approved, Reverted, Rejected, Pending)
   let qrRequests = [];
   if (supabase) {
     try {
       const { data } = await supabase
         .from('qr_payment_requests')
         .select('*')
-        .eq('user_id', userId)
-        .in('status', ['approved', 'reverted']);
+        .eq('user_id', userId);
       if (Array.isArray(data)) qrRequests = data;
     } catch {}
   }
   if (qrRequests.length === 0) {
-    qrRequests = (db.qr_payment_requests || []).filter(
-      r => r.user_id === userId && (r.status === 'approved' || r.status === 'reverted' || (r.status === 'rejected' && String(r.rejection_reason || '').startsWith('[REVERTED]')))
-    );
+    qrRequests = (db.qr_payment_requests || []).filter(r => r.user_id === userId);
   }
 
   for (const qr of qrRequests) {
@@ -53,6 +64,35 @@ export const compileUserStatement = async (userId, options = {}) => {
     const net = parseFloat(qr.net_amount || (gross - fee));
     const feePct = qr.charge_percent ? `${qr.charge_percent}%` : '';
     const isReverted = qr.status === 'reverted' || (qr.status === 'rejected' && String(qr.rejection_reason || '').startsWith('[REVERTED]'));
+    const isRejected = (qr.status === 'rejected' || qr.status === 'declined') && !isReverted;
+    const isPending = qr.status === 'pending';
+
+    const originalUtrMatch = (qr.admin_note && qr.admin_note.match(/Original UTR:\s*(\d{12})/)?.[1])
+      || (qr.revert_reason && qr.revert_reason.match(/Original UTR:\s*(\d{12})/)?.[1])
+      || (qr.rejection_reason && qr.rejection_reason.match(/Original UTR:\s*(\d{12})/)?.[1]);
+    const displayUtr = originalUtrMatch || qr.utr_number || qr.id;
+
+    let entryStatus = 'SUCCESS';
+    let entryTitle = 'QR Add Money - UPI Settlement';
+    let entryNarration = `QR Add Money via UPI (${qr.mobile_number || 'Mobile'})`;
+    let mathBreakdown = `Request: ₹${gross.toFixed(2)} - QR Charge ${feePct ? `(${feePct})` : ''}: ₹${fee.toFixed(2)} = Net Credited: ₹${net.toFixed(2)}`;
+
+    if (isReverted) {
+      entryStatus = 'REVERTED';
+      entryTitle = 'QR Add Money (Reverted Later)';
+      entryNarration = `QR Add Money via UPI (${qr.mobile_number || 'Mobile'}) [Reverted]`;
+    } else if (isRejected) {
+      entryStatus = 'REJECTED';
+      entryTitle = 'QR Add Money (Rejected)';
+      const reason = qr.rejection_reason || 'Rejected by Admin';
+      entryNarration = `QR Add Money via UPI (${qr.mobile_number || 'Mobile'}) - ${reason}`;
+      mathBreakdown = `Request: ₹${gross.toFixed(2)} - Rejected by Admin (${reason})`;
+    } else if (isPending) {
+      entryStatus = 'PENDING';
+      entryTitle = 'QR Add Money (Pending Verification)';
+      entryNarration = `QR Add Money via UPI (${qr.mobile_number || 'Mobile'}) [Pending Approval]`;
+      mathBreakdown = `Request: ₹${gross.toFixed(2)} (Awaiting Admin Verification)`;
+    }
 
     // 1. Original Credit Entry
     rawEntries.push({
@@ -64,11 +104,11 @@ export const compileUserStatement = async (userId, options = {}) => {
       amount: gross,
       charge_amount: fee,
       net_amount: net,
-      title: isReverted ? 'QR Add Money (Reverted Later)' : 'QR Add Money - UPI Settlement',
-      narration: `QR Add Money via UPI (${qr.mobile_number || 'Mobile'})${isReverted ? ' [Reverted]' : ''}`,
-      math_breakdown: `Request: ₹${gross.toFixed(2)} - QR Charge ${feePct ? `(${feePct})` : ''}: ₹${fee.toFixed(2)} = Net Credited: ₹${net.toFixed(2)}`,
-      reference_id: qr.utr_number || qr.id,
-      status: isReverted ? 'REVERTED' : 'SUCCESS',
+      title: entryTitle,
+      narration: entryNarration,
+      math_breakdown: mathBreakdown,
+      reference_id: displayUtr,
+      status: entryStatus,
       created_at: qr.processed_at || qr.created_at
     });
 
@@ -85,9 +125,9 @@ export const compileUserStatement = async (userId, options = {}) => {
         charge_amount: 0,
         net_amount: net,
         title: 'QR Deposit Reversal (Admin Undo)',
-        narration: `Reversal of UTR ${qr.utr_number || qr.id} - ${revertReason}`,
+        narration: `Reversal of UTR ${displayUtr} - ${revertReason}`,
         math_breakdown: `Reversal Deduction: -₹${net.toFixed(2)} (Reason: ${revertReason})`,
-        reference_id: qr.utr_number || qr.id,
+        reference_id: displayUtr,
         status: 'SUCCESS',
         created_at: qr.reverted_at || qr.processed_at || qr.created_at
       });
@@ -115,6 +155,7 @@ export const compileUserStatement = async (userId, options = {}) => {
     const totalDeducted = parseFloat(po.total_deducted || (principal + fee));
     const accMasked = po.account_number ? `••${String(po.account_number).slice(-4)}` : '';
     const bankName = po.bank_name || 'Bank';
+    const isRefunded = !!(po.refunded_to_wallet || po.status === 'refunded' || (po.status === 'failed' && po.refunded_to_wallet !== false));
 
     // Debit entry (Initial deduction)
     rawEntries.push({
@@ -131,11 +172,12 @@ export const compileUserStatement = async (userId, options = {}) => {
       math_breakdown: `Transfer: ₹${principal.toFixed(2)} + Payout Slab Fee: ₹${fee.toFixed(2)} = Total Debited: ₹${totalDeducted.toFixed(2)}`,
       reference_id: po.utr || po.client_order_id,
       status: po.status === 'success' ? 'SUCCESS' : (po.status === 'failed' ? 'FAILED' : 'PENDING'),
+      has_refund: isRefunded,
       created_at: po.created_at
     });
 
     // If failed & refunded, create separate CREDIT refund row
-    if (po.refunded_to_wallet || po.status === 'refunded' || (po.status === 'failed' && po.refunded_to_wallet !== false)) {
+    if (isRefunded) {
       rawEntries.push({
         id: `stmt_po_ref_${po.id}`,
         original_id: po.id,
@@ -150,6 +192,7 @@ export const compileUserStatement = async (userId, options = {}) => {
         math_breakdown: `Refunded: ₹${principal.toFixed(2)} + Fee Refund: ₹${fee.toFixed(2)} = Total Credited: ₹${totalDeducted.toFixed(2)}`,
         reference_id: po.client_order_id,
         status: 'REFUNDED',
+        has_refund: false,
         created_at: po.updated_at || new Date(new Date(po.created_at).getTime() + 1000).toISOString()
       });
     }
@@ -175,6 +218,7 @@ export const compileUserStatement = async (userId, options = {}) => {
     const fee = parseFloat(cc.service_charge || 0);
     const totalAmt = parseFloat(cc.total_amount || (billAmt + fee));
     const cardMasked = cc.card_number ? `••${String(cc.card_number).slice(-4)}` : '';
+    const isRejected = cc.status === 'rejected';
 
     rawEntries.push({
       id: `stmt_cc_deb_${cc.id}`,
@@ -190,10 +234,11 @@ export const compileUserStatement = async (userId, options = {}) => {
       math_breakdown: `Bill: ₹${billAmt.toFixed(2)} + Service Charge: ₹${fee.toFixed(2)} = Total Debited: ₹${totalAmt.toFixed(2)}`,
       reference_id: cc.id,
       status: cc.status === 'approved' ? 'SUCCESS' : (cc.status === 'rejected' ? 'REJECTED' : 'PENDING'),
+      has_refund: isRejected,
       created_at: cc.created_at
     });
 
-    if (cc.status === 'rejected') {
+    if (isRejected) {
       rawEntries.push({
         id: `stmt_cc_ref_${cc.id}`,
         original_id: cc.id,
@@ -208,6 +253,7 @@ export const compileUserStatement = async (userId, options = {}) => {
         math_breakdown: `Refunded Bill: ₹${billAmt.toFixed(2)} + Charge Refund: ₹${fee.toFixed(2)} = Total Credited: ₹${totalAmt.toFixed(2)}`,
         reference_id: cc.id,
         status: 'REFUNDED',
+        has_refund: false,
         created_at: cc.processed_at || new Date(new Date(cc.created_at).getTime() + 1000).toISOString()
       });
     }
@@ -230,6 +276,11 @@ export const compileUserStatement = async (userId, options = {}) => {
 
   for (const bp of bbpsPayments) {
     const bpAmt = parseFloat(bp.amount || 0);
+    const fee = parseFloat(bp.service_charge || 0);
+    const totalDeducted = parseFloat(bp.total_deducted || (bpAmt + fee));
+    const isSuccess = bp.status === 'success' || bp.status === 'approved';
+    const isPending = bp.status === 'pending';
+
     rawEntries.push({
       id: `stmt_bp_${bp.id}`,
       original_id: bp.id,
@@ -237,15 +288,57 @@ export const compileUserStatement = async (userId, options = {}) => {
       type: 'DEBIT',
       category: 'BBPS_BILL',
       amount: bpAmt,
-      charge_amount: 0,
-      net_amount: bpAmt,
-      title: `BBPS Live Payment - ${bp.biller_name}`,
+      charge_amount: fee,
+      net_amount: totalDeducted,
+      title: bp.biller_name ? `BBPS Live Payment - ${bp.biller_name}` : 'BBPS Live Payment',
       narration: `Utility Bill Payment for ${bp.customer_name || bp.customer_mobile}`,
-      math_breakdown: `Bill Amount: ₹${bpAmt.toFixed(2)} = Total Debited: ₹${bpAmt.toFixed(2)}`,
+      math_breakdown: fee > 0
+        ? `Bill: ₹${bpAmt.toFixed(2)} + Service Charge: ₹${fee.toFixed(2)} = Total Debited: ₹${totalDeducted.toFixed(2)}`
+        : `Bill Amount: ₹${bpAmt.toFixed(2)} = Total Debited: ₹${totalDeducted.toFixed(2)}`,
       reference_id: bp.bbps_txn_ref_id || bp.client_transaction_id || bp.id,
-      status: bp.status === 'success' || bp.status === 'approved' ? 'SUCCESS' : (bp.status === 'failed' ? 'FAILED' : 'PENDING'),
+      status: isSuccess ? 'SUCCESS' : (isPending ? 'PENDING' : 'FAILED'),
+      has_refund: false,
       created_at: bp.created_at
     });
+  }
+
+  // 5b. Fetch Bank Account Penny Drop Verifications
+  let verifications = [];
+  if (supabase) {
+    try {
+      const { data } = await supabase
+        .from('payout_verifications')
+        .select('*')
+        .eq('user_id', userId);
+      if (Array.isArray(data)) verifications = data;
+    } catch {}
+  }
+  if (verifications.length === 0) {
+    verifications = (db.payout_verifications || []).filter(v => v.user_id === userId);
+  }
+
+  for (const v of verifications) {
+    const fee = parseFloat(v.charge_deducted || 0);
+    if (v.status === 'success' && fee > 0) {
+      const accMasked = v.account_number ? `••${String(v.account_number).slice(-4)}` : '';
+      rawEntries.push({
+        id: `stmt_vfy_${v.id}`,
+        original_id: v.id,
+        user_id: userId,
+        type: 'DEBIT',
+        category: 'VERIFICATION',
+        amount: fee,
+        charge_amount: 0,
+        net_amount: fee,
+        title: `Bank Account Verification (${v.bank_name || 'Bank'} A/C ${accMasked})`,
+        narration: `Penny Drop Verification for ${v.name_at_bank || 'Beneficiary'} - ${v.ifsc_code || ''}`,
+        math_breakdown: `Verification Charge: ₹${fee.toFixed(2)} = Total Debited: ₹${fee.toFixed(2)}`,
+        reference_id: v.client_reference_id || v.id,
+        status: 'SUCCESS',
+        has_refund: false,
+        created_at: v.created_at
+      });
+    }
   }
 
   // 6. Chronological Sorting ASC to compute exact Bank Running Balance
@@ -258,7 +351,7 @@ export const compileUserStatement = async (userId, options = {}) => {
   let totalDebits = 0;
 
   for (const entry of rawEntries) {
-    if (entry.status !== 'FAILED' && entry.status !== 'REJECTED') {
+    if (entryAffectsBalance(entry)) {
       if (entry.type === 'CREDIT') totalCredits += entry.net_amount;
       else if (entry.type === 'DEBIT') totalDebits += entry.net_amount;
     }
@@ -271,7 +364,7 @@ export const compileUserStatement = async (userId, options = {}) => {
   // Assign Running Balance to each row
   for (const entry of rawEntries) {
     entry.opening_balance = parseFloat(running.toFixed(2));
-    if (entry.status !== 'FAILED' && entry.status !== 'REJECTED') {
+    if (entryAffectsBalance(entry)) {
       if (entry.type === 'CREDIT') {
         running += entry.net_amount;
       } else if (entry.type === 'DEBIT') {
@@ -322,7 +415,7 @@ export const compileUserStatement = async (userId, options = {}) => {
   let periodDebit = 0;
 
   for (const e of filtered) {
-    if (e.status !== 'FAILED' && e.status !== 'REJECTED') {
+    if (entryAffectsBalance(e)) {
       if (e.type === 'CREDIT') periodCredit += e.net_amount;
       else if (e.type === 'DEBIT') periodDebit += e.net_amount;
     }
@@ -444,7 +537,7 @@ router.get('/admin', verifyToken, requireRoles(['admin']), async (req, res) => {
             firm_name: u.firm_name,
             user_mobile: u.mobile_number
           });
-          if (e.status !== 'FAILED' && e.status !== 'REJECTED') {
+          if (entryAffectsBalance(e)) {
             if (e.type === 'CREDIT') totalInflow += e.net_amount;
             else if (e.type === 'DEBIT') totalOutflow += e.net_amount;
           }

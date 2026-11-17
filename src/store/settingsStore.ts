@@ -1,13 +1,15 @@
 import { create } from 'zustand';
-import { b2bApi, payoutApi, billRequestApi } from '../services/api';
+import { b2bApi, payoutApi, billRequestApi, qrApi } from '../services/api';
 
 interface SettingsState {
   liveBillPayEnabled: boolean;
   instantPayoutEnabled: boolean;
   ccBillPayEnabled: boolean;
+  minWalletBalance: number;
   isLoading: boolean;
   isInitialized: boolean;
   fetchSettings: () => Promise<void>;
+  setMinWalletBalance: (val: number) => void;
   setLiveBillPayEnabled: (enabled: boolean) => void;
   toggleLiveBillPay: () => Promise<{ success: boolean; message: string; enabled: boolean }>;
   setInstantPayoutEnabled: (enabled: boolean) => void;
@@ -26,19 +28,24 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
   const savedCc = typeof window !== 'undefined' ? localStorage.getItem('aseasy_cc_bill_pay_enabled') : null;
   const initialCcEnabled = savedCc !== null ? savedCc === 'true' : true;
 
+  const savedMinBal = typeof window !== 'undefined' ? localStorage.getItem('aseasy_min_wallet_balance') : null;
+  const initialMinBal = savedMinBal !== null ? (parseFloat(savedMinBal) || 200) : 200;
+
   return {
     liveBillPayEnabled: initialBillEnabled,
     instantPayoutEnabled: initialPayoutEnabled,
     ccBillPayEnabled: initialCcEnabled,
+    minWalletBalance: initialMinBal,
     isLoading: false,
     isInitialized: false,
 
     fetchSettings: async () => {
       try {
-        const [b2bRes, payoutRes, ccRes] = await Promise.allSettled([
+        const [b2bRes, payoutRes, ccRes, qrRes] = await Promise.allSettled([
           b2bApi.getSettings(),
           payoutApi.getSettings(),
-          billRequestApi.getSettings()
+          billRequestApi.getSettings(),
+          qrApi.getSettings()
         ]);
 
         if (b2bRes.status === 'fulfilled' && b2bRes.value?.success && b2bRes.value?.settings) {
@@ -65,10 +72,26 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
           set({ ccBillPayEnabled: enabled });
         }
 
+        if (qrRes.status === 'fulfilled' && qrRes.value?.success && qrRes.value?.settings) {
+          const minBal = qrRes.value.settings.min_wallet_balance !== undefined ? Number(qrRes.value.settings.min_wallet_balance) : 200;
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('aseasy_min_wallet_balance', String(minBal));
+          }
+          set({ minWalletBalance: minBal });
+        }
+
         set({ isInitialized: true });
       } catch {
         set({ isInitialized: true });
       }
+    },
+
+    setMinWalletBalance: (val: number) => {
+      const cleanVal = Math.max(0, Number(val) || 0);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('aseasy_min_wallet_balance', String(cleanVal));
+      }
+      set({ minWalletBalance: cleanVal });
     },
 
     setLiveBillPayEnabled: (enabled: boolean) => {

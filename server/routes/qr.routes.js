@@ -337,8 +337,8 @@ const fetchActiveQrFromDb = async () => {
   // Fallback to in-memory store if DB query yielded nothing
   if (!activeQr) {
     activeQr = (db.qr_masters || []).find(q => q.is_selected && q.is_active) ||
-               (db.qr_masters || []).find(q => q.is_active) ||
-               (db.qr_masters || [])[0] || null;
+      (db.qr_masters || []).find(q => q.is_active) ||
+      (db.qr_masters || [])[0] || null;
   }
 
   return activeQr;
@@ -385,7 +385,8 @@ router.get('/settings', verifyToken, async (req, res) => {
         qr_request_section_enabled: true,
         live_bill_pay_enabled: true,
         instant_payout_enabled: true,
-        cc_bill_pay_enabled: true
+        cc_bill_pay_enabled: true,
+        min_wallet_balance: 200
       };
     }
 
@@ -408,10 +409,17 @@ router.get('/settings', verifyToken, async (req, res) => {
           if (data.cc_bill_pay_enabled !== undefined) {
             db.system_settings.cc_bill_pay_enabled = data.cc_bill_pay_enabled !== false;
           }
+          if (data.min_wallet_balance !== undefined) {
+            db.system_settings.min_wallet_balance = Number(data.min_wallet_balance);
+          }
         }
       } catch (sbErr) {
         // Table may not exist yet, use in-memory store
       }
+    }
+
+    if (db.system_settings.min_wallet_balance === undefined) {
+      db.system_settings.min_wallet_balance = 200;
     }
 
     return res.status(200).json({
@@ -430,30 +438,35 @@ router.get('/settings', verifyToken, async (req, res) => {
 router.post('/settings', verifyToken, requireRoles(['admin']), async (req, res) => {
   try {
     if (!db.system_settings) {
-      db.system_settings = { user_qr_visible: true, qr_request_section_enabled: true, live_bill_pay_enabled: true, instant_payout_enabled: true, cc_bill_pay_enabled: true };
+      db.system_settings = { user_qr_visible: true, qr_request_section_enabled: true, live_bill_pay_enabled: true, instant_payout_enabled: true, cc_bill_pay_enabled: true, min_wallet_balance: 200 };
     }
 
-    const { user_qr_visible, qr_request_section_enabled, live_bill_pay_enabled, instant_payout_enabled, cc_bill_pay_enabled } = req.body;
+    const { user_qr_visible, qr_request_section_enabled, live_bill_pay_enabled, instant_payout_enabled, cc_bill_pay_enabled, min_wallet_balance } = req.body;
 
     if (user_qr_visible !== undefined) db.system_settings.user_qr_visible = Boolean(user_qr_visible);
     if (qr_request_section_enabled !== undefined) db.system_settings.qr_request_section_enabled = Boolean(qr_request_section_enabled);
     if (live_bill_pay_enabled !== undefined) db.system_settings.live_bill_pay_enabled = Boolean(live_bill_pay_enabled);
     if (instant_payout_enabled !== undefined) db.system_settings.instant_payout_enabled = Boolean(instant_payout_enabled);
     if (cc_bill_pay_enabled !== undefined) db.system_settings.cc_bill_pay_enabled = Boolean(cc_bill_pay_enabled);
+    if (min_wallet_balance !== undefined) db.system_settings.min_wallet_balance = Math.max(0, parseFloat(min_wallet_balance) || 0);
 
     if (supabase) {
       try {
+        const payload = {
+          id: 'qr_controls',
+          user_qr_visible: db.system_settings.user_qr_visible,
+          qr_request_section_enabled: db.system_settings.qr_request_section_enabled,
+          live_bill_pay_enabled: db.system_settings.live_bill_pay_enabled,
+          instant_payout_enabled: db.system_settings.instant_payout_enabled,
+          cc_bill_pay_enabled: db.system_settings.cc_bill_pay_enabled,
+          updated_at: new Date().toISOString()
+        };
+        if (min_wallet_balance !== undefined) {
+          payload.min_wallet_balance = db.system_settings.min_wallet_balance;
+        }
         await supabase
           .from('system_settings')
-          .upsert([{
-            id: 'qr_controls',
-            user_qr_visible: db.system_settings.user_qr_visible,
-            qr_request_section_enabled: db.system_settings.qr_request_section_enabled,
-            live_bill_pay_enabled: db.system_settings.live_bill_pay_enabled,
-            instant_payout_enabled: db.system_settings.instant_payout_enabled,
-            cc_bill_pay_enabled: db.system_settings.cc_bill_pay_enabled,
-            updated_at: new Date().toISOString()
-          }]);
+          .upsert([payload]);
       } catch (sbErr) {
         // Table or column in system_settings may not exist in Supabase schema, safe in-memory fallback
       }
@@ -507,32 +520,57 @@ router.post('/request/submit', verifyToken, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide a valid 10-digit mobile number.' });
     }
 
-    // Check for duplicate UTR number in in-memory store
-    const isDuplicateUtr = (db.qr_payment_requests || []).some(
-      r => r.utr_number === cleanUtr && r.status !== 'rejected'
-    );
-    if (isDuplicateUtr) {
+    // Check for duplicate UTR number in in-memory store (only block if currently active: approved or pending)
+    const activeInMem = (db.qr_payment_requests || []).filter(r => r.utr_number === cleanUtr);
+    const hasActiveInMem = activeInMem.some(r => r.status === 'approved' || r.status === 'pending');
+    if (hasActiveInMem) {
       return res.status(400).json({ success: false, message: 'This 12-digit UTR number has already been submitted or processed.' });
     }
+    // For any in-memory rejected/reverted records holding this UTR, archive their UTR so cleanUtr is freed
+    activeInMem.forEach((r, idx) => {
+      const archivedUtr = ('R' + (Date.now() + idx).toString().slice(-11)).slice(0, 12);
+      r.original_utr_number = r.utr_number;
+      r.utr_number = archivedUtr;
+      r.admin_note = r.admin_note ? `${r.admin_note} | Original UTR: ${cleanUtr}` : `Original UTR: ${cleanUtr}`;
+    });
 
-    // Check duplicate UTR in Supabase database & handle rejected cleanup
+    // Check duplicate UTR in Supabase database & free UTR if previously rejected or reverted
     if (supabase) {
       try {
-        const { data: existingUtr } = await supabase
+        const { data: existingRecords } = await supabase
           .from('qr_payment_requests')
-          .select('id, status')
-          .eq('utr_number', cleanUtr)
-          .maybeSingle();
+          .select('id, status, rejection_reason, admin_note')
+          .eq('utr_number', cleanUtr);
 
-        if (existingUtr) {
-          if (existingUtr.status !== 'rejected') {
+        if (existingRecords && existingRecords.length > 0) {
+          const hasActive = existingRecords.some(r => r.status === 'approved' || r.status === 'pending');
+          if (hasActive) {
             return res.status(400).json({
               success: false,
               message: 'This 12-digit UTR number has already been submitted or processed.'
             });
-          } else {
-            // Delete old rejected record so PostgreSQL unique constraint doesn't block re-submission
-            await supabase.from('qr_payment_requests').delete().eq('id', existingUtr.id);
+          }
+
+          // If records exist but all are rejected or reverted, release the UTR in PostgreSQL
+          // by archiving their utr_number to a unique 12-char value starting with 'R'
+          for (let i = 0; i < existingRecords.length; i++) {
+            const oldRec = existingRecords[i];
+            const archivedUtr = ('R' + (Date.now() + i).toString().slice(-11)).slice(0, 12);
+            await supabase
+              .from('qr_payment_requests')
+              .update({
+                utr_number: archivedUtr,
+                admin_note: oldRec.admin_note ? `${oldRec.admin_note} | Original UTR: ${cleanUtr}` : `Original UTR: ${cleanUtr}`
+              })
+              .eq('id', oldRec.id);
+
+            // Also update local in-memory store
+            const memRec = (db.qr_payment_requests || []).find(r => r.id === oldRec.id);
+            if (memRec) {
+              memRec.original_utr_number = cleanUtr;
+              memRec.utr_number = archivedUtr;
+              memRec.admin_note = oldRec.admin_note ? `${oldRec.admin_note} | Original UTR: ${cleanUtr}` : `Original UTR: ${cleanUtr}`;
+            }
           }
         }
       } catch (checkErr) {
@@ -541,8 +579,8 @@ router.post('/request/submit', verifyToken, async (req, res) => {
     }
 
     const activeQr = db.qr_masters.find(q => q.id === qr_master_id) ||
-                     db.qr_masters.find(q => q.is_selected && q.is_active) ||
-                     db.qr_masters[0];
+      db.qr_masters.find(q => q.is_selected && q.is_active) ||
+      db.qr_masters[0];
 
     const userChargePct = user.qr_charge_percent !== undefined ? parseFloat(user.qr_charge_percent) : 0;
     const chargeAmt = Math.round((numericAmount * (userChargePct / 100)) * 100) / 100;
@@ -550,8 +588,8 @@ router.post('/request/submit', verifyToken, async (req, res) => {
 
     // Calculate Hierarchy Markup Commission
     let distUser = user.distributor_id ? db.users.find(u => u.id === user.distributor_id) : null;
-    let superDistUser = (user.super_distributor_id || (distUser && distUser.super_distributor_id)) 
-      ? db.users.find(u => u.id === (user.super_distributor_id || (distUser && distUser.super_distributor_id))) 
+    let superDistUser = (user.super_distributor_id || (distUser && distUser.super_distributor_id))
+      ? db.users.find(u => u.id === (user.super_distributor_id || (distUser && distUser.super_distributor_id)))
       : null;
 
     const userRate = userChargePct;
@@ -600,7 +638,7 @@ router.post('/request/submit', verifyToken, async (req, res) => {
             role: user.role || 'retailer',
             wallet_balance: user.wallet_balance || 0,
             created_at: new Date().toISOString()
-          }], { onConflict: 'id' }).catch(() => {});
+          }], { onConflict: 'id' }).catch(() => { });
         }
       } catch (uErr) {
         console.error('Supabase users_profiles check warning:', uErr);
@@ -722,8 +760,14 @@ router.get('/request/list', verifyToken, async (req, res) => {
             const u = (db.users || []).find(u => u.id === r.user_id);
             const q = (db.qr_masters || []).find(qm => qm.id === r.qr_master_id);
             const isReverted = r.status === 'reverted' || (r.status === 'rejected' && String(r.rejection_reason || '').startsWith('[REVERTED]'));
+            const originalUtrMatch = (r.admin_note && r.admin_note.match(/Original UTR:\s*(\d{12})/)?.[1])
+              || (r.revert_reason && r.revert_reason.match(/Original UTR:\s*(\d{12})/)?.[1])
+              || (r.rejection_reason && r.rejection_reason.match(/Original UTR:\s*(\d{12})/)?.[1]);
+
             return {
               ...r,
+              utr_number: originalUtrMatch || r.utr_number,
+              original_utr_number: originalUtrMatch || r.utr_number,
               status: isReverted ? 'reverted' : r.status,
               revert_reason: r.revert_reason || (String(r.rejection_reason || '').startsWith('[REVERTED]') ? r.rejection_reason.replace('[REVERTED]', '').trim() : null),
               user_name: u ? u.name : (r.user_name || 'Retailer User'),
@@ -992,10 +1036,15 @@ router.get('/gallery/images', verifyToken, requireRoles(['admin']), async (req, 
     const populated = paginated.map(r => {
       const u = (db.users || []).find(user => user.id === r.user_id);
       const q = (db.qr_masters || []).find(qm => qm.id === r.qr_master_id);
+      const originalUtrMatch = (r.admin_note && r.admin_note.match(/Original UTR:\s*(\d{12})/)?.[1])
+        || (r.revert_reason && r.revert_reason.match(/Original UTR:\s*(\d{12})/)?.[1])
+        || (r.rejection_reason && r.rejection_reason.match(/Original UTR:\s*(\d{12})/)?.[1]);
+
       return {
         id: r.id,
         amount: Number(r.amount || 0),
-        utr_number: r.utr_number,
+        utr_number: originalUtrMatch || r.utr_number,
+        original_utr_number: originalUtrMatch || r.utr_number,
         mobile_number: r.mobile_number || (u ? u.mobile_number : ''),
         user_name: u ? u.name : (r.user_name || 'Retailer User'),
         firm_name: u ? u.firm_name : (r.firm_name || 'N/A'),
@@ -1308,11 +1357,17 @@ router.post('/request/:id/revert', verifyToken, requireRoles(['admin']), async (
       superDistUser.updated_at = new Date().toISOString();
     }
 
-    // 5. UPDATE REQUEST RECORD
+    // 5. UPDATE REQUEST RECORD & ARCHIVE UTR TO FREE IT FOR USER RESUBMISSION
+    const originalUtr = targetReq.utr_number;
+    const archivedUtr = ('R' + Date.now().toString().slice(-11)).slice(0, 12);
+
+    targetReq.original_utr_number = originalUtr;
+    targetReq.utr_number = archivedUtr;
     targetReq.status = 'reverted';
-    targetReq.revert_reason = reason.trim();
+    targetReq.revert_reason = `${reason.trim()} (Original UTR: ${originalUtr})`;
     targetReq.reverted_at = new Date().toISOString();
     targetReq.reverted_by = req.user.id;
+    targetReq.admin_note = targetReq.admin_note ? `${targetReq.admin_note} | Original UTR: ${originalUtr}` : `Original UTR: ${originalUtr}`;
 
     // 6. RECORD REVERSAL TRANSACTION LOG
     const txRecord = {
@@ -1322,7 +1377,7 @@ router.post('/request/:id/revert', verifyToken, requireRoles(['admin']), async (
       amount: targetReq.amount,
       service_charge: targetReq.charge_amount || 0,
       net_amount: netCreditAmt,
-      recipient_account: `UTR: ${targetReq.utr_number}`,
+      recipient_account: `UTR: ${originalUtr}`,
       recipient_name: `QR Approval Reverted: ${reason.trim()}`,
       status: 'SUCCESS',
       reference_number: 'ASY-REV-' + Date.now().toString().slice(-8),
@@ -1336,10 +1391,12 @@ router.post('/request/:id/revert', verifyToken, requireRoles(['admin']), async (
       try {
         const { error: sbReqErr } = await supabase.from('qr_payment_requests').update({
           status: 'reverted',
-          rejection_reason: `[REVERTED] ${reason.trim()}`,
+          utr_number: archivedUtr,
+          rejection_reason: `[REVERTED] ${reason.trim()} (Original UTR: ${originalUtr})`,
           reverted_at: targetReq.reverted_at,
           reverted_by: targetReq.reverted_by,
-          revert_reason: targetReq.revert_reason
+          revert_reason: targetReq.revert_reason,
+          admin_note: targetReq.admin_note
         }).eq('id', reqId);
 
         if (sbReqErr) {
@@ -1347,9 +1404,11 @@ router.post('/request/:id/revert', verifyToken, requireRoles(['admin']), async (
           console.warn('Supabase reverted status update warning, trying fallback:', sbReqErr.message);
           await supabase.from('qr_payment_requests').update({
             status: 'rejected',
-            rejection_reason: `[REVERTED] ${reason.trim()}`,
+            utr_number: archivedUtr,
+            rejection_reason: `[REVERTED] ${reason.trim()} (Original UTR: ${originalUtr})`,
             processed_at: targetReq.reverted_at,
-            processed_by: targetReq.reverted_by
+            processed_by: targetReq.reverted_by,
+            admin_note: targetReq.admin_note
           }).eq('id', reqId);
         }
 
@@ -1378,7 +1437,7 @@ router.post('/request/:id/revert', verifyToken, requireRoles(['admin']), async (
         }
 
         // Insert reversal transaction
-        await supabase.from('transactions').insert([txRecord]).catch(() => {});
+        await supabase.from('transactions').insert([txRecord]).catch(() => { });
       } catch (sbErr) {
         console.error('Supabase Revert QR Sync Error:', sbErr);
       }

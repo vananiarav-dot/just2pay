@@ -348,6 +348,8 @@ export const UserAccountStatement: React.FC = () => {
               <option value="CC_BILL">Credit Card Bill</option>
               <option value="BBPS_BILL">BBPS Bill</option>
               <option value="REFUND">Refunds</option>
+              <option value="VERIFICATION">Bank Verification</option>
+              <option value="REVERSAL">Reversals</option>
             </select>
           </div>
 

@@ -137,7 +137,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {
           id: 'api_fund_request',
           label: 'API Wallet Top-Up',
-          icon: Zap
+          icon: Zap,
+          badge: badgeCounts['api_fund_request'],
+          badgeColor: 'bg-purple-500 text-white shadow-purple-500/30'
         },
         {
           id: 'admin_statement',

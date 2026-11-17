@@ -13,7 +13,7 @@ import { useSettingsStore } from '../../store/settingsStore';
 
 export const UserPayoutTransfer: React.FC = () => {
   const { user, updateUser } = useAuthStore();
-  const { instantPayoutEnabled } = useSettingsStore();
+  const { instantPayoutEnabled, minWalletBalance } = useSettingsStore();
   const [activeSubTab, setActiveSubTab] = useState<'transfer' | 'beneficiaries' | 'verifications' | 'history'>('transfer');
 
   // Saved Beneficiaries State
@@ -318,10 +318,11 @@ export const UserPayoutTransfer: React.FC = () => {
     }
 
     const bal = parseFloat(String(user?.wallet_balance || 0));
-    if (bal < payoutVerificationCharge) {
+    const minReserve = minWalletBalance !== undefined ? minWalletBalance : 200;
+    if (bal - payoutVerificationCharge < minReserve) {
       setVerificationAlert({
         type: 'error',
-        message: `Insufficient Wallet Balance! Verification fee is ₹${payoutVerificationCharge.toFixed(2)}, but your current wallet balance is ₹${bal.toFixed(2)}.`
+        message: `Insufficient Wallet Balance! A mandatory minimum reserve balance of ₹${minReserve.toFixed(2)} must be maintained in your wallet. Required: ₹${payoutVerificationCharge.toFixed(2)} fee + ₹${minReserve.toFixed(2)} reserve = ₹${(payoutVerificationCharge + minReserve).toFixed(2)}, Available: ₹${bal.toFixed(2)}.`
       });
       return;
     }
@@ -496,9 +497,12 @@ export const UserPayoutTransfer: React.FC = () => {
 
     const totalRequired = calculation ? calculation.total_deducted : (numAmount + 15);
     const balance = parseFloat(String(user?.wallet_balance || 0));
+    const minReserve = minWalletBalance !== undefined ? minWalletBalance : 200;
 
-    if (balance < totalRequired) {
-      setFormError(`Insufficient Wallet Balance! Required ₹${totalRequired.toFixed(2)}, Available ₹${balance.toFixed(2)}`);
+    if (balance - totalRequired < minReserve) {
+      setFormError(
+        `Insufficient Wallet Balance! A mandatory minimum reserve balance of ₹${minReserve.toFixed(2)} must be maintained in your wallet. Required: ₹${totalRequired.toFixed(2)} + ₹${minReserve.toFixed(2)} reserve = ₹${(totalRequired + minReserve).toFixed(2)}, Available: ₹${balance.toFixed(2)}.`
+      );
       return;
     }
 

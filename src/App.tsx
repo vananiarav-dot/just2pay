@@ -377,7 +377,7 @@ export default function App() {
         { id: 'admin_bill_requests', label: 'CC Bills', badgeKey: 'admin_bill_requests' },
         { id: 'live_bill_history', label: 'LiveBill History' },
         { id: 'admin_payout', label: 'Payouts', badgeKey: 'admin_payout' },
-        { id: 'api_fund_request', label: 'API Top-Up' },
+        { id: 'api_fund_request', label: 'API Top-Up', badgeKey: 'api_fund_request' },
       ];
 
       const more: NavTabItem[] = [
@@ -615,9 +615,7 @@ export default function App() {
               >
                 <span>{item.label}</span>
                 {badgeCount > 0 && (
-                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${
-                    isActive ? 'bg-white/20 text-white' : 'bg-rose-500 text-white animate-pulse'
-                  }`}>
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-rose-500 text-white ring-1 ring-white/50 animate-pulse font-mono shadow-xs">
                     {badgeCount}
                   </span>
                 )}
@@ -637,8 +635,8 @@ export default function App() {
                 }`}
               >
                 <span>{isMoreActive ? activeMoreItem?.label : 'MORE'}</span>
-                {moreBadgeCount > 0 && !isMoreActive && (
-                  <span className="px-1.5 py-0.2 rounded-full text-[10px] font-extrabold bg-rose-500 text-white animate-pulse">
+                {moreBadgeCount > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-rose-500 text-white ring-1 ring-white/50 animate-pulse font-mono shadow-xs">
                     {moreBadgeCount}
                   </span>
                 )}
@@ -722,53 +720,134 @@ export default function App() {
             </div>
           )}
 
-          {/* 1. Notification Bell with Red Dot */}
-          <div ref={notificationsRef} className="relative nav-dropdown-container">
-            <button
-              onClick={() => {
-                setShowNotifications(!showNotifications);
-                setShowProfileMenu(false);
-                setShowMoreMenu(false);
-              }}
-              className="w-10 h-10 rounded-full bg-white border border-slate-200/90 hover:bg-slate-50 flex items-center justify-center text-slate-700 shadow-2xs relative transition cursor-pointer"
-              title="Notifications"
-            >
-              <Bell className="w-4 h-4" />
-              {Object.values(badgeCounts).reduce((a, b) => a + b, 0) > 0 && (
-                <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white animate-pulse" />
-              )}
-            </button>
+          {/* 1. Notification Bell with Count Badge */}
+          {(() => {
+            const totalPendingAlerts = (badgeCounts['qr_requests'] || 0) +
+              (badgeCounts['admin_bill_requests'] || 0) +
+              (badgeCounts['admin_kyc'] || 0) +
+              (badgeCounts['admin_payout'] || 0) +
+              (badgeCounts['api_fund_request'] || 0);
 
-            {/* Notification Dropdown */}
-            {showNotifications && (
-              <div className="absolute right-0 mt-3 w-72 bg-white border border-slate-200 rounded-3xl shadow-xl p-3.5 z-50 animate-in fade-in zoom-in-95">
-                <h4 className="text-xs font-black text-slate-900 px-1 py-1">Pending Queue Alerts</h4>
-                <div className="space-y-1.5 mt-2 text-xs">
-                  <div 
-                    onClick={() => { handleTabChange('admin_kyc'); setShowNotifications(false); }}
-                    className="p-2.5 rounded-2xl bg-slate-50 hover:bg-indigo-50 flex justify-between items-center cursor-pointer"
-                  >
-                    <span className="text-slate-700 font-medium">Pending KYC Submissions</span>
-                    <span className="font-bold text-emerald-600 font-mono">{badgeCounts['admin_kyc'] || 0}</span>
+            return (
+              <div ref={notificationsRef} className="relative nav-dropdown-container">
+                <button
+                  onClick={() => {
+                    setShowNotifications(!showNotifications);
+                    setShowProfileMenu(false);
+                    setShowMoreMenu(false);
+                  }}
+                  className="w-10 h-10 rounded-full bg-white border border-slate-200/90 hover:bg-slate-50 flex items-center justify-center text-slate-700 shadow-2xs relative transition cursor-pointer"
+                  title="Pending Queue Alerts"
+                >
+                  <Bell className="w-4 h-4" />
+                  {totalPendingAlerts > 0 && (
+                    <span className="absolute -top-1 -right-1 px-1.5 min-w-[18px] h-[18px] rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center ring-2 ring-white animate-pulse shadow-xs font-mono">
+                      {totalPendingAlerts}
+                    </span>
+                  )}
+                </button>
+
+                {/* Notification Dropdown */}
+                {showNotifications && (
+                  <div className="absolute right-0 mt-3 w-80 bg-white border border-slate-200 rounded-3xl shadow-xl p-4 z-50 animate-in fade-in zoom-in-95">
+                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+                      <h4 className="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                        <Bell className="w-3.5 h-3.5 text-indigo-600" />
+                        Pending Queue Alerts
+                      </h4>
+                      <span className={`text-[10px] font-black font-mono px-2 py-0.5 rounded-full ${
+                        totalPendingAlerts > 0 ? 'bg-rose-50 text-rose-600 border border-rose-200 animate-pulse' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      }`}>
+                        {totalPendingAlerts > 0 ? `${totalPendingAlerts} Pending` : 'All Clear'}
+                      </span>
+                    </div>
+
+                    <div className="space-y-1.5 text-xs">
+                      {/* 1. QR Requests */}
+                      <div 
+                        onClick={() => { handleTabChange('qr_requests'); setShowNotifications(false); }}
+                        className="p-2.5 rounded-2xl bg-slate-50 hover:bg-amber-50 flex justify-between items-center cursor-pointer transition group border border-slate-100 hover:border-amber-200"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-amber-500" />
+                          <span className="text-slate-700 font-bold group-hover:text-amber-800">Pending QR Loads</span>
+                        </div>
+                        <span className={`font-mono font-black px-2 py-0.5 rounded-full text-[11px] ${
+                          (badgeCounts['qr_requests'] || 0) > 0 ? 'bg-amber-500 text-white shadow-xs animate-pulse' : 'text-slate-400 bg-slate-100'
+                        }`}>
+                          {badgeCounts['qr_requests'] || 0}
+                        </span>
+                      </div>
+
+                      {/* 2. CC Bills */}
+                      <div 
+                        onClick={() => { handleTabChange('admin_bill_requests'); setShowNotifications(false); }}
+                        className="p-2.5 rounded-2xl bg-slate-50 hover:bg-rose-50 flex justify-between items-center cursor-pointer transition group border border-slate-100 hover:border-rose-200"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-rose-500" />
+                          <span className="text-slate-700 font-bold group-hover:text-rose-800">Pending CC Bills</span>
+                        </div>
+                        <span className={`font-mono font-black px-2 py-0.5 rounded-full text-[11px] ${
+                          (badgeCounts['admin_bill_requests'] || 0) > 0 ? 'bg-rose-500 text-white shadow-xs animate-pulse' : 'text-slate-400 bg-slate-100'
+                        }`}>
+                          {badgeCounts['admin_bill_requests'] || 0}
+                        </span>
+                      </div>
+
+                      {/* 3. KYC Submissions */}
+                      <div 
+                        onClick={() => { handleTabChange('admin_kyc'); setShowNotifications(false); }}
+                        className="p-2.5 rounded-2xl bg-slate-50 hover:bg-emerald-50 flex justify-between items-center cursor-pointer transition group border border-slate-100 hover:border-emerald-200"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                          <span className="text-slate-700 font-bold group-hover:text-emerald-800">Pending KYC Submissions</span>
+                        </div>
+                        <span className={`font-mono font-black px-2 py-0.5 rounded-full text-[11px] ${
+                          (badgeCounts['admin_kyc'] || 0) > 0 ? 'bg-emerald-500 text-white shadow-xs animate-pulse' : 'text-slate-400 bg-slate-100'
+                        }`}>
+                          {badgeCounts['admin_kyc'] || 0}
+                        </span>
+                      </div>
+
+                      {/* 4. Instant Payouts */}
+                      <div 
+                        onClick={() => { handleTabChange('admin_payout'); setShowNotifications(false); }}
+                        className="p-2.5 rounded-2xl bg-slate-50 hover:bg-cyan-50 flex justify-between items-center cursor-pointer transition group border border-slate-100 hover:border-cyan-200"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-cyan-500" />
+                          <span className="text-slate-700 font-bold group-hover:text-cyan-800">Pending Payout Transfers</span>
+                        </div>
+                        <span className={`font-mono font-black px-2 py-0.5 rounded-full text-[11px] ${
+                          (badgeCounts['admin_payout'] || 0) > 0 ? 'bg-cyan-500 text-white shadow-xs animate-pulse' : 'text-slate-400 bg-slate-100'
+                        }`}>
+                          {badgeCounts['admin_payout'] || 0}
+                        </span>
+                      </div>
+
+                      {/* 5. API Top-Up */}
+                      <div 
+                        onClick={() => { handleTabChange('api_fund_request'); setShowNotifications(false); }}
+                        className="p-2.5 rounded-2xl bg-slate-50 hover:bg-purple-50 flex justify-between items-center cursor-pointer transition group border border-slate-100 hover:border-purple-200"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-purple-500" />
+                          <span className="text-slate-700 font-bold group-hover:text-purple-800">Pending API Top-Up</span>
+                        </div>
+                        <span className={`font-mono font-black px-2 py-0.5 rounded-full text-[11px] ${
+                          (badgeCounts['api_fund_request'] || 0) > 0 ? 'bg-purple-500 text-white shadow-xs animate-pulse' : 'text-slate-400 bg-slate-100'
+                        }`}>
+                          {badgeCounts['api_fund_request'] || 0}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div 
-                    onClick={() => { handleTabChange('qr_requests'); setShowNotifications(false); }}
-                    className="p-2.5 rounded-2xl bg-slate-50 hover:bg-indigo-50 flex justify-between items-center cursor-pointer"
-                  >
-                    <span className="text-slate-700 font-medium">Pending QR Loads</span>
-                    <span className="font-bold text-indigo-600 font-mono">{badgeCounts['qr_requests'] || 0}</span>
-                  </div>
-                  <div 
-                    onClick={() => { handleTabChange('admin_bill_requests'); setShowNotifications(false); }}
-                    className="p-2.5 rounded-2xl bg-slate-50 hover:bg-indigo-50 flex justify-between items-center cursor-pointer"
-                  >
-                    <span className="text-slate-700 font-medium">Pending CC Bills</span>
-                    <span className="font-bold text-amber-600 font-mono">{badgeCounts['admin_bill_requests'] || 0}</span>
-                  </div>
-                </div>
+                )}
               </div>
-            )}
-          </div>
+            );
+          })()}
 
           {/* 2. Settings Gear Button */}
           <button

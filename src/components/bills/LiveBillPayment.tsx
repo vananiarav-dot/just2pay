@@ -120,7 +120,7 @@ const getServiceCharge = (item: any): number => {
 
 export const LiveBillPayment: React.FC = () => {
   const { user } = useAuthStore();
-  const { liveBillPayEnabled } = useSettingsStore();
+  const { liveBillPayEnabled, minWalletBalance } = useSettingsStore();
 
   // Category & Biller State (Credit Card Only - Fetched from Database)
   const [categories] = useState<BillerCategory[]>(defaultCategoriesList);
@@ -446,11 +446,12 @@ export const LiveBillPayment: React.FC = () => {
     try {
       const res = await b2bApi.calculateCharge(amt);
       if (res && res.success) {
+        const minReserve = minWalletBalance !== undefined ? minWalletBalance : 200;
         setChargeInfo({
           serviceCharge: res.serviceCharge,
           totalDeduction: res.totalDeduction,
           walletBalance: res.walletBalance,
-          hasSufficientBalance: res.hasSufficientBalance,
+          hasSufficientBalance: (res.walletBalance - res.totalDeduction >= minReserve),
           valid: true,
           min_limit: res.min_limit,
           max_limit: res.max_limit
@@ -531,8 +532,13 @@ export const LiveBillPayment: React.FC = () => {
       setPayError(chargeInfo.message || 'Amount is outside active slab range.');
       return;
     }
-    if (chargeInfo && !chargeInfo.hasSufficientBalance) {
-      setPayError(`Insufficient Wallet Balance! Required: ₹${chargeInfo.totalDeduction.toLocaleString('en-IN')} (Bill: ₹${payAmount} + Charge: ₹${chargeInfo.serviceCharge}), Available: ₹${chargeInfo.walletBalance.toLocaleString('en-IN')}`);
+    const minReserve = minWalletBalance !== undefined ? minWalletBalance : 200;
+    const availableBal = chargeInfo ? chargeInfo.walletBalance : Number(user?.wallet_balance || 0);
+    const totalDed = chargeInfo ? chargeInfo.totalDeduction : payAmount;
+    if (availableBal - totalDed < minReserve) {
+      setPayError(
+        `Insufficient Wallet Balance! A mandatory minimum reserve balance of ₹${minReserve.toFixed(2)} must be maintained in your wallet. Required: ₹${totalDed.toLocaleString('en-IN')} + ₹${minReserve.toFixed(2)} reserve = ₹${(totalDed + minReserve).toLocaleString('en-IN')}, Available: ₹${availableBal.toLocaleString('en-IN')}.`
+      );
       return;
     }
 
@@ -1871,9 +1877,13 @@ export const LiveBillPayment: React.FC = () => {
                             ₹{chargeInfo.walletBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                           </span>
                         </div>
+                        <div className="flex justify-between text-[11px] text-amber-600 font-medium">
+                          <span>Mandatory Reserve Balance:</span>
+                          <span className="font-mono font-bold">₹{(minWalletBalance !== undefined ? minWalletBalance : 200).toFixed(2)}</span>
+                        </div>
                         {!chargeInfo.hasSufficientBalance && (
                           <div className="p-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-[11px] font-bold text-center">
-                            ⚠️ Insufficient Wallet Balance! Please top up your wallet.
+                            ⚠️ Insufficient Wallet Balance! A mandatory minimum balance of ₹{(minWalletBalance !== undefined ? minWalletBalance : 200).toFixed(2)} must remain in your wallet.
                           </div>
                         )}
                       </>
