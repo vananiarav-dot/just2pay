@@ -261,20 +261,37 @@ export const AdminOverviewDashboard: React.FC = () => {
     <div className="space-y-6 w-full pb-14 animate-in fade-in duration-300">
       
       {/* ========================================================
-          1. TOP HEADER & FILTER BAR (TILSHIFT MODERN HEADER)
+          1. FINANCIAL STREAMS & SETTLEMENT ENGINES (1ST POSITION)
           ======================================================== */}
+      {/* SECTION HEADER & TOP FILTER BAR */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            Sales Overview
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
-            Your current platform summary, financial volumes and activity
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100/80 flex items-center justify-center text-indigo-600 shadow-xs">
+            <Layers className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                Financial Streams & Settlement Engines
+              </h1>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-[10px] font-bold text-emerald-700 border border-emerald-200/80">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Live Reconciliation
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
+              Multi-channel volume ledgers, tier commissions & upstream liquidity pools
+            </p>
+          </div>
         </div>
 
-        {/* Right Controls: Period dropdown, Export button, Filter toggle, Refresh */}
+        {/* Right Controls: Rails Badge, Period dropdown, Export button, Filter toggle, Refresh */}
         <div className="flex flex-wrap items-center gap-2.5">
+          <span className="hidden xl:inline-flex px-3.5 py-2 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs font-bold text-slate-600 items-center gap-1.5 shadow-2xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            3 Active Payment Rails
+          </span>
+
           {/* Period selector pill */}
           <div className="relative">
             <select
@@ -365,166 +382,7 @@ export const AdminOverviewDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* ========================================================
-          2. TOP 4 METRIC CARDS (TILSHIFT SIGNATURE 4-CARD ROW)
-          ======================================================== */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        
-        {/* CARD 1: HERO ACCENT GRADIENT CARD (TILSHIFT VIOLET CARD) */}
-        <div className="rounded-3xl p-6 bg-gradient-to-br from-[#6366f1] via-[#6d5dfc] to-[#7c3aed] text-white shadow-xl shadow-indigo-500/20 relative overflow-hidden flex flex-col justify-between group hover:scale-[1.01] transition-all duration-300">
-          <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-          
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold text-indigo-100 tracking-wide">Total Sales & Revenue</span>
-              <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/20 shadow-inner">
-                <CircleDollarSign className="w-5 h-5" />
-              </div>
-            </div>
-
-            <div className="flex items-baseline gap-2.5">
-              <span className="text-3xl sm:text-4xl font-black tracking-tight font-mono">
-                ₹{totalCombinedCharges >= 100000 
-                  ? (totalCombinedCharges / 1000).toFixed(1) + 'k' 
-                  : totalCombinedCharges.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-              </span>
-              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white flex items-center gap-0.5">
-                <TrendingUp className="w-3 h-3" /> 4.3%
-              </span>
-            </div>
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-white/15 text-[11px] text-indigo-100 font-medium flex items-center justify-between">
-            <span>Net Earnings (QR+CC+Payout)</span>
-            <span className="font-mono font-bold text-white">₹{totalCombinedCharges.toFixed(2)}</span>
-          </div>
-        </div>
-
-        {/* CARD 2: NEW CUSTOMER / ACTIVE ACCOUNTS (TILSHIFT YELLOW CARD) */}
-        <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold text-slate-500 tracking-wide">New Customer / Users</span>
-              <div className="w-11 h-11 rounded-2xl bg-amber-400 text-white flex items-center justify-center shadow-md shadow-amber-400/30">
-                <Users className="w-5 h-5" />
-              </div>
-            </div>
-
-            <div className="flex items-baseline gap-2.5">
-              <span className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight font-mono">
-                {activeUserCount}
-              </span>
-              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 flex items-center gap-0.5">
-                <TrendingUp className="w-3 h-3" /> 7.5%
-              </span>
-            </div>
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-500 font-medium flex items-center justify-between">
-            <span>Active merchant ratio</span>
-            <span className="font-bold text-slate-800">
-              {usersList.length > 0 ? `${Math.round((activeUserCount / usersList.length) * 100)}% (${usersList.length} total)` : '0%'}
-            </span>
-          </div>
-        </div>
-
-        {/* CARD 3: RETURN PRODUCTS / PENDING APPROVALS (TILSHIFT CYAN/BLUE CARD) */}
-        <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold text-slate-500 tracking-wide">Pending Approvals</span>
-              <div className="w-11 h-11 rounded-2xl bg-blue-500 text-white flex items-center justify-center shadow-md shadow-blue-500/30">
-                <Clock className="w-5 h-5" />
-              </div>
-            </div>
-
-            <div className="flex items-baseline gap-2.5">
-              <span className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight font-mono">
-                {pendingRequests.length + pendingBillRequests.length + pendingPayouts.length}
-              </span>
-              <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
-                pendingRequests.length + pendingBillRequests.length + pendingPayouts.length > 0
-                  ? 'bg-amber-50 text-amber-700'
-                  : 'bg-emerald-50 text-emerald-700'
-              }`}>
-                {pendingRequests.length + pendingBillRequests.length + pendingPayouts.length > 0 ? 'Queue' : 'Clear'}
-              </span>
-            </div>
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-500 font-medium flex items-center justify-between">
-            <span>Action Required</span>
-            <span className="font-bold font-mono text-slate-800">
-              {pendingRequests.length} QR • {pendingBillRequests.length} CC{pendingPayouts.length > 0 ? ` • ${pendingPayouts.length} Payout` : ''}
-            </span>
-          </div>
-        </div>
-
-        {/* CARD 4: TOTAL REVENUE / PLATFORM LIVE WALLET (TILSHIFT PURPLE CIRCLE CARD) */}
-        <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold text-slate-500 tracking-wide">Total Live Wallets</span>
-              <div className="w-11 h-11 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-600/30">
-                <Wallet className="w-5 h-5" />
-              </div>
-            </div>
-
-            <div className="flex items-baseline gap-2.5">
-              <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-mono">
-                ₹{totalSystemBalance >= 100000 
-                  ? (totalSystemBalance / 1000).toFixed(1) + 'k' 
-                  : totalSystemBalance.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-              </span>
-            </div>
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-500 font-medium flex items-center justify-between">
-            <span>Platform liability</span>
-            <span className="font-bold font-mono text-slate-800">
-              ₹{totalSystemBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-          </div>
-        </div>
-
-      </div>
-
-      {/* ========================================================
-          3. FINANCIAL STREAMS & SETTLEMENT ENGINES (TILSHIFT BENTO)
-          ======================================================== */}
-      {/* SECTION HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100/80 flex items-center justify-center text-indigo-600 shadow-xs">
-            <Layers className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2.5">
-              <h2 className="text-xl font-black text-slate-900 tracking-tight">
-                Financial Streams & Settlement Engines
-              </h2>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-[10px] font-bold text-emerald-700 border border-emerald-200/80">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Live Reconciliation
-              </span>
-            </div>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">
-              Multi-channel volume ledgers, tier commissions & upstream liquidity pools
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          <span className="px-3.5 py-1.5 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs font-bold text-slate-600 flex items-center gap-1.5 shadow-2xs">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            3 Active Payment Rails
-          </span>
-        </div>
-      </div>
-
-      {/* ========================================================
-          5. BENTO ROW 1: 3 CORE TRANSACTION VERTICALS
-          ======================================================== */}
+      {/* 3 CORE TRANSACTION VERTICALS (QR, CC, PAYOUT) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* 1. QR PAYMENT GATEWAY DESK */}
@@ -701,7 +559,7 @@ export const AdminOverviewDashboard: React.FC = () => {
       </div>
 
       {/* ========================================================
-          6. BENTO ROW 2: HIERARCHY COMMISSIONS & UPSTREAM B2B ENGINE
+          2. COMMISSION HIERARCHY & UPSTREAM B2B ENGINE (2ND POSITION)
           ======================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
@@ -958,7 +816,149 @@ export const AdminOverviewDashboard: React.FC = () => {
       </div>
 
       {/* ========================================================
-          6. API WALLET FUND REQUEST MODAL (LOGIC PRESERVED)
+          3. SALES OVERVIEW (3RD POSITION)
+          ======================================================== */}
+      {/* SECTION HEADER */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center shadow-xs">
+            <TrendingUp className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="text-xl font-black text-slate-900 tracking-tight">
+              Sales Overview
+            </h2>
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
+              Your current platform summary, financial volumes and activity
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* TOP 4 METRIC CARDS */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        
+        {/* CARD 1: HERO ACCENT GRADIENT CARD (TILSHIFT VIOLET CARD) */}
+        <div className="rounded-3xl p-6 bg-gradient-to-br from-[#6366f1] via-[#6d5dfc] to-[#7c3aed] text-white shadow-xl shadow-indigo-500/20 relative overflow-hidden flex flex-col justify-between group hover:scale-[1.01] transition-all duration-300">
+          <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+          
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold text-indigo-100 tracking-wide">Total Sales & Revenue</span>
+              <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/20 shadow-inner">
+                <CircleDollarSign className="w-5 h-5" />
+              </div>
+            </div>
+
+            <div className="flex items-baseline gap-2.5">
+              <span className="text-3xl sm:text-4xl font-black tracking-tight font-mono">
+                ₹{totalCombinedCharges >= 100000 
+                  ? (totalCombinedCharges / 1000).toFixed(1) + 'k' 
+                  : totalCombinedCharges.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+              </span>
+              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white flex items-center gap-0.5">
+                <TrendingUp className="w-3 h-3" /> 4.3%
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-4 pt-3 border-t border-white/15 text-[11px] text-indigo-100 font-medium flex items-center justify-between">
+            <span>Net Earnings (QR+CC+Payout)</span>
+            <span className="font-mono font-bold text-white">₹{totalCombinedCharges.toFixed(2)}</span>
+          </div>
+        </div>
+
+        {/* CARD 2: NEW CUSTOMER / ACTIVE ACCOUNTS (TILSHIFT YELLOW CARD) */}
+        <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold text-slate-500 tracking-wide">New Customer / Users</span>
+              <div className="w-11 h-11 rounded-2xl bg-amber-400 text-white flex items-center justify-center shadow-md shadow-amber-400/30">
+                <Users className="w-5 h-5" />
+              </div>
+            </div>
+
+            <div className="flex items-baseline gap-2.5">
+              <span className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight font-mono">
+                {activeUserCount}
+              </span>
+              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 flex items-center gap-0.5">
+                <TrendingUp className="w-3 h-3" /> 7.5%
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-500 font-medium flex items-center justify-between">
+            <span>Active merchant ratio</span>
+            <span className="font-bold text-slate-800">
+              {usersList.length > 0 ? `${Math.round((activeUserCount / usersList.length) * 100)}% (${usersList.length} total)` : '0%'}
+            </span>
+          </div>
+        </div>
+
+        {/* CARD 3: RETURN PRODUCTS / PENDING APPROVALS (TILSHIFT CYAN/BLUE CARD) */}
+        <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold text-slate-500 tracking-wide">Pending Approvals</span>
+              <div className="w-11 h-11 rounded-2xl bg-blue-500 text-white flex items-center justify-center shadow-md shadow-blue-500/30">
+                <Clock className="w-5 h-5" />
+              </div>
+            </div>
+
+            <div className="flex items-baseline gap-2.5">
+              <span className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight font-mono">
+                {pendingRequests.length + pendingBillRequests.length + pendingPayouts.length}
+              </span>
+              <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                pendingRequests.length + pendingBillRequests.length + pendingPayouts.length > 0
+                  ? 'bg-amber-50 text-amber-700'
+                  : 'bg-emerald-50 text-emerald-700'
+              }`}>
+                {pendingRequests.length + pendingBillRequests.length + pendingPayouts.length > 0 ? 'Queue' : 'Clear'}
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-500 font-medium flex items-center justify-between">
+            <span>Action Required</span>
+            <span className="font-bold font-mono text-slate-800">
+              {pendingRequests.length} QR • {pendingBillRequests.length} CC{pendingPayouts.length > 0 ? ` • ${pendingPayouts.length} Payout` : ''}
+            </span>
+          </div>
+        </div>
+
+        {/* CARD 4: TOTAL REVENUE / PLATFORM LIVE WALLET (TILSHIFT PURPLE CIRCLE CARD) */}
+        <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold text-slate-500 tracking-wide">Total Live Wallets</span>
+              <div className="w-11 h-11 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-600/30">
+                <Wallet className="w-5 h-5" />
+              </div>
+            </div>
+
+            <div className="flex items-baseline gap-2.5">
+              <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-mono">
+                ₹{totalSystemBalance >= 100000 
+                  ? (totalSystemBalance / 1000).toFixed(1) + 'k' 
+                  : totalSystemBalance.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-500 font-medium flex items-center justify-between">
+            <span>Platform liability</span>
+            <span className="font-bold font-mono text-slate-800">
+              ₹{totalSystemBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          </div>
+        </div>
+
+      </div>
+
+      {/* ========================================================
+          4. API WALLET FUND REQUEST MODAL (LOGIC PRESERVED)
           ======================================================== */}
       <ApiWalletFundRequestModal
         isOpen={showFundRequestModal}
