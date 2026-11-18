@@ -321,6 +321,7 @@ export const billRequestApi = {
     bank_name: string;
     amount: number;
     mobile_number: string;
+    debit_wallet_type?: 'main' | 'pos';
   }) => {
     const response = await apiClient.post('/bill-request/submit', data);
     return response.data;
@@ -395,6 +396,7 @@ export const b2bApi = {
     billerResponseInfo?: any;
     additionalInfo?: any;
     customerPan?: string;
+    debit_wallet_type?: 'main' | 'pos';
   }) => {
     const response = await apiClient.post('/b2b/pay-bill', payload);
     return response.data;
@@ -677,6 +679,69 @@ export const kycApi = {
     rejection_reason?: string;
   }) => {
     const response = await apiClient.post('/kyc/admin/action', data);
+    return response.data;
+  }
+};
+
+// ============================================================================
+// POS (POINT OF SALE) MACHINE & MULTI-WALLET APIS
+// ============================================================================
+export const posApi = {
+  // Machines Management
+  getMachines: async (includeInactive = false) => {
+    const response = await apiClient.get('/pos/machines', { params: { include_inactive: includeInactive } });
+    return response.data;
+  },
+
+  createMachine: async (data: any) => {
+    const response = await apiClient.post('/pos/machines', data);
+    return response.data;
+  },
+
+  updateMachine: async (id: string, data: any) => {
+    const response = await apiClient.put(`/pos/machines/${encodeURIComponent(id)}`, data);
+    return response.data;
+  },
+
+  deleteMachine: async (id: string) => {
+    const response = await apiClient.delete(`/pos/machines/${encodeURIComponent(id)}`);
+    return response.data;
+  },
+
+  // Payment Requests
+  getRequests: async (params?: any) => {
+    const response = await apiClient.get('/pos/requests', { params });
+    return response.data;
+  },
+
+  submitRequest: async (data: any) => {
+    const response = await apiClient.post('/pos/requests', data);
+    return response.data;
+  },
+
+  approveRequest: async (id: string) => {
+    const response = await apiClient.post(`/pos/requests/${encodeURIComponent(id)}/approve`);
+    return response.data;
+  },
+
+  rejectRequest: async (id: string, rejection_reason: string) => {
+    const response = await apiClient.post(`/pos/requests/${encodeURIComponent(id)}/reject`, { rejection_reason });
+    return response.data;
+  },
+
+  revertRequest: async (id: string, reason: string) => {
+    const response = await apiClient.post(`/pos/requests/${encodeURIComponent(id)}/revert`, { reason });
+    return response.data;
+  },
+
+  settleT1: async () => {
+    const response = await apiClient.post('/pos/settle-t1');
+    return response.data;
+  },
+
+  // POS Ledger / Statement
+  getStatement: async (params?: any) => {
+    const response = await apiClient.get('/pos/statement', { params });
     return response.data;
   }
 };

@@ -617,29 +617,48 @@ export const RetailerDashboard: React.FC = () => {
               </span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-sm space-y-3">
-              <div>
-                <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Available Main Wallet</p>
-                <p className="text-2xl font-black font-mono tracking-tight text-white mt-0.5">
-                  ₹{Number(user?.wallet_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
+            <div className="space-y-3">
+              {/* Main Wallet Card */}
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-sm space-y-2">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Available Main Wallet</p>
+                    <p className="text-xl font-black font-mono tracking-tight text-white mt-0.5">
+                      ₹{Number(user?.wallet_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <span className="w-2.5 h-2.5 rounded-full bg-blue-500 mt-1" />
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-700/60">
-                <button
-                  onClick={() => handleNavigate('/fund-request')}
-                  className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition cursor-pointer shadow-xs"
-                >
-                  <ArrowDownLeft className="w-3.5 h-3.5" />
-                  <span>Load Wallet</span>
-                </button>
-                <button
-                  onClick={() => handleNavigate('/instant-payout')}
-                  className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold transition cursor-pointer"
-                >
-                  <ArrowUpRight className="w-3.5 h-3.5" />
-                  <span>Transfer</span>
-                </button>
+              {/* POS Multi-Wallet Card */}
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-950 to-slate-900 text-white shadow-sm border border-emerald-500/20 space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <span className="text-[9px] uppercase font-bold text-emerald-400 block">🟢 POS Wallet (T+0)</span>
+                    <p className="text-base font-black font-mono text-emerald-300 mt-0.5">
+                      ₹{Number(user?.pos_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </p>
+                    <span className="text-[9px] text-emerald-200/60">Live Spendable</span>
+                  </div>
+
+                  <div>
+                    <span className="text-[9px] uppercase font-bold text-purple-400 block">🟣 POS T+1 (Tomorrow)</span>
+                    <p className="text-base font-black font-mono text-purple-300 mt-0.5">
+                      ₹{Number(user?.pos_t1_pending_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </p>
+                    <span className="text-[9px] text-purple-200/60">Clearing Tomorrow</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-white/10 flex items-center justify-between">
+                  <button
+                    onClick={() => handleNavigate('/pos-requests')}
+                    className="flex-1 py-1.5 px-3 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-bold transition cursor-pointer text-center"
+                  >
+                    + Submit POS Swipe Slip
+                  </button>
+                </div>
               </div>
             </div>
 

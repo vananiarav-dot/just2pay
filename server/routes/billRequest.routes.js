@@ -247,6 +247,10 @@ router.post('/submit', verifyToken, async (req, res) => {
     const serviceCharge = chargeCalc.serviceCharge;
     const totalDeduction = chargeCalc.totalDeduction;
 
+    const selectedWalletType = (req.body.debit_wallet_type || 'main').toLowerCase() === 'pos' ? 'pos' : 'main';
+    const isPosWallet = selectedWalletType === 'pos';
+    const walletLabel = isPosWallet ? 'POS Wallet (T+0)' : 'Main Wallet';
+
     // Check user wallet balance
     let currentUser = db.users.find(u => u.id === req.user.id);
     if (supabase) {
@@ -258,30 +262,65 @@ router.post('/submit', verifyToken, async (req, res) => {
       return res.status(404).json({ success: false, message: 'User profile not found' });
     }
 
-    const currentBalance = Number(currentUser.wallet_balance || 0);
+    const currentBalance = Number(isPosWallet ? (currentUser.pos_balance || 0) : (currentUser.wallet_balance || 0));
     if (currentBalance < totalDeduction) {
       return res.status(400).json({
         success: false,
-        message: `Insufficient Wallet Balance! Required: ₹${totalDeduction.toLocaleString('en-IN')} (Amount: ₹${numAmount} + Charge: ₹${serviceCharge}), Available: ₹${currentBalance.toLocaleString('en-IN')}`
+        message: `Insufficient ${walletLabel} Balance! Required: ₹${totalDeduction.toLocaleString('en-IN')} (Amount: ₹${numAmount} + Charge: ₹${serviceCharge}), Available: ₹${currentBalance.toLocaleString('en-IN')}`
       });
     }
 
     // Deduct amount from user wallet
-    const newWalletBalance = currentBalance - totalDeduction;
-    currentUser.wallet_balance = newWalletBalance;
+    const newWalletBalance = Number((currentBalance - totalDeduction).toFixed(2));
+    if (isPosWallet) currentUser.pos_balance = newWalletBalance;
+    else currentUser.wallet_balance = newWalletBalance;
     currentUser.updated_at = new Date().toISOString();
 
     const memUserIdx = db.users.findIndex(u => u.id === req.user.id);
-    if (memUserIdx !== -1) db.users[memUserIdx].wallet_balance = newWalletBalance;
+    if (memUserIdx !== -1) {
+      if (isPosWallet) db.users[memUserIdx].pos_balance = newWalletBalance;
+      else db.users[memUserIdx].wallet_balance = newWalletBalance;
+    }
 
     if (supabase) {
       try {
+        const updateData = isPosWallet
+          ? { pos_balance: newWalletBalance, updated_at: new Date().toISOString() }
+          : { wallet_balance: newWalletBalance, updated_at: new Date().toISOString() };
         await supabase
           .from('users_profiles')
-          .update({ wallet_balance: newWalletBalance, updated_at: new Date().toISOString() })
+          .update(updateData)
           .eq('id', req.user.id);
       } catch (e) {
         console.warn('Supabase wallet deduction warning:', e.message);
+      }
+    }
+
+    // Create POS wallet ledger debit if paid from POS
+    if (isPosWallet) {
+      const posDebitLedger = {
+        id: `pos_led_cc_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+        user_id: req.user.id,
+        user_name: req.user.name,
+        firm_name: req.user.firm_name,
+        user_mobile: req.user.mobile_number,
+        type: 'DEBIT',
+        wallet_type: 'T0',
+        category: 'CC_BILL_DEBIT',
+        amount: totalDeduction,
+        charge_amount: serviceCharge,
+        opening_balance: currentBalance,
+        closing_balance: newWalletBalance,
+        reference_id: `ccreq_${Date.now()}`,
+        description: `Credit Card Bill Request - ${bank_name} (${cleanCard.slice(-4)})`,
+        created_at: new Date().toISOString()
+      };
+      if (!db.pos_wallet_ledger) db.pos_wallet_ledger = [];
+      db.pos_wallet_ledger.unshift(posDebitLedger);
+      if (supabase) {
+        try {
+          await supabase.from('pos_wallet_ledger').insert([posDebitLedger]);
+        } catch (e) {}
       }
     }
 
@@ -297,6 +336,7 @@ router.post('/submit', verifyToken, async (req, res) => {
       amount: numAmount,
       service_charge: serviceCharge,
       total_amount: totalDeduction,
+      debit_wallet_type: selectedWalletType,
       mobile_number: cleanMobile,
       status: 'pending',
       created_at: new Date().toISOString()
@@ -318,6 +358,7 @@ router.post('/submit', verifyToken, async (req, res) => {
             amount: newRequest.amount,
             service_charge: newRequest.service_charge,
             total_amount: newRequest.total_amount,
+            debit_wallet_type: selectedWalletType,
             mobile_number: newRequest.mobile_number,
             status: 'pending',
             created_at: newRequest.created_at
@@ -326,7 +367,21 @@ router.post('/submit', verifyToken, async (req, res) => {
           .single();
 
         if (error) {
-          console.warn('Supabase bill request create warning:', error.message);
+          // Fallback: If debit_wallet_type column does not exist yet
+          const fallbackPayload = {
+            id: newRequest.id,
+            user_id: newRequest.user_id,
+            customer_name: newRequest.customer_name,
+            card_number: newRequest.card_number,
+            bank_name: newRequest.bank_name,
+            amount: newRequest.amount,
+            service_charge: newRequest.service_charge,
+            total_amount: newRequest.total_amount,
+            mobile_number: newRequest.mobile_number,
+            status: 'pending',
+            created_at: newRequest.created_at
+          };
+          await supabase.from('credit_card_bill_requests').insert([fallbackPayload]);
         } else if (data) {
           const idx = db.bill_requests.findIndex(r => r.id === newRequest.id);
           if (idx !== -1) db.bill_requests[idx] = { ...data, user_name: req.user.name, user_mobile: req.user.mobile_number };
@@ -338,7 +393,7 @@ router.post('/submit', verifyToken, async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: `Bill Payment Request submitted successfully! ₹${totalDeduction.toLocaleString('en-IN')} debited from main wallet.`,
+      message: `Bill Payment Request submitted successfully! ₹${totalDeduction.toLocaleString('en-IN')} debited from ${walletLabel}.`,
       request: newRequest,
       new_wallet_balance: newWalletBalance
     });
@@ -463,10 +518,11 @@ router.post('/:id/process', verifyToken, requireRoles(['admin']), async (req, re
       }
     }
 
-    // IF REJECTED: INSTANT REFUND BACK TO USER WALLET!
+    // IF REJECTED: INSTANT REFUND BACK TO SOURCE WALLET!
     let refundAmount = 0;
     if (action === 'rejected') {
       refundAmount = Number(targetRequest.total_amount || targetRequest.amount);
+      const isPos = (targetRequest.debit_wallet_type || 'main').toLowerCase() === 'pos';
 
       let targetUser = db.users.find(u => u.id === targetRequest.user_id);
       if (supabase) {
@@ -475,23 +531,58 @@ router.post('/:id/process', verifyToken, requireRoles(['admin']), async (req, re
       }
 
       if (targetUser) {
-        const currentBal = Number(targetUser.wallet_balance || 0);
-        const refundedBalance = currentBal + refundAmount;
+        const currentBal = Number(isPos ? (targetUser.pos_balance || 0) : (targetUser.wallet_balance || 0));
+        const refundedBalance = Number((currentBal + refundAmount).toFixed(2));
 
-        targetUser.wallet_balance = refundedBalance;
+        if (isPos) targetUser.pos_balance = refundedBalance;
+        else targetUser.wallet_balance = refundedBalance;
         targetUser.updated_at = new Date().toISOString();
 
         const memIdx = db.users.findIndex(u => u.id === targetRequest.user_id);
-        if (memIdx !== -1) db.users[memIdx].wallet_balance = refundedBalance;
+        if (memIdx !== -1) {
+          if (isPos) db.users[memIdx].pos_balance = refundedBalance;
+          else db.users[memIdx].wallet_balance = refundedBalance;
+        }
 
         if (supabase) {
           try {
+            const updateObj = isPos
+              ? { pos_balance: refundedBalance, updated_at: new Date().toISOString() }
+              : { wallet_balance: refundedBalance, updated_at: new Date().toISOString() };
             await supabase
               .from('users_profiles')
-              .update({ wallet_balance: refundedBalance, updated_at: new Date().toISOString() })
+              .update(updateObj)
               .eq('id', targetRequest.user_id);
           } catch (e) {
             console.warn('Supabase refund update warning:', e.message);
+          }
+        }
+
+        // Add POS ledger credit entry if refunded to POS
+        if (isPos) {
+          const posRefundLedger = {
+            id: `pos_led_ref_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+            user_id: targetRequest.user_id,
+            user_name: targetUser.name,
+            firm_name: targetUser.firm_name,
+            user_mobile: targetUser.mobile_number,
+            type: 'CREDIT',
+            wallet_type: 'T0',
+            category: 'REFUND_CREDIT',
+            amount: refundAmount,
+            charge_amount: 0,
+            opening_balance: currentBal,
+            closing_balance: refundedBalance,
+            reference_id: targetRequest.id,
+            description: `Refund: Credit Card Bill Request rejected (${remarks || 'Rejected by Admin'})`,
+            created_at: new Date().toISOString()
+          };
+          if (!db.pos_wallet_ledger) db.pos_wallet_ledger = [];
+          db.pos_wallet_ledger.unshift(posRefundLedger);
+          if (supabase) {
+            try {
+              await supabase.from('pos_wallet_ledger').insert([posRefundLedger]);
+            } catch (e) {}
           }
         }
       }

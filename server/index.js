@@ -17,6 +17,7 @@ import billRequestRoutes from './routes/billRequest.routes.js';
 import payoutRoutes from './routes/payout.routes.js';
 import statementRoutes from './routes/statement.routes.js';
 import kycRoutes from './routes/kyc.routes.js';
+import posRoutes from './routes/pos.routes.js';
 import './db/supabase.js';
 
 dotenv.config();
@@ -62,6 +63,7 @@ app.use('/api/bill-request', billRequestRoutes);
 app.use('/api/payout', payoutRoutes);
 app.use('/api/statement', statementRoutes);
 app.use('/api/kyc', kycRoutes);
+app.use('/api/pos', posRoutes);
 
 // Serve frontend static build in production (SPA fallback)
 const __filename = fileURLToPath(import.meta.url);

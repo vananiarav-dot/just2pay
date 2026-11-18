@@ -18,6 +18,10 @@ export interface UserProfile {
   firm_address?: string | null;
   profile_photo_url?: string | null;
   wallet_balance: number;
+  pos_balance?: number;
+  pos_t1_pending_balance?: number;
+  pos_t0_charge_percent?: number;
+  pos_t1_charge_percent?: number;
   hold_balance: number;
   commission_balance: number;
   t_plus_one_balance: number;

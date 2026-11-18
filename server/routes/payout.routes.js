@@ -152,6 +152,125 @@ export const isPayoutProcessingOrPending = (data, errorMsg) => {
   return isPendingStatus || isProcessingMessage;
 };
 
+// Helper: Refund payout transaction back to its originating source wallet ('pos' or 'main')
+const refundPayoutTxnToWallet = async (txn, reason = 'Bank failure') => {
+  const refundAmt = Number(txn.total_deducted || (txn.amount + (txn.slab_charge || 0)));
+  const isPos = (txn.debit_wallet_type || 'main').toLowerCase() === 'pos';
+  const userId = txn.user_id;
+
+  let user = (db.users || []).find(u => u.id === userId);
+  let openBal = 0;
+  let closeBal = 0;
+
+  if (supabase) {
+    try {
+      const { data } = await supabase.from('users_profiles').select('id, name, firm_name, mobile_number, wallet_balance, pos_balance').eq('id', userId).maybeSingle();
+      if (data) user = data;
+    } catch (e) {}
+  }
+
+  if (isPos) {
+    openBal = Number(user?.pos_balance || 0);
+    closeBal = Number((openBal + refundAmt).toFixed(2));
+    if (user) user.pos_balance = closeBal;
+    const memIdx = (db.users || []).findIndex(u => u.id === userId);
+    if (memIdx !== -1) db.users[memIdx].pos_balance = closeBal;
+
+    if (supabase) {
+      try {
+        await supabase.from('users_profiles').update({ pos_balance: closeBal, updated_at: new Date().toISOString() }).eq('id', userId);
+      } catch (e) {
+        console.warn('POS refund supabase error:', e.message);
+      }
+    }
+
+    const posRefundLedger = {
+      id: `pos_led_ref_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+      user_id: userId,
+      user_name: user?.name,
+      firm_name: user?.firm_name,
+      user_mobile: user?.mobile_number,
+      type: 'CREDIT',
+      wallet_type: 'T0',
+      category: 'PAYOUT_REFUND',
+      amount: refundAmt,
+      charge_amount: 0,
+      opening_balance: openBal,
+      closing_balance: closeBal,
+      reference_id: txn.client_order_id,
+      description: `Refund: Payout transfer failed (${reason})`,
+      created_at: new Date().toISOString()
+    };
+    if (!db.pos_wallet_ledger) db.pos_wallet_ledger = [];
+    db.pos_wallet_ledger.unshift(posRefundLedger);
+    if (supabase) {
+      try {
+        await supabase.from('pos_wallet_ledger').insert([posRefundLedger]);
+      } catch (e) {}
+    }
+    console.log(`[Payout Refund]: Credited ₹${refundAmt} back to POS Wallet for user ${userId}. New POS Balance: ₹${closeBal}`);
+  } else {
+    openBal = Number(user?.wallet_balance || 0);
+    closeBal = Number((openBal + refundAmt).toFixed(2));
+    if (user) user.wallet_balance = closeBal;
+    const memIdx = (db.users || []).findIndex(u => u.id === userId);
+    if (memIdx !== -1) db.users[memIdx].wallet_balance = closeBal;
+
+    if (supabase) {
+      try {
+        await supabase.from('users_profiles').update({ wallet_balance: closeBal, updated_at: new Date().toISOString() }).eq('id', userId);
+      } catch (e) {
+        console.warn('Main wallet refund supabase error:', e.message);
+      }
+    }
+    console.log(`[Payout Refund]: Credited ₹${refundAmt} back to Main Wallet for user ${userId}. New Wallet Balance: ₹${closeBal}`);
+  }
+};
+
+// Helper: Re-debit payout transaction from original wallet if previously refunded by mistake
+const reDebitPayoutTxnFromWallet = async (txn) => {
+  const deductAmt = Number(txn.total_deducted || (txn.amount + (txn.slab_charge || 0)));
+  const isPos = (txn.debit_wallet_type || 'main').toLowerCase() === 'pos';
+  const userId = txn.user_id;
+
+  let user = (db.users || []).find(u => u.id === userId);
+  let openBal = 0;
+  let closeBal = 0;
+
+  if (supabase) {
+    try {
+      const { data } = await supabase.from('users_profiles').select('id, name, firm_name, mobile_number, wallet_balance, pos_balance').eq('id', userId).maybeSingle();
+      if (data) user = data;
+    } catch (e) {}
+  }
+
+  if (isPos) {
+    openBal = Number(user?.pos_balance || 0);
+    closeBal = Number((openBal - deductAmt).toFixed(2));
+    if (user) user.pos_balance = closeBal;
+    const memIdx = (db.users || []).findIndex(u => u.id === userId);
+    if (memIdx !== -1) db.users[memIdx].pos_balance = closeBal;
+
+    if (supabase) {
+      try {
+        await supabase.from('users_profiles').update({ pos_balance: closeBal, updated_at: new Date().toISOString() }).eq('id', userId);
+      } catch (e) {}
+    }
+  } else {
+    openBal = Number(user?.wallet_balance || 0);
+    closeBal = Number((openBal - deductAmt).toFixed(2));
+    if (user) user.wallet_balance = closeBal;
+    const memIdx = (db.users || []).findIndex(u => u.id === userId);
+    if (memIdx !== -1) db.users[memIdx].wallet_balance = closeBal;
+
+    if (supabase) {
+      try {
+        await supabase.from('users_profiles').update({ wallet_balance: closeBal, updated_at: new Date().toISOString() }).eq('id', userId);
+      } catch (e) {}
+    }
+  }
+};
+
 // ============================================================================
 // 1. SLABS MANAGEMENT (Admin & Public read for calculate)
 // ============================================================================
@@ -607,8 +726,12 @@ router.post('/transfer', verifyToken, async (req, res) => {
       beneficiary_name,
       mobile_number,
       bank_name,
-      transfer_mode
+      transfer_mode,
+      debit_wallet_type
     } = req.body;
+
+    const selectedWalletType = (debit_wallet_type || 'main').toLowerCase() === 'pos' ? 'pos' : 'main';
+    const isPosWallet = selectedWalletType === 'pos';
 
     // 2. Basic Validations
     const numAmount = parseFloat(amount || 0);
@@ -688,12 +811,16 @@ router.post('/transfer', verifyToken, async (req, res) => {
     const { slab, charge_amount, total_deducted } = calcResult;
     deductedAmount = total_deducted;
 
-    // 6. Wallet Balance Check
-    const currentWalletBalance = parseFloat(userProfile.wallet_balance || 0);
+    // 6. Wallet Balance Check (Source Wallet: POS vs Main)
+    const currentWalletBalance = isPosWallet
+      ? parseFloat(userProfile.pos_balance || 0)
+      : parseFloat(userProfile.wallet_balance || 0);
+    const walletLabel = isPosWallet ? 'POS Wallet (T+0)' : 'Main Wallet';
+
     if (currentWalletBalance < total_deducted) {
       return res.status(400).json({
         success: false,
-        message: `Insufficient Wallet Balance! Required: ₹${total_deducted.toFixed(2)} (Transfer Amount: ₹${numAmount} + Slab Charge: ₹${charge_amount}), Available: ₹${currentWalletBalance.toFixed(2)}`
+        message: `Insufficient ${walletLabel} Balance! Required: ₹${total_deducted.toFixed(2)} (Transfer Amount: ₹${numAmount} + Slab Charge: ₹${charge_amount}), Available: ₹${currentWalletBalance.toFixed(2)}`
       });
     }
 
@@ -702,25 +829,63 @@ router.post('/transfer', verifyToken, async (req, res) => {
     const cleanMobile = (mobile_number || userProfile.mobile_number || '').trim();
     const mode = (transfer_mode || 'IMPS').toUpperCase() === 'NEFT' ? 'NEFT' : 'IMPS';
 
-    // 8. ATOMIC WALLET DEDUCTION (Upfront deduction)
+    // 8. ATOMIC WALLET DEDUCTION (Upfront deduction from selected wallet)
     const newWalletBalance = parseFloat((currentWalletBalance - total_deducted).toFixed(2));
-    userProfile.wallet_balance = newWalletBalance;
+    if (isPosWallet) {
+      userProfile.pos_balance = newWalletBalance;
+    } else {
+      userProfile.wallet_balance = newWalletBalance;
+    }
     userProfile.updated_at = new Date().toISOString();
     isDeducted = true;
 
     const memUserIdx = (db.users || []).findIndex(u => u.id === userProfile.id);
     if (memUserIdx !== -1) {
-      db.users[memUserIdx].wallet_balance = newWalletBalance;
+      if (isPosWallet) db.users[memUserIdx].pos_balance = newWalletBalance;
+      else db.users[memUserIdx].wallet_balance = newWalletBalance;
     }
 
     if (supabase) {
       try {
+        const updateData = isPosWallet
+          ? { pos_balance: newWalletBalance, updated_at: new Date().toISOString() }
+          : { wallet_balance: newWalletBalance, updated_at: new Date().toISOString() };
         await supabase
           .from('users_profiles')
-          .update({ wallet_balance: newWalletBalance, updated_at: new Date().toISOString() })
+          .update(updateData)
           .eq('id', userProfile.id);
       } catch (e) {
         console.warn('Supabase wallet deduction warning:', e.message);
+      }
+    }
+
+    // POS Ledger Debit Entry if paid from POS Wallet
+    if (isPosWallet) {
+      const posDebitLedger = {
+        id: `pos_led_po_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+        user_id: userProfile.id,
+        user_name: userProfile.name,
+        firm_name: userProfile.firm_name,
+        user_mobile: userProfile.mobile_number,
+        type: 'DEBIT',
+        wallet_type: 'T0',
+        category: 'PAYOUT_DEBIT',
+        amount: total_deducted,
+        charge_amount: charge_amount,
+        opening_balance: currentWalletBalance,
+        closing_balance: newWalletBalance,
+        reference_id: clientOrderId,
+        description: `Payout Transfer to ${cleanBeneficiary} (A/C: ${cleanAccount.slice(-4)}) - ${mode}`,
+        created_at: new Date().toISOString()
+      };
+      if (!db.pos_wallet_ledger) db.pos_wallet_ledger = [];
+      db.pos_wallet_ledger.unshift(posDebitLedger);
+      if (supabase) {
+        try {
+          await supabase.from('pos_wallet_ledger').insert([posDebitLedger]);
+        } catch (e) {
+          console.warn('Supabase pos_wallet_ledger insert warning:', e.message);
+        }
       }
     }
 
@@ -740,6 +905,7 @@ router.post('/transfer', verifyToken, async (req, res) => {
       slab_charge: charge_amount,
       api_charge: currentApiCharge,
       total_deducted: total_deducted,
+      debit_wallet_type: selectedWalletType,
       account_number: cleanAccount,
       ifsc_code: cleanIfsc,
       beneficiary_name: cleanBeneficiary,
@@ -766,6 +932,7 @@ router.post('/transfer', verifyToken, async (req, res) => {
           slab_charge: newTxn.slab_charge,
           api_charge: newTxn.api_charge,
           total_deducted: newTxn.total_deducted,
+          debit_wallet_type: selectedWalletType,
           account_number: newTxn.account_number,
           ifsc_code: newTxn.ifsc_code,
           beneficiary_name: newTxn.beneficiary_name,
@@ -779,9 +946,10 @@ router.post('/transfer', verifyToken, async (req, res) => {
         };
         const { error: insErr } = await supabase.from('payout_transactions').insert([payload]);
         if (insErr) {
-          // Fallback: If api_charge column does not exist in Supabase yet, store safely inside api_response JSONB
+          // Fallback: If api_charge or debit_wallet_type column does not exist in Supabase yet, store safely inside api_response JSONB
           delete payload.api_charge;
-          payload.api_response = { api_charge: newTxn.api_charge };
+          delete payload.debit_wallet_type;
+          payload.api_response = { api_charge: newTxn.api_charge, debit_wallet_type: selectedWalletType };
           await supabase.from('payout_transactions').insert([payload]);
         }
       } catch (e) {
@@ -1077,24 +1245,14 @@ router.post('/transfer', verifyToken, async (req, res) => {
       let refundedBalance = currentWalletBalance;
       if (isDeducted && !hasRefunded) {
         hasRefunded = true;
-        refundedBalance = parseFloat((userProfile.wallet_balance + total_deducted).toFixed(2));
-        userProfile.wallet_balance = refundedBalance;
-        userProfile.updated_at = new Date().toISOString();
-
-        if (memUserIdx !== -1) {
-          db.users[memUserIdx].wallet_balance = refundedBalance;
-        }
-
-        if (supabase) {
-          try {
-            await supabase
-              .from('users_profiles')
-              .update({ wallet_balance: refundedBalance, updated_at: new Date().toISOString() })
-              .eq('id', userProfile.id);
-          } catch (e) {
-            console.error('Auto-refund wallet update failed:', e);
-          }
-        }
+        await refundPayoutTxnToWallet({
+          ...newTxn,
+          user_id: userProfile.id,
+          debit_wallet_type: selectedWalletType,
+          total_deducted: total_deducted,
+          client_order_id: clientOrderId
+        }, failureReason);
+        refundedBalance = isPosWallet ? Number(userProfile.pos_balance || 0) : Number(userProfile.wallet_balance || 0);
       }
 
       if (newTxn) {
@@ -1244,17 +1402,10 @@ router.get('/status/:order_id', verifyToken, async (req, res) => {
               localTxn.refunded_to_wallet = false;
             } else if (liveStatus === 'failed' || liveStatus === 'rejected') {
               localTxn.status = 'failed';
-              // If not refunded, refund once
+              // If not refunded, refund once to source wallet
               if (!localTxn.refunded_to_wallet) {
                 localTxn.refunded_to_wallet = true;
-                const refundAmt = Number(localTxn.total_deducted || (localTxn.amount + localTxn.slab_charge));
-                if (supabase) {
-                  const { data: userRec } = await supabase.from('users_profiles').select('id, wallet_balance').eq('id', localTxn.user_id).single();
-                  if (userRec) {
-                    const newBal = Number((Number(userRec.wallet_balance || 0) + refundAmt).toFixed(2));
-                    await supabase.from('users_profiles').update({ wallet_balance: newBal, updated_at: new Date().toISOString() }).eq('id', userRec.id);
-                  }
-                }
+                await refundPayoutTxnToWallet(localTxn, 'Live status check confirmed failed');
               }
             } else if (isPayoutProcessingOrPending(liveData) || isPayoutProcessingOrPending(response.data)) {
               localTxn.status = 'pending';
@@ -1862,32 +2013,7 @@ router.post('/webhook', async (req, res) => {
       // Only refund if not already refunded
       if (!txn.refunded_to_wallet) {
         txn.refunded_to_wallet = true;
-        const refundAmt = Number(txn.total_deducted || (txn.amount + txn.slab_charge));
-
-        if (supabase) {
-          try {
-            const { data: userRecord } = await supabase
-              .from('users_profiles')
-              .select('id, wallet_balance')
-              .eq('id', txn.user_id)
-              .single();
-
-            if (userRecord) {
-              const currentBal = Number(userRecord.wallet_balance || 0);
-              const newBal = Number((currentBal + refundAmt).toFixed(2));
-              await supabase
-                .from('users_profiles')
-                .update({ wallet_balance: newBal, updated_at: new Date().toISOString() })
-                .eq('id', userRecord.id);
-
-              const memUser = (db.users || []).find(u => u.id === txn.user_id);
-              if (memUser) memUser.wallet_balance = newBal;
-              console.log(`[Payout Webhook]: Refunded ₹${refundAmt} to user ${txn.user_id}`);
-            }
-          } catch (e) {
-            console.error('Webhook refund error:', e);
-          }
-        }
+        await refundPayoutTxnToWallet(txn, msg || 'Bank webhook notification failed');
       }
 
       txn.status = 'failed';
@@ -1944,18 +2070,7 @@ router.post('/reconcile/:id', verifyToken, requireRoles(['admin']), async (req, 
 
       // If it was previously refunded to wallet by mistake, adjust wallet balance back
       if (wasRefunded && adjust_wallet !== false) {
-        const deductAmt = Number(txn.total_deducted || (txn.amount + txn.slab_charge));
-        if (supabase) {
-          const { data: userRec } = await supabase.from('users_profiles').select('id, wallet_balance').eq('id', txn.user_id).single();
-          if (userRec) {
-            const currentBal = Number(userRec.wallet_balance || 0);
-            const adjustedBal = Number((currentBal - deductAmt).toFixed(2));
-            await supabase.from('users_profiles').update({ wallet_balance: adjustedBal, updated_at: new Date().toISOString() }).eq('id', userRec.id);
-            const memUser = (db.users || []).find(u => u.id === txn.user_id);
-            if (memUser) memUser.wallet_balance = adjustedBal;
-            console.log(`[Admin Reconcile]: Re-debited ₹${deductAmt} from User ${txn.user_id} due to confirmed bank success.`);
-          }
-        }
+        await reDebitPayoutTxnFromWallet(txn);
       }
 
       txn.status = 'success';
@@ -1978,17 +2093,8 @@ router.post('/reconcile/:id', verifyToken, requireRoles(['admin']), async (req, 
     } else if (action === 'mark_failed') {
       const shouldRefund = !txn.refunded_to_wallet;
       if (shouldRefund) {
-        const refundAmt = Number(txn.total_deducted || (txn.amount + txn.slab_charge));
-        if (supabase) {
-          const { data: userRec } = await supabase.from('users_profiles').select('id, wallet_balance').eq('id', txn.user_id).single();
-          if (userRec) {
-            const currentBal = Number(userRec.wallet_balance || 0);
-            const refundedBal = Number((currentBal + refundAmt).toFixed(2));
-            await supabase.from('users_profiles').update({ wallet_balance: refundedBal, updated_at: new Date().toISOString() }).eq('id', userRec.id);
-            const memUser = (db.users || []).find(u => u.id === txn.user_id);
-            if (memUser) memUser.wallet_balance = refundedBal;
-          }
-        }
+        txn.refunded_to_wallet = true;
+        await refundPayoutTxnToWallet(txn, remarks || 'Marked failed by administrator');
       }
 
       txn.status = 'failed';

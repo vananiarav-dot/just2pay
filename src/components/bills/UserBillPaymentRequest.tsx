@@ -47,6 +47,7 @@ export const UserBillPaymentRequest: React.FC = () => {
   const [bankName, setBankName] = useState('');
   const [amount, setAmount] = useState('');
   const [mobileNumber, setMobileNumber] = useState(user?.mobile_number || '');
+  const [debitWalletType, setDebitWalletType] = useState<'main' | 'pos'>('main');
 
   // Live service charge calculation
   const [calculatedCharge, setCalculatedCharge] = useState<number>(25);
@@ -271,14 +272,17 @@ export const UserBillPaymentRequest: React.FC = () => {
       return;
     }
 
+    const isPos = debitWalletType === 'pos';
     const totalDeduction = numAmt + calculatedCharge;
-    const currentBalance = Number(user?.wallet_balance || 0);
-    const minReserve = minWalletBalance !== undefined ? minWalletBalance : 200;
+    const currentBalance = isPos ? Number(user?.pos_balance || 0) : Number(user?.wallet_balance || 0);
+    const minReserve = isPos ? 0 : (minWalletBalance !== undefined ? minWalletBalance : 200);
 
     if (currentBalance - totalDeduction < minReserve) {
       showNotice(
         'error',
-        `Insufficient Wallet Balance! A mandatory minimum reserve balance of ₹${minReserve.toFixed(2)} must be maintained in your wallet. Required: ₹${totalDeduction.toLocaleString('en-IN')} + ₹${minReserve.toFixed(2)} reserve = ₹${(totalDeduction + minReserve).toLocaleString('en-IN')}, Available: ₹${currentBalance.toLocaleString('en-IN')}.`
+        isPos
+          ? `Insufficient POS Wallet Balance! Required: ₹${totalDeduction.toLocaleString('en-IN')}, Available in POS Wallet (T+0): ₹${currentBalance.toLocaleString('en-IN')}.`
+          : `Insufficient Main Wallet Balance! A mandatory minimum reserve balance of ₹${minReserve.toFixed(2)} must be maintained in your wallet. Required: ₹${totalDeduction.toLocaleString('en-IN')} + ₹${minReserve.toFixed(2)} reserve = ₹${(totalDeduction + minReserve).toLocaleString('en-IN')}, Available: ₹${currentBalance.toLocaleString('en-IN')}.`
       );
       return;
     }
@@ -290,7 +294,8 @@ export const UserBillPaymentRequest: React.FC = () => {
         card_number: cardNumber,
         bank_name: bankName,
         amount: numAmt,
-        mobile_number: mobileNumber
+        mobile_number: mobileNumber,
+        debit_wallet_type: debitWalletType
       });
 
       if (res.success) {
@@ -373,6 +378,59 @@ export const UserBillPaymentRequest: React.FC = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Debit Wallet Selection: Main Wallet vs POS Wallet */}
+            <div className="space-y-1.5 pb-2 border-b border-slate-100">
+              <label className="block text-xs font-bold text-slate-700">Select Debit Wallet</label>
+              <div className="grid grid-cols-2 gap-3">
+                <div
+                  onClick={() => setDebitWalletType('main')}
+                  className={`p-3 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
+                    debitWalletType === 'main'
+                      ? 'border-blue-600 bg-blue-50/60 shadow-xs ring-1 ring-blue-500/20'
+                      : 'border-slate-200 hover:border-slate-300 bg-white'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-bold text-slate-900">Main Wallet</span>
+                    <input
+                      type="radio"
+                      name="ccBillWallet"
+                      checked={debitWalletType === 'main'}
+                      onChange={() => setDebitWalletType('main')}
+                      className="text-blue-600 cursor-pointer"
+                    />
+                  </div>
+                  <p className="text-sm font-extrabold text-blue-900 font-mono">
+                    ₹{Number(user?.wallet_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </p>
+                  <span className="text-[10px] text-slate-500 mt-0.5">Primary Balance</span>
+                </div>
+
+                <div
+                  onClick={() => setDebitWalletType('pos')}
+                  className={`p-3 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
+                    debitWalletType === 'pos'
+                      ? 'border-emerald-600 bg-emerald-50/60 shadow-xs ring-1 ring-emerald-500/20'
+                      : 'border-slate-200 hover:border-slate-300 bg-white'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-bold text-slate-900">POS Wallet (T+0)</span>
+                    <input
+                      type="radio"
+                      name="ccBillWallet"
+                      checked={debitWalletType === 'pos'}
+                      onChange={() => setDebitWalletType('pos')}
+                      className="text-emerald-600 cursor-pointer"
+                    />
+                  </div>
+                  <p className="text-sm font-extrabold text-emerald-900 font-mono">
+                    ₹{Number(user?.pos_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </p>
+                  <span className="text-[10px] text-emerald-700 font-semibold mt-0.5">Card Swipe Balance</span>
+                </div>
+              </div>
+            </div>
             {/* Customer Name */}
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">

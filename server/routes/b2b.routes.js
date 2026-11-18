@@ -1286,8 +1286,13 @@ router.post('/pay-bill', verifyToken, async (req, res) => {
   const baseUrl = (usepayConfig.baseUrl || process.env.USEPAY_BASE_URL || 'https://www.usepay.in/api/v1/b2b').replace(/\/$/, '');
   const { 
     billerId, amount, mobile, paymentMode, client_transaction_id, 
-    fetchRequestId, customerParams, billerResponseInfo, additionalInfo, customerPan 
+    fetchRequestId, customerParams, billerResponseInfo, additionalInfo, customerPan,
+    debit_wallet_type
   } = req.body;
+
+  const selectedWalletType = (debit_wallet_type || 'main').toLowerCase() === 'pos' ? 'pos' : 'main';
+  const isPosWallet = selectedWalletType === 'pos';
+  const walletLabel = isPosWallet ? 'POS Wallet (T+0)' : 'Main Wallet';
 
   if (!billerId || !amount) {
     return res.status(400).json({ status: 'error', message: 'billerId and amount are required.' });
@@ -1341,29 +1346,37 @@ router.post('/pay-bill', verifyToken, async (req, res) => {
     currentUser = (db.users || []).find(u => u.id === req.user.id);
   }
 
-  const currentWalletBalance = Number(currentUser?.wallet_balance || 0);
+  const currentWalletBalance = isPosWallet
+    ? Number(currentUser?.pos_balance || 0)
+    : Number(currentUser?.wallet_balance || 0);
 
   if (currentWalletBalance < totalDeduction) {
     return res.status(400).json({
       status: 'failed',
-      message: `Insufficient Wallet Balance! Required: ₹${totalDeduction.toLocaleString('en-IN')} (Bill Amount: ₹${numAmount.toLocaleString('en-IN')} + Slab Charge: ₹${serviceCharge.toLocaleString('en-IN')}), Available Balance: ₹${currentWalletBalance.toLocaleString('en-IN')}`
+      message: `Insufficient ${walletLabel} Balance! Required: ₹${totalDeduction.toLocaleString('en-IN')} (Bill Amount: ₹${numAmount.toLocaleString('en-IN')} + Slab Charge: ₹${serviceCharge.toLocaleString('en-IN')}), Available Balance: ₹${currentWalletBalance.toLocaleString('en-IN')}`
     });
   }
 
   // 4. ATOMICALLY DEDUCT WALLET BALANCE BEFORE GATEWAY EXECUTION
-  const balanceAfterDeduction = currentWalletBalance - totalDeduction;
-  if (currentUser) currentUser.wallet_balance = balanceAfterDeduction;
+  const balanceAfterDeduction = Number((currentWalletBalance - totalDeduction).toFixed(2));
+  if (currentUser) {
+    if (isPosWallet) currentUser.pos_balance = balanceAfterDeduction;
+    else currentUser.wallet_balance = balanceAfterDeduction;
+  }
 
   const memUser = (db.users || []).find(u => u.id === req.user.id);
-  if (memUser) memUser.wallet_balance = balanceAfterDeduction;
+  if (memUser) {
+    if (isPosWallet) memUser.pos_balance = balanceAfterDeduction;
+    else memUser.wallet_balance = balanceAfterDeduction;
+  }
 
   if (supabase) {
     try {
-      await supabase.from('users_profiles').update({
-        wallet_balance: balanceAfterDeduction,
-        updated_at: new Date().toISOString()
-      }).eq('id', req.user.id);
-      console.log(`[BBPS Wallet Deduction]: Deducted ₹${totalDeduction} (Bill: ₹${numAmount} + Charge: ₹${serviceCharge}) from User ${req.user.id}. New Balance: ₹${balanceAfterDeduction}`);
+      const updateData = isPosWallet
+        ? { pos_balance: balanceAfterDeduction, updated_at: new Date().toISOString() }
+        : { wallet_balance: balanceAfterDeduction, updated_at: new Date().toISOString() };
+      await supabase.from('users_profiles').update(updateData).eq('id', req.user.id);
+      console.log(`[BBPS Wallet Deduction]: Deducted ₹${totalDeduction} from ${walletLabel} for User ${req.user.id}. New Balance: ₹${balanceAfterDeduction}`);
     } catch (e) {
       console.warn('[BBPS Wallet Update Warning]:', e.message);
     }
@@ -1375,6 +1388,36 @@ router.post('/pay-bill', verifyToken, async (req, res) => {
   const cleanPan = customerPan ? String(customerPan).trim().toUpperCase() : null;
   const cardLast4 = extractCardLast4({ customer_params: customerParams, additional_info: additionalInfo, biller_response_info: billerResponseInfo });
   const firmName = currentUser?.firm_name || req.user?.firm_name || '';
+
+  // Write POS Wallet Ledger Entry if paid from POS Wallet
+  if (isPosWallet) {
+    const posDebitLedger = {
+      id: `pos_led_bill_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+      user_id: req.user.id,
+      user_name: currentUser?.name || req.user.name,
+      firm_name: firmName,
+      user_mobile: currentUser?.mobile_number || req.user.mobile_number,
+      type: 'DEBIT',
+      wallet_type: 'T0',
+      category: 'LIVE_BILL_DEBIT',
+      amount: totalDeduction,
+      charge_amount: serviceCharge,
+      opening_balance: currentWalletBalance,
+      closing_balance: balanceAfterDeduction,
+      reference_id: generatedClientTxnId,
+      description: `Live Bill Payment - ${targetBiller.biller_name || billerId} (${cardLast4})`,
+      created_at: new Date().toISOString()
+    };
+    if (!db.pos_wallet_ledger) db.pos_wallet_ledger = [];
+    db.pos_wallet_ledger.unshift(posDebitLedger);
+    if (supabase) {
+      try {
+        await supabase.from('pos_wallet_ledger').insert([posDebitLedger]);
+      } catch (e) {
+        console.warn('Supabase pos_wallet_ledger insert warning:', e.message);
+      }
+    }
+  }
 
   // 5. PRE-INSERT TRANSACTION RECORD IN DATABASE
   // Calculate Upstream Live Bill API Cost at the exact moment of execution (Permanent Snapshot)
@@ -1394,6 +1437,7 @@ router.post('/pay-bill', verifyToken, async (req, res) => {
     service_charge: serviceCharge,
     api_charge: currentLiveBillApiCharge,
     total_deducted: totalDeduction,
+    debit_wallet_type: selectedWalletType,
     payment_mode: paymentMode || 'Cash',
     client_transaction_id: generatedClientTxnId,
     fetch_request_id: fetchRequestId || null,
@@ -1411,10 +1455,11 @@ router.post('/pay-bill', verifyToken, async (req, res) => {
       const dbPayload = sanitizeBbpsDbPayload(newTxnEntry);
       const { error: insertErr } = await supabase.from('bbps_bill_payments').upsert(dbPayload, { onConflict: 'client_transaction_id' });
       if (insertErr) {
-        // Fallback: If api_charge column does not exist in bbps_bill_payments table yet, embed in customer_params
+        // Fallback: If api_charge or debit_wallet_type column does not exist in bbps_bill_payments table yet, embed in customer_params
         delete dbPayload.api_charge;
+        delete dbPayload.debit_wallet_type;
         const currentParams = Array.isArray(dbPayload.customer_params) ? [...dbPayload.customer_params] : [];
-        dbPayload.customer_params = [...currentParams, { name: 'api_charge', value: currentLiveBillApiCharge }];
+        dbPayload.customer_params = [...currentParams, { name: 'api_charge', value: currentLiveBillApiCharge }, { name: 'debit_wallet_type', value: selectedWalletType }];
         await supabase.from('bbps_bill_payments').upsert(dbPayload, { onConflict: 'client_transaction_id' });
       } else {
         console.log(`[BBPS DB Pre-Entry Success]: Successfully saved ${generatedClientTxnId} to bbps_bill_payments table.`);
@@ -1444,32 +1489,68 @@ router.post('/pay-bill', verifyToken, async (req, res) => {
       try {
         const { data: freshUser } = await supabase
           .from('users_profiles')
-          .select('wallet_balance')
+          .select('wallet_balance, pos_balance')
           .eq('id', req.user.id)
           .single();
-        if (freshUser && freshUser.wallet_balance !== undefined) {
-          latestBalance = Number(freshUser.wallet_balance);
+        if (freshUser) {
+          latestBalance = isPosWallet ? Number(freshUser.pos_balance) : Number(freshUser.wallet_balance);
         }
       } catch (e) {
         console.warn('[BBPS Fresh Balance Fetch Warning]:', e.message);
       }
     }
 
-    const currentBase = latestBalance !== null ? latestBalance : Number(currentUser?.wallet_balance ?? balanceAfterDeduction);
-    const balanceAfterRefund = currentBase + totalDeduction;
+    const currentBase = latestBalance !== null 
+      ? latestBalance 
+      : Number(isPosWallet ? (currentUser?.pos_balance ?? balanceAfterDeduction) : (currentUser?.wallet_balance ?? balanceAfterDeduction));
+    const balanceAfterRefund = Number((currentBase + totalDeduction).toFixed(2));
 
-    if (currentUser) currentUser.wallet_balance = balanceAfterRefund;
-    if (memUser) memUser.wallet_balance = balanceAfterRefund;
+    if (currentUser) {
+      if (isPosWallet) currentUser.pos_balance = balanceAfterRefund;
+      else currentUser.wallet_balance = balanceAfterRefund;
+    }
+    if (memUser) {
+      if (isPosWallet) memUser.pos_balance = balanceAfterRefund;
+      else memUser.wallet_balance = balanceAfterRefund;
+    }
 
     if (supabase) {
       try {
-        await supabase.from('users_profiles').update({
-          wallet_balance: balanceAfterRefund,
-          updated_at: new Date().toISOString()
-        }).eq('id', req.user.id);
-        console.log(`[BBPS Wallet Refund]: Refunded ₹${totalDeduction} to User ${req.user.id}. Base: ₹${currentBase}, New Balance: ₹${balanceAfterRefund}. Reason: ${reason}`);
+        const updateData = isPosWallet
+          ? { pos_balance: balanceAfterRefund, updated_at: new Date().toISOString() }
+          : { wallet_balance: balanceAfterRefund, updated_at: new Date().toISOString() };
+        await supabase.from('users_profiles').update(updateData).eq('id', req.user.id);
+        console.log(`[BBPS Wallet Refund]: Refunded ₹${totalDeduction} to User ${req.user.id} (${walletLabel}). Base: ₹${currentBase}, New Balance: ₹${balanceAfterRefund}. Reason: ${reason}`);
       } catch (e) {
         console.warn('[BBPS Wallet Refund Error]:', e.message);
+      }
+    }
+
+    // Add refund entry to POS Wallet ledger if paid from POS
+    if (isPosWallet) {
+      const posRefundLedger = {
+        id: `pos_led_ref_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+        user_id: req.user.id,
+        user_name: currentUser?.name || req.user.name,
+        firm_name: firmName,
+        user_mobile: currentUser?.mobile_number || req.user.mobile_number,
+        type: 'CREDIT',
+        wallet_type: 'T0',
+        category: 'REFUND_CREDIT',
+        amount: totalDeduction,
+        charge_amount: 0,
+        opening_balance: currentBase,
+        closing_balance: balanceAfterRefund,
+        reference_id: generatedClientTxnId,
+        description: `Refund: Live Bill Payment failed (${reason})`,
+        created_at: new Date().toISOString()
+      };
+      if (!db.pos_wallet_ledger) db.pos_wallet_ledger = [];
+      db.pos_wallet_ledger.unshift(posRefundLedger);
+      if (supabase) {
+        try {
+          await supabase.from('pos_wallet_ledger').insert([posRefundLedger]);
+        } catch (e) {}
       }
     }
   };

@@ -35,12 +35,15 @@ import { AdminKycManagement } from './components/kyc/AdminKycManagement';
 import { ManageTpinPage } from './components/security/ManageTpinPage';
 import { ChangeMpinPage } from './components/security/ChangeMpinPage';
 import { ChangePasswordPage } from './components/security/ChangePasswordPage';
+import { PosMasterManagement } from './components/pos/PosMasterManagement';
+import { PosPaymentRequests } from './components/pos/PosPaymentRequests';
+import { PosAccountStatement } from './components/pos/PosAccountStatement';
 import type { UserRole } from './types/auth';
 import { 
   Menu, LogOut, Wallet, Clock, ChevronDown, ChevronRight, Key, ShieldCheck,
   Zap, Bell, Settings, FileText, CreditCard, Landmark, X, SlidersHorizontal,
   LayoutDashboard, Users, ArrowRightLeft, RefreshCw, Images, Sliders, KeyRound, Lock, QrCode,
-  Volume2, VolumeX, History
+  Volume2, VolumeX, History, FileSpreadsheet
 } from 'lucide-react';
 import { AdminSoundSettingsModal } from './components/common/AdminSoundSettingsModal';
 import { AdminSoundToastContainer } from './components/common/AdminSoundToastContainer';
@@ -52,6 +55,9 @@ export default function App() {
   const { liveBillPayEnabled, instantPayoutEnabled, ccBillPayEnabled, fetchSettings } = useSettingsStore();
   const getTabFromPath = (path: string, role?: string): string => {
     const p = path.toLowerCase().trim();
+    if (p.includes('pos-master') || p.includes('pos_master')) return role === 'admin' ? 'pos_master' : 'users';
+    if (p.includes('pos-statement') || p.includes('pos_statement')) return 'pos_statement';
+    if (p.includes('pos-requests') || p.includes('pos_requests') || p.includes('pos')) return 'pos_requests';
     if (p.includes('admin-statement') || p.includes('admin_statement')) return 'admin_statement';
     if (p.includes('statement') || p.includes('passbook')) return role === 'admin' ? 'admin_statement' : 'user_statement';
     if (p.includes('admin-payout') || p.includes('admin_payout')) return 'admin_payout';
@@ -99,6 +105,9 @@ export default function App() {
   };
 
   const getPathFromTab = (tab: string): string => {
+    if (tab === 'pos_master') return '/pos-master';
+    if (tab === 'pos_requests') return '/pos-requests';
+    if (tab === 'pos_statement') return '/pos-statement';
     if (tab === 'dashboard' || tab === 'users') return '/dashboard';
     if (tab === 'manage_tpin') return '/manage-tpin';
     if (tab === 'change_mpin') return '/change-mpin';
@@ -398,6 +407,7 @@ export default function App() {
         { id: 'dashboard', label: 'Dashboard' },
         { id: 'users', label: 'Users' },
         { id: 'qr_requests', label: 'QR Requests', badgeKey: 'qr_requests' },
+        { id: 'pos_requests', label: 'POS Swipes' },
         { id: 'qr_master', label: 'QR Master' },
         { id: 'admin_bill_requests', label: 'CC Bills', badgeKey: 'admin_bill_requests' },
         { id: 'live_bill_history', label: 'LiveBill History' },
@@ -406,6 +416,8 @@ export default function App() {
       ];
 
       const more: NavTabItem[] = [
+        { id: 'pos_master', label: 'POS Machine Master', icon: CreditCard, desc: 'Configure EDC terminals & swipe rates' },
+        { id: 'pos_statement', label: 'POS Statement', icon: FileSpreadsheet, desc: 'POS swipe & outward ledger' },
         { id: 'admin_kyc', label: 'KYC Verification', icon: ShieldCheck, badgeKey: 'admin_kyc', desc: 'Merchant identity verification' },
         { id: 'admin_statement', label: 'Account Passbook', icon: FileText, desc: 'Ledger statements & transactions' },
         { id: 'bank_entry', label: 'Bank Entry', icon: Landmark, desc: 'Bank accounts & deposit entries' },
@@ -422,12 +434,14 @@ export default function App() {
       const primary: NavTabItem[] = [
         { id: 'users', label: 'Dashboard' },
         { id: 'qr_requests', label: 'QR Payments' },
+        { id: 'pos_requests', label: 'POS Swipe' },
         { id: 'bill_request', label: 'CC Bill Pay' },
         ...(liveBillPayEnabled ? [{ id: 'live_bill_pay', label: 'Live Bill Pay' }] : []),
         ...(instantPayoutEnabled ? [{ id: 'payout_transfer', label: 'Instant Payout' }] : []),
       ];
 
       const more: NavTabItem[] = [
+        { id: 'pos_statement', label: 'POS Statement', icon: FileSpreadsheet, desc: 'Card swipe passbook & ledger' },
         { id: 'user_statement', label: 'Account Passbook', icon: FileText, desc: 'Ledger statements & passbook' },
         { id: 'manage_tpin', label: user?.tpin_set ? 'Manage TPIN' : 'Create TPIN', icon: Key, desc: 'Transaction security PIN' },
         { id: 'change_mpin', label: 'Change MPIN', icon: KeyRound, desc: '6-digit mobile login PIN' },
@@ -445,6 +459,8 @@ export default function App() {
       ];
 
       const more: NavTabItem[] = [
+        { id: 'pos_requests', label: 'POS Requests', icon: CreditCard, desc: 'Retailer swipe transactions' },
+        { id: 'pos_statement', label: 'POS Statement', icon: FileSpreadsheet, desc: 'POS transaction history' },
         { id: 'user_statement', label: 'Account Passbook', icon: FileText, desc: 'Commission ledger & passbook' },
         { id: 'manage_tpin', label: user?.tpin_set ? 'Manage TPIN' : 'Create TPIN', icon: Key, desc: 'Transaction security PIN' },
         { id: 'change_mpin', label: 'Change MPIN', icon: KeyRound, desc: '6-digit mobile login PIN' },
@@ -462,6 +478,8 @@ export default function App() {
       ];
 
       const more: NavTabItem[] = [
+        { id: 'pos_requests', label: 'POS Requests', icon: CreditCard, desc: 'Retailer swipe transactions' },
+        { id: 'pos_statement', label: 'POS Statement', icon: FileSpreadsheet, desc: 'POS transaction history' },
         { id: 'user_statement', label: 'Account Passbook', icon: FileText, desc: 'Master ledger & passbook' },
         { id: 'manage_tpin', label: user?.tpin_set ? 'Manage TPIN' : 'Create TPIN', icon: Key, desc: 'Transaction security PIN' },
         { id: 'change_mpin', label: 'Change MPIN', icon: KeyRound, desc: '6-digit mobile login PIN' },
@@ -733,15 +751,40 @@ export default function App() {
             <span>{formatTimer(sessionRemainingSeconds)}</span>
           </div>
 
-          {/* Main Wallet pill (Retailer / Dist only) */}
+          {/* Multi-Wallet Display (Retailer / Dist / Super Dist) */}
           {user.role !== 'admin' && (
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200">
-              <Wallet className="w-4 h-4 text-emerald-600" />
-              <div className="text-right">
-                <p className="text-[9px] uppercase font-bold text-slate-500">Main Wallet</p>
-                <p className="text-xs font-black font-mono text-emerald-700">
-                  ₹{user.wallet_balance ? Number(user.wallet_balance).toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '0.00'}
-                </p>
+            <div className="flex items-center gap-2">
+              {/* Main Wallet */}
+              <div className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-blue-50 border border-blue-200">
+                <Wallet className="w-3.5 h-3.5 text-blue-600" />
+                <div className="text-right">
+                  <p className="text-[9px] uppercase font-bold text-blue-600 leading-none">Main Wallet</p>
+                  <p className="text-xs font-black font-mono text-blue-900 leading-tight mt-0.5">
+                    ₹{user.wallet_balance ? Number(user.wallet_balance).toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '0.00'}
+                  </p>
+                </div>
+              </div>
+
+              {/* POS Wallet (T+0 Available) */}
+              <div className="hidden md:flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200">
+                <CreditCard className="w-3.5 h-3.5 text-emerald-600" />
+                <div className="text-right">
+                  <p className="text-[9px] uppercase font-bold text-emerald-600 leading-none">POS (T+0)</p>
+                  <p className="text-xs font-black font-mono text-emerald-900 leading-tight mt-0.5">
+                    ₹{user.pos_balance ? Number(user.pos_balance).toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '0.00'}
+                  </p>
+                </div>
+              </div>
+
+              {/* POS T+1 (Clearing Tomorrow) */}
+              <div className="hidden lg:flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-purple-50 border border-purple-200" title="Settles into spendable POS Wallet tomorrow">
+                <Clock className="w-3.5 h-3.5 text-purple-600" />
+                <div className="text-right">
+                  <p className="text-[9px] uppercase font-bold text-purple-600 leading-none">POS T+1 (Tomorrow)</p>
+                  <p className="text-xs font-black font-mono text-purple-900 leading-tight mt-0.5">
+                    ₹{user.pos_t1_pending_balance ? Number(user.pos_t1_pending_balance).toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '0.00'}
+                  </p>
+                </div>
               </div>
             </div>
           )}
@@ -1071,8 +1114,27 @@ export default function App() {
               <QRProofGallery />
             </ProtectedRoute>
           )}
+          {activeTab === 'pos_master' && (
+            <ProtectedRoute allowedRoles={['admin']}>
+              <PosMasterManagement />
+            </ProtectedRoute>
+          )}
+          {activeTab === 'pos_requests' && (
+            <PosPaymentRequests 
+              user={user} 
+              onRefreshUser={async () => {
+                try {
+                  const prof = await userApi.getProfile();
+                  if (prof.success && prof.user) updateUser(prof.user);
+                } catch {}
+              }} 
+            />
+          )}
+          {activeTab === 'pos_statement' && (
+            <PosAccountStatement user={user} />
+          )}
           {activeTab === 'users' && renderDashboardByRole(user.role)}
-          {activeTab !== 'dashboard' && activeTab !== 'admin_kyc' && activeTab !== 'admin_payout' && activeTab !== 'api_fund_request' && activeTab !== 'admin_statement' && activeTab !== 'user_statement' && activeTab !== 'payout_transfer' && activeTab !== 'bank_entry' && activeTab !== 'admin_bill_requests' && activeTab !== 'live_bill_history' && activeTab !== 'ccbiller' && activeTab !== 'live_bill_pay' && activeTab !== 'bill_request' && activeTab !== 'qr_master' && activeTab !== 'qr_tracking' && activeTab !== 'qr_requests' && activeTab !== 'qr_gallery' && activeTab !== 'manage_tpin' && activeTab !== 'change_mpin' && activeTab !== 'change_password' && activeTab !== 'users' && renderDashboardByRole(user.role)}
+          {activeTab !== 'dashboard' && activeTab !== 'admin_kyc' && activeTab !== 'admin_payout' && activeTab !== 'api_fund_request' && activeTab !== 'admin_statement' && activeTab !== 'user_statement' && activeTab !== 'payout_transfer' && activeTab !== 'bank_entry' && activeTab !== 'admin_bill_requests' && activeTab !== 'live_bill_history' && activeTab !== 'ccbiller' && activeTab !== 'live_bill_pay' && activeTab !== 'bill_request' && activeTab !== 'qr_master' && activeTab !== 'qr_tracking' && activeTab !== 'qr_requests' && activeTab !== 'qr_gallery' && activeTab !== 'manage_tpin' && activeTab !== 'change_mpin' && activeTab !== 'change_password' && activeTab !== 'pos_master' && activeTab !== 'pos_requests' && activeTab !== 'pos_statement' && activeTab !== 'users' && renderDashboardByRole(user.role)}
         </main>
 
         {/* Floating Sound Toast Container (Admin Only) */}

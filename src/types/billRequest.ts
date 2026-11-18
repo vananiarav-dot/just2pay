@@ -29,6 +29,7 @@ export interface CreditCardBillRequest {
   amount: number;
   service_charge: number;
   total_amount: number;
+  debit_wallet_type?: 'main' | 'pos';
   mobile_number: string;
   status: 'pending' | 'approved' | 'rejected';
   rejection_reason?: string;
@@ -44,4 +45,5 @@ export interface SubmitBillRequestInput {
   bank_name: string;
   amount: number;
   mobile_number: string;
+  debit_wallet_type?: 'main' | 'pos';
 }

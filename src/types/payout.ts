@@ -41,6 +41,7 @@ export interface PayoutTransferPayload {
   mobile_number?: string;
   transfer_mode?: 'IMPS' | 'NEFT';
   tpin?: string;
+  debit_wallet_type?: 'main' | 'pos';
 }
 
 export interface PayoutTransaction {
@@ -62,6 +63,7 @@ export interface PayoutTransaction {
   bank_name?: string;
   mobile_number?: string;
   transfer_mode: 'IMPS' | 'NEFT';
+  debit_wallet_type?: 'main' | 'pos';
   status: 'pending' | 'success' | 'failed' | 'refunded';
   refunded_to_wallet?: boolean;
   failure_reason?: string;
