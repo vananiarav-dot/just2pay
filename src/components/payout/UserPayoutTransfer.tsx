@@ -742,67 +742,69 @@ export const UserPayoutTransfer: React.FC = () => {
 
             <form onSubmit={handleValidateForm} className="space-y-4">
               
-              {/* Debit Wallet Selection: Main Wallet vs POS Wallet */}
-              <div className="space-y-1.5 pb-2 border-b border-slate-100">
-                <label className="block text-xs font-bold text-slate-700">Select Debit Wallet</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Main Wallet Card */}
-                  <div
-                    onClick={() => setDebitWalletType('main')}
-                    className={`p-3 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between ${
-                      debitWalletType === 'main'
-                        ? 'border-blue-600 bg-blue-50/60 shadow-xs ring-1 ring-blue-500/20'
-                        : 'border-slate-200 hover:border-slate-300 bg-white'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
-                        <span className="text-xs font-bold text-slate-900">Main Wallet</span>
+              {/* Debit Wallet Selection: Main Wallet vs POS Wallet (Only if POS assigned) */}
+              {Array.isArray(user?.assigned_pos_machine_ids) && user.assigned_pos_machine_ids.length > 0 && user.pos_allowed_settlement_types !== 'NONE' && (
+                <div className="space-y-1.5 pb-2 border-b border-slate-100">
+                  <label className="block text-xs font-bold text-slate-700">Select Debit Wallet</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Main Wallet Card */}
+                    <div
+                      onClick={() => setDebitWalletType('main')}
+                      className={`p-3 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between ${
+                        debitWalletType === 'main'
+                          ? 'border-blue-600 bg-blue-50/60 shadow-xs ring-1 ring-blue-500/20'
+                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                          <span className="text-xs font-bold text-slate-900">Main Wallet</span>
+                        </div>
+                        <input
+                          type="radio"
+                          name="payoutWallet"
+                          checked={debitWalletType === 'main'}
+                          onChange={() => setDebitWalletType('main')}
+                          className="text-blue-600 cursor-pointer"
+                        />
                       </div>
-                      <input
-                        type="radio"
-                        name="payoutWallet"
-                        checked={debitWalletType === 'main'}
-                        onChange={() => setDebitWalletType('main')}
-                        className="text-blue-600 cursor-pointer"
-                      />
+                      <p className="text-sm font-extrabold text-blue-900 font-mono">
+                        ₹{parseFloat(String(user?.wallet_balance || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </p>
+                      <span className="text-[10px] text-slate-500 mt-0.5">Primary Platform Balance</span>
                     </div>
-                    <p className="text-sm font-extrabold text-blue-900 font-mono">
-                      ₹{parseFloat(String(user?.wallet_balance || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                    </p>
-                    <span className="text-[10px] text-slate-500 mt-0.5">Primary Platform Balance</span>
-                  </div>
 
-                  {/* POS Wallet Card */}
-                  <div
-                    onClick={() => setDebitWalletType('pos')}
-                    className={`p-3 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between ${
-                      debitWalletType === 'pos'
-                        ? 'border-emerald-600 bg-emerald-50/60 shadow-xs ring-1 ring-emerald-500/20'
-                        : 'border-slate-200 hover:border-slate-300 bg-white'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
-                        <span className="text-xs font-bold text-slate-900">POS Wallet (T+0)</span>
+                    {/* POS Wallet Card */}
+                    <div
+                      onClick={() => setDebitWalletType('pos')}
+                      className={`p-3 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between ${
+                        debitWalletType === 'pos'
+                          ? 'border-emerald-600 bg-emerald-50/60 shadow-xs ring-1 ring-emerald-500/20'
+                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+                          <span className="text-xs font-bold text-slate-900">POS Wallet (T+0)</span>
+                        </div>
+                        <input
+                          type="radio"
+                          name="payoutWallet"
+                          checked={debitWalletType === 'pos'}
+                          onChange={() => setDebitWalletType('pos')}
+                          className="text-emerald-600 cursor-pointer"
+                        />
                       </div>
-                      <input
-                        type="radio"
-                        name="payoutWallet"
-                        checked={debitWalletType === 'pos'}
-                        onChange={() => setDebitWalletType('pos')}
-                        className="text-emerald-600 cursor-pointer"
-                      />
+                      <p className="text-sm font-extrabold text-emerald-900 font-mono">
+                        ₹{parseFloat(String(user?.pos_balance || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </p>
+                      <span className="text-[10px] text-emerald-700 font-semibold mt-0.5">Card Swipe Balance (Zero Reserve)</span>
                     </div>
-                    <p className="text-sm font-extrabold text-emerald-900 font-mono">
-                      ₹{parseFloat(String(user?.pos_balance || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                    </p>
-                    <span className="text-[10px] text-emerald-700 font-semibold mt-0.5">Card Swipe Balance (Zero Reserve)</span>
                   </div>
                 </div>
-              </div>
+              )}
               
               {/* Transfer Mode: Pill Segmented Toggle exactly like Mockup */}
               <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 py-1">

@@ -431,17 +431,21 @@ export default function App() {
     }
 
     if (user?.role === 'user') {
+      const hasPos = Array.isArray(user.assigned_pos_machine_ids) && 
+        user.assigned_pos_machine_ids.length > 0 && 
+        user.pos_allowed_settlement_types !== 'NONE';
+
       const primary: NavTabItem[] = [
         { id: 'users', label: 'Dashboard' },
         { id: 'qr_requests', label: 'QR Payments' },
-        { id: 'pos_requests', label: 'POS Swipe' },
+        ...(hasPos ? [{ id: 'pos_requests', label: 'POS Swipe' }] : []),
         { id: 'bill_request', label: 'CC Bill Pay' },
         ...(liveBillPayEnabled ? [{ id: 'live_bill_pay', label: 'Live Bill Pay' }] : []),
         ...(instantPayoutEnabled ? [{ id: 'payout_transfer', label: 'Instant Payout' }] : []),
       ];
 
       const more: NavTabItem[] = [
-        { id: 'pos_statement', label: 'POS Statement', icon: FileSpreadsheet, desc: 'Card swipe passbook & ledger' },
+        ...(hasPos ? [{ id: 'pos_statement', label: 'POS Statement', icon: FileSpreadsheet, desc: 'Card swipe passbook & ledger' }] : []),
         { id: 'user_statement', label: 'Account Passbook', icon: FileText, desc: 'Ledger statements & passbook' },
         { id: 'manage_tpin', label: user?.tpin_set ? 'Manage TPIN' : 'Create TPIN', icon: Key, desc: 'Transaction security PIN' },
         { id: 'change_mpin', label: 'Change MPIN', icon: KeyRound, desc: '6-digit mobile login PIN' },
@@ -765,27 +769,31 @@ export default function App() {
                 </div>
               </div>
 
-              {/* POS Wallet (T+0 Available) */}
-              <div className="hidden md:flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200">
-                <CreditCard className="w-3.5 h-3.5 text-emerald-600" />
-                <div className="text-right">
-                  <p className="text-[9px] uppercase font-bold text-emerald-600 leading-none">POS (T+0)</p>
-                  <p className="text-xs font-black font-mono text-emerald-900 leading-tight mt-0.5">
-                    ₹{user.pos_balance ? Number(user.pos_balance).toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '0.00'}
-                  </p>
-                </div>
-              </div>
+              {/* POS Wallet (T+0 Available) - ONLY SHOWN IF POS IS ASSIGNED TO USER */}
+              {Array.isArray(user.assigned_pos_machine_ids) && user.assigned_pos_machine_ids.length > 0 && user.pos_allowed_settlement_types !== 'NONE' && (
+                <>
+                  <div className="hidden md:flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200">
+                    <CreditCard className="w-3.5 h-3.5 text-emerald-600" />
+                    <div className="text-right">
+                      <p className="text-[9px] uppercase font-bold text-emerald-600 leading-none">POS (T+0)</p>
+                      <p className="text-xs font-black font-mono text-emerald-900 leading-tight mt-0.5">
+                        ₹{user.pos_balance ? Number(user.pos_balance).toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '0.00'}
+                      </p>
+                    </div>
+                  </div>
 
-              {/* POS T+1 (Clearing Tomorrow) */}
-              <div className="hidden lg:flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-purple-50 border border-purple-200" title="Settles into spendable POS Wallet tomorrow">
-                <Clock className="w-3.5 h-3.5 text-purple-600" />
-                <div className="text-right">
-                  <p className="text-[9px] uppercase font-bold text-purple-600 leading-none">POS T+1 (Tomorrow)</p>
-                  <p className="text-xs font-black font-mono text-purple-900 leading-tight mt-0.5">
-                    ₹{user.pos_t1_pending_balance ? Number(user.pos_t1_pending_balance).toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '0.00'}
-                  </p>
-                </div>
-              </div>
+                  {/* POS T+1 (Clearing Tomorrow) */}
+                  <div className="hidden lg:flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-purple-50 border border-purple-200" title="Settles into spendable POS Wallet tomorrow">
+                    <Clock className="w-3.5 h-3.5 text-purple-600" />
+                    <div className="text-right">
+                      <p className="text-[9px] uppercase font-bold text-purple-600 leading-none">POS T+1 (Tomorrow)</p>
+                      <p className="text-xs font-black font-mono text-purple-900 leading-tight mt-0.5">
+                        ₹{user.pos_t1_pending_balance ? Number(user.pos_t1_pending_balance).toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '0.00'}
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
 

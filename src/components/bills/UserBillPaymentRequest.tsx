@@ -378,59 +378,61 @@ export const UserBillPaymentRequest: React.FC = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Debit Wallet Selection: Main Wallet vs POS Wallet */}
-            <div className="space-y-1.5 pb-2 border-b border-slate-100">
-              <label className="block text-xs font-bold text-slate-700">Select Debit Wallet</label>
-              <div className="grid grid-cols-2 gap-3">
-                <div
-                  onClick={() => setDebitWalletType('main')}
-                  className={`p-3 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
-                    debitWalletType === 'main'
-                      ? 'border-blue-600 bg-blue-50/60 shadow-xs ring-1 ring-blue-500/20'
-                      : 'border-slate-200 hover:border-slate-300 bg-white'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-bold text-slate-900">Main Wallet</span>
-                    <input
-                      type="radio"
-                      name="ccBillWallet"
-                      checked={debitWalletType === 'main'}
-                      onChange={() => setDebitWalletType('main')}
-                      className="text-blue-600 cursor-pointer"
-                    />
+            {/* Debit Wallet Selection: Main Wallet vs POS Wallet (Only if POS assigned) */}
+            {Array.isArray(user?.assigned_pos_machine_ids) && user.assigned_pos_machine_ids.length > 0 && user.pos_allowed_settlement_types !== 'NONE' && (
+              <div className="space-y-1.5 pb-2 border-b border-slate-100">
+                <label className="block text-xs font-bold text-slate-700">Select Debit Wallet</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div
+                    onClick={() => setDebitWalletType('main')}
+                    className={`p-3 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
+                      debitWalletType === 'main'
+                        ? 'border-blue-600 bg-blue-50/60 shadow-xs ring-1 ring-blue-500/20'
+                        : 'border-slate-200 hover:border-slate-300 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-bold text-slate-900">Main Wallet</span>
+                      <input
+                        type="radio"
+                        name="ccBillWallet"
+                        checked={debitWalletType === 'main'}
+                        onChange={() => setDebitWalletType('main')}
+                        className="text-blue-600 cursor-pointer"
+                      />
+                    </div>
+                    <p className="text-sm font-extrabold text-blue-900 font-mono">
+                      ₹{Number(user?.wallet_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </p>
+                    <span className="text-[10px] text-slate-500 mt-0.5">Primary Balance</span>
                   </div>
-                  <p className="text-sm font-extrabold text-blue-900 font-mono">
-                    ₹{Number(user?.wallet_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                  </p>
-                  <span className="text-[10px] text-slate-500 mt-0.5">Primary Balance</span>
-                </div>
 
-                <div
-                  onClick={() => setDebitWalletType('pos')}
-                  className={`p-3 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
-                    debitWalletType === 'pos'
-                      ? 'border-emerald-600 bg-emerald-50/60 shadow-xs ring-1 ring-emerald-500/20'
-                      : 'border-slate-200 hover:border-slate-300 bg-white'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-bold text-slate-900">POS Wallet (T+0)</span>
-                    <input
-                      type="radio"
-                      name="ccBillWallet"
-                      checked={debitWalletType === 'pos'}
-                      onChange={() => setDebitWalletType('pos')}
-                      className="text-emerald-600 cursor-pointer"
-                    />
+                  <div
+                    onClick={() => setDebitWalletType('pos')}
+                    className={`p-3 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
+                      debitWalletType === 'pos'
+                        ? 'border-emerald-600 bg-emerald-50/60 shadow-xs ring-1 ring-emerald-500/20'
+                        : 'border-slate-200 hover:border-slate-300 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-bold text-slate-900">POS Wallet (T+0)</span>
+                      <input
+                        type="radio"
+                        name="ccBillWallet"
+                        checked={debitWalletType === 'pos'}
+                        onChange={() => setDebitWalletType('pos')}
+                        className="text-emerald-600 cursor-pointer"
+                      />
+                    </div>
+                    <p className="text-sm font-extrabold text-emerald-900 font-mono">
+                      ₹{Number(user?.pos_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </p>
+                    <span className="text-[10px] text-emerald-700 font-semibold mt-0.5">Card Swipe Balance</span>
                   </div>
-                  <p className="text-sm font-extrabold text-emerald-900 font-mono">
-                    ₹{Number(user?.pos_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                  </p>
-                  <span className="text-[10px] text-emerald-700 font-semibold mt-0.5">Card Swipe Balance</span>
                 </div>
               </div>
-            </div>
+            )}
             {/* Customer Name */}
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">

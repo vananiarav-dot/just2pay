@@ -631,35 +631,37 @@ export const RetailerDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* POS Multi-Wallet Card */}
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-950 to-slate-900 text-white shadow-sm border border-emerald-500/20 space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <span className="text-[9px] uppercase font-bold text-emerald-400 block">🟢 POS Wallet (T+0)</span>
-                    <p className="text-base font-black font-mono text-emerald-300 mt-0.5">
-                      ₹{Number(user?.pos_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                    </p>
-                    <span className="text-[9px] text-emerald-200/60">Live Spendable</span>
+              {/* POS Multi-Wallet Card - ONLY SHOWN IF POS IS ASSIGNED TO USER */}
+              {Array.isArray(user?.assigned_pos_machine_ids) && user.assigned_pos_machine_ids.length > 0 && user.pos_allowed_settlement_types !== 'NONE' && (
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-950 to-slate-900 text-white shadow-sm border border-emerald-500/20 space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <span className="text-[9px] uppercase font-bold text-emerald-400 block">🟢 POS Wallet (T+0)</span>
+                      <p className="text-base font-black font-mono text-emerald-300 mt-0.5">
+                        ₹{Number(user?.pos_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </p>
+                      <span className="text-[9px] text-emerald-200/60">Live Spendable</span>
+                    </div>
+
+                    <div>
+                      <span className="text-[9px] uppercase font-bold text-purple-400 block">🟣 POS T+1 (Tomorrow)</span>
+                      <p className="text-base font-black font-mono text-purple-300 mt-0.5">
+                        ₹{Number(user?.pos_t1_pending_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </p>
+                      <span className="text-[9px] text-purple-200/60">Clearing Tomorrow</span>
+                    </div>
                   </div>
 
-                  <div>
-                    <span className="text-[9px] uppercase font-bold text-purple-400 block">🟣 POS T+1 (Tomorrow)</span>
-                    <p className="text-base font-black font-mono text-purple-300 mt-0.5">
-                      ₹{Number(user?.pos_t1_pending_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                    </p>
-                    <span className="text-[9px] text-purple-200/60">Clearing Tomorrow</span>
+                  <div className="pt-2 border-t border-white/10 flex items-center justify-between">
+                    <button
+                      onClick={() => handleNavigate('/pos-requests')}
+                      className="flex-1 py-1.5 px-3 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-bold transition cursor-pointer text-center"
+                    >
+                      + Submit POS Swipe Slip
+                    </button>
                   </div>
                 </div>
-
-                <div className="pt-2 border-t border-white/10 flex items-center justify-between">
-                  <button
-                    onClick={() => handleNavigate('/pos-requests')}
-                    className="flex-1 py-1.5 px-3 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-bold transition cursor-pointer text-center"
-                  >
-                    + Submit POS Swipe Slip
-                  </button>
-                </div>
-              </div>
+              )}
             </div>
 
             {/* Quick Service Links */}
