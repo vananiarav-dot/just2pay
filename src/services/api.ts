@@ -425,6 +425,27 @@ export const b2bApi = {
     return response.data;
   },
 
+  // UPSTREAM API CHARGE SLABS (Admin Only - Live Bill Payment)
+  getApiSlabs: async () => {
+    const response = await apiClient.get('/b2b/api-slabs');
+    return response.data;
+  },
+
+  createApiSlab: async (data: { min_amount: number; max_amount: number; charge_amount: number; is_active?: boolean }) => {
+    const response = await apiClient.post('/b2b/api-slabs', data);
+    return response.data;
+  },
+
+  updateApiSlab: async (id: string, data: { min_amount?: number; max_amount?: number; charge_amount?: number; is_active?: boolean }) => {
+    const response = await apiClient.put(`/b2b/api-slabs/${encodeURIComponent(id)}`, data);
+    return response.data;
+  },
+
+  deleteApiSlab: async (id: string) => {
+    const response = await apiClient.delete(`/b2b/api-slabs/${encodeURIComponent(id)}`);
+    return response.data;
+  },
+
   // USEPAY FUND REQUEST / TOP-UP APIS
   getFundRequestActiveServices: async (): Promise<{ success: boolean; active_services: UsePayActiveServiceItem[]; total_active: number }> => {
     const response = await apiClient.get('/b2b/fund-request/active-services');

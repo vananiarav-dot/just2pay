@@ -1962,6 +1962,134 @@ router.post('/settings', verifyToken, requireRoles(['admin']), async (req, res) 
   }
 });
 
+// -----------------------------------------------------------------------------
+// DYNAMIC UPSTREAM API CHARGE SLABS (Admin Only - Live Bill Payment)
+// -----------------------------------------------------------------------------
+const DEFAULT_API_SLABS = [
+  { id: 'lbslab_01', min_amount: 1, max_amount: 50000, charge_amount: 16, is_active: true },
+  { id: 'lbslab_02', min_amount: 50001, max_amount: 100000, charge_amount: 32, is_active: true },
+  { id: 'lbslab_03', min_amount: 100001, max_amount: 150000, charge_amount: 48, is_active: true },
+  { id: 'lbslab_04', min_amount: 150001, max_amount: 200000, charge_amount: 64, is_active: true }
+];
+
+const getApiSlabsFilePath = () => path.join(__dirname, '../db/live_bill_api_slabs.json');
+
+const loadApiSlabs = () => {
+  try {
+    const filePath = getApiSlabsFilePath();
+    if (fs.existsSync(filePath)) {
+      const content = fs.readFileSync(filePath, 'utf8');
+      const parsed = JSON.parse(content);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {
+    console.warn('Failed reading live_bill_api_slabs.json:', e.message);
+  }
+  return DEFAULT_API_SLABS;
+};
+
+const saveApiSlabs = (slabs) => {
+  try {
+    const filePath = getApiSlabsFilePath();
+    fs.writeFileSync(filePath, JSON.stringify(slabs, null, 2), 'utf8');
+  } catch (e) {
+    console.error('Failed saving live_bill_api_slabs.json:', e.message);
+  }
+};
+
+// GET /api/b2b/api-slabs - Fetch all Live Bill Pay upstream API charge slabs
+router.get('/api-slabs', verifyToken, async (req, res) => {
+  try {
+    const slabs = loadApiSlabs();
+    return res.status(200).json({ success: true, slabs });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Failed to fetch API charge slabs' });
+  }
+});
+
+// POST /api/b2b/api-slabs - Create new API charge slab (Admin only)
+router.post('/api-slabs', verifyToken, requireRoles(['admin']), async (req, res) => {
+  try {
+    const { min_amount, max_amount, charge_amount, is_active } = req.body;
+    if (min_amount === undefined || max_amount === undefined || charge_amount === undefined) {
+      return res.status(400).json({ success: false, message: 'min_amount, max_amount, and charge_amount are required' });
+    }
+
+    const slabs = loadApiSlabs();
+    const newSlab = {
+      id: `lbslab_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+      min_amount: parseFloat(min_amount),
+      max_amount: parseFloat(max_amount),
+      charge_amount: parseFloat(charge_amount),
+      is_active: is_active !== false,
+      created_at: new Date().toISOString()
+    };
+
+    slabs.push(newSlab);
+    slabs.sort((a, b) => a.min_amount - b.min_amount);
+    saveApiSlabs(slabs);
+
+    return res.status(201).json({
+      success: true,
+      message: 'API charge slab created successfully',
+      slab: newSlab,
+      slabs
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Failed to create API slab' });
+  }
+});
+
+// PUT /api/b2b/api-slabs/:id - Update existing API charge slab (Admin only)
+router.put('/api-slabs/:id', verifyToken, requireRoles(['admin']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { min_amount, max_amount, charge_amount, is_active } = req.body;
+
+    const slabs = loadApiSlabs();
+    const index = slabs.findIndex(s => s.id === id);
+    if (index === -1) {
+      return res.status(404).json({ success: false, message: 'Slab not found' });
+    }
+
+    if (min_amount !== undefined) slabs[index].min_amount = parseFloat(min_amount);
+    if (max_amount !== undefined) slabs[index].max_amount = parseFloat(max_amount);
+    if (charge_amount !== undefined) slabs[index].charge_amount = parseFloat(charge_amount);
+    if (is_active !== undefined) slabs[index].is_active = Boolean(is_active);
+    slabs[index].updated_at = new Date().toISOString();
+
+    slabs.sort((a, b) => a.min_amount - b.min_amount);
+    saveApiSlabs(slabs);
+
+    return res.status(200).json({
+      success: true,
+      message: 'API charge slab updated successfully',
+      slab: slabs[index],
+      slabs
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Failed to update API slab' });
+  }
+});
+
+// DELETE /api/b2b/api-slabs/:id - Delete API charge slab (Admin only)
+router.delete('/api-slabs/:id', verifyToken, requireRoles(['admin']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    let slabs = loadApiSlabs();
+    slabs = slabs.filter(s => s.id !== id);
+    saveApiSlabs(slabs);
+
+    return res.status(200).json({
+      success: true,
+      message: 'API charge slab deleted successfully',
+      slabs
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Failed to delete API slab' });
+  }
+});
+
 export default router;
 
 

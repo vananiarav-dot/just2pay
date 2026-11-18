@@ -4,9 +4,10 @@ import {
   Clock, Search, RefreshCw, CheckCircle2, AlertCircle, 
   Receipt, Landmark, ShieldCheck, UserCheck, ArrowUpRight,
   X, RotateCcw, Activity, Zap, Check, Calendar, Filter,
-  Building2, CreditCard
+  Building2, CreditCard, Sliders, Plus, Edit, Trash2, TrendingUp, Power
 } from 'lucide-react';
 import { useSettingsStore } from '../../store/settingsStore';
+import type { LiveBillApiSlab } from '../../types/billRequest';
 
 /**
  * Safely extract the last 4 digits of the card number from the transaction item
@@ -112,6 +113,24 @@ export const getServiceCharge = (item: any): number => {
   return 100;
 };
 
+/**
+ * Dynamic Upstream API Charge computation based on admin configured slabs
+ * If no matching slab found, automatically falls back to ₹16 per ₹50,000 block
+ */
+export const computeLiveBillApiCharge = (amount: number, slabs: LiveBillApiSlab[]): number => {
+  const amt = Number(amount || 0);
+  if (amt <= 0) return 0;
+
+  const activeSlabs = (slabs || []).filter(s => s.is_active !== false);
+  if (activeSlabs.length > 0) {
+    const matched = activeSlabs.find(s => amt >= Number(s.min_amount) && amt <= Number(s.max_amount));
+    if (matched) return Number(matched.charge_amount || 0);
+  }
+
+  // Dynamic formula fallback: ₹16 per ₹50,000 slab block
+  return Math.ceil(amt / 50000) * 16;
+};
+
 export const AdminLiveBillPayHistory: React.FC = () => {
   const [historyList, setHistoryList] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -125,6 +144,30 @@ export const AdminLiveBillPayHistory: React.FC = () => {
     item: any;
     data: any;
   } | null>(null);
+
+  // Dynamic Upstream API Charge Slabs State
+  const [apiSlabs, setApiSlabs] = useState<LiveBillApiSlab[]>(() => {
+    try {
+      const cached = localStorage.getItem('just2pay_livebill_api_slabs');
+      if (cached) return JSON.parse(cached);
+    } catch {}
+    return [
+      { id: 'lbslab_01', min_amount: 1, max_amount: 50000, charge_amount: 16, is_active: true },
+      { id: 'lbslab_02', min_amount: 50001, max_amount: 100000, charge_amount: 32, is_active: true },
+      { id: 'lbslab_03', min_amount: 100001, max_amount: 150000, charge_amount: 48, is_active: true },
+      { id: 'lbslab_04', min_amount: 150001, max_amount: 200000, charge_amount: 64, is_active: true }
+    ];
+  });
+  const [isSlabModalOpen, setIsSlabModalOpen] = useState(false);
+  const [savingSlab, setSavingSlab] = useState(false);
+  const [editingSlab, setEditingSlab] = useState<LiveBillApiSlab | null>(null);
+  const [slabForm, setSlabForm] = useState({
+    min_amount: '',
+    max_amount: '',
+    charge_amount: '',
+    is_active: true
+  });
+  const [slabNotice, setSlabNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const { liveBillPayEnabled, toggleLiveBillPay, fetchSettings: fetchLiveBillSettings } = useSettingsStore();
   const [isTogglingLiveBill, setIsTogglingLiveBill] = useState(false);
@@ -144,14 +187,97 @@ export const AdminLiveBillPayHistory: React.FC = () => {
     }
   };
 
+  const fetchApiSlabs = async () => {
+    try {
+      const res = await b2bApi.getApiSlabs();
+      if (res && res.success && Array.isArray(res.slabs)) {
+        setApiSlabs(res.slabs);
+        localStorage.setItem('just2pay_livebill_api_slabs', JSON.stringify(res.slabs));
+      }
+    } catch (err) {
+      console.warn('Failed to fetch API slabs from server, using cached/default:', err);
+    }
+  };
+
   useEffect(() => {
     fetchAdminHistory(true);
     fetchLiveBillSettings();
+    fetchApiSlabs();
     const interval = setInterval(() => {
       fetchAdminHistory(false);
     }, 4000);
     return () => clearInterval(interval);
   }, [fetchLiveBillSettings]);
+
+  const handleSaveSlab = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const min = parseFloat(slabForm.min_amount);
+    const max = parseFloat(slabForm.max_amount);
+    const chg = parseFloat(slabForm.charge_amount);
+
+    if (isNaN(min) || isNaN(max) || isNaN(chg) || min < 0 || max < min || chg < 0) {
+      setSlabNotice({ type: 'error', message: 'Please enter valid positive numbers. Min must be <= Max.' });
+      return;
+    }
+
+    setSavingSlab(true);
+    setSlabNotice(null);
+    try {
+      if (editingSlab) {
+        const res = await b2bApi.updateApiSlab(editingSlab.id, {
+          min_amount: min,
+          max_amount: max,
+          charge_amount: chg,
+          is_active: slabForm.is_active
+        });
+        if (res.success && res.slabs) {
+          setApiSlabs(res.slabs);
+          localStorage.setItem('just2pay_livebill_api_slabs', JSON.stringify(res.slabs));
+        } else {
+          setApiSlabs(prev => prev.map(s => s.id === editingSlab.id ? { ...s, min_amount: min, max_amount: max, charge_amount: chg, is_active: slabForm.is_active } : s));
+        }
+        setSlabNotice({ type: 'success', message: 'API charge slab updated successfully!' });
+      } else {
+        const res = await b2bApi.createApiSlab({
+          min_amount: min,
+          max_amount: max,
+          charge_amount: chg,
+          is_active: slabForm.is_active
+        });
+        if (res.success && res.slabs) {
+          setApiSlabs(res.slabs);
+          localStorage.setItem('just2pay_livebill_api_slabs', JSON.stringify(res.slabs));
+        } else {
+          const newS: LiveBillApiSlab = { id: `lbslab_${Date.now()}`, min_amount: min, max_amount: max, charge_amount: chg, is_active: slabForm.is_active };
+          setApiSlabs(prev => [...prev, newS].sort((a,b) => a.min_amount - b.min_amount));
+        }
+        setSlabNotice({ type: 'success', message: 'New API charge slab created!' });
+      }
+      setEditingSlab(null);
+      setSlabForm({ min_amount: '', max_amount: '', charge_amount: '', is_active: true });
+    } catch (err: any) {
+      setSlabNotice({ type: 'error', message: err.response?.data?.message || err.message || 'Failed to save slab' });
+    } finally {
+      setSavingSlab(false);
+    }
+  };
+
+  const handleDeleteSlab = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this API charge slab?')) return;
+    try {
+      const res = await b2bApi.deleteApiSlab(id);
+      if (res.success && res.slabs) {
+        setApiSlabs(res.slabs);
+        localStorage.setItem('just2pay_livebill_api_slabs', JSON.stringify(res.slabs));
+      } else {
+        setApiSlabs(prev => prev.filter(s => s.id !== id));
+      }
+      setSlabNotice({ type: 'success', message: 'Slab deleted successfully.' });
+    } catch (err: any) {
+      setApiSlabs(prev => prev.filter(s => s.id !== id));
+      setSlabNotice({ type: 'success', message: 'Slab deleted.' });
+    }
+  };
 
   const handleToggleLiveBill = async () => {
     setIsTogglingLiveBill(true);
@@ -320,6 +446,13 @@ export const AdminLiveBillPayHistory: React.FC = () => {
     0
   );
 
+  const totalApiCost = successTransactions.reduce(
+    (sum, item) => sum + computeLiveBillApiCharge(item.amount, apiSlabs),
+    0
+  );
+
+  const totalNetProfit = totalEarnedCharges - totalApiCost;
+
   const pendingTransactions = summaryBaseHistory.filter(
     i => (i.status || '').toLowerCase() === 'pending'
   );
@@ -361,51 +494,74 @@ export const AdminLiveBillPayHistory: React.FC = () => {
           </div>
         </div>
 
-        {/* TOP RIGHT CORNER: TOGGLE SWITCH */}
-        <div className="flex items-center self-end sm:self-auto gap-3.5 bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl shadow-inner">
-          <div className="text-right">
-            <div className="flex items-center gap-1.5 justify-end">
-              <Zap className={`w-3.5 h-3.5 ${liveBillPayEnabled ? 'text-emerald-600 fill-emerald-600/20' : 'text-slate-400'}`} />
-              <span className="text-xs font-black text-slate-900">Live Bill Pay Menu</span>
-              <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${
-                liveBillPayEnabled 
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                  : 'bg-rose-50 text-rose-700 border-rose-200'
-              }`}>
-                {liveBillPayEnabled ? 'ACTIVE / VISIBLE' : 'OFF / BLOCKED'}
-              </span>
-            </div>
-            <p className="text-[10px] text-slate-500 mt-0.5">
-              {liveBillPayEnabled 
-                ? 'User panel menu is visible & route accessible' 
-                : 'User menu is hidden & route URL blocked'}
-            </p>
-          </div>
-
-          {/* TOGGLE BUTTON */}
+        {/* TOP RIGHT: DYNAMIC API SLABS BUTTON & TOGGLE SWITCH */}
+        <div className="flex items-center self-end sm:self-auto gap-3 flex-wrap">
+          
+          {/* SLABS BUTTON */}
           <button
             type="button"
-            role="switch"
-            aria-checked={liveBillPayEnabled}
-            disabled={isTogglingLiveBill}
-            onClick={handleToggleLiveBill}
-            className={`relative inline-flex h-8 w-14 shrink-0 cursor-pointer items-center rounded-full p-1 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 shadow-inner ${
-              liveBillPayEnabled ? 'bg-emerald-600 justify-end' : 'bg-slate-300 justify-start'
-            } ${isTogglingLiveBill ? 'opacity-70 cursor-not-allowed' : ''}`}
-            title={liveBillPayEnabled ? 'Click to Turn OFF Live Bill Pay on User Panel' : 'Click to Turn ON Live Bill Pay on User Panel'}
+            onClick={() => {
+              setEditingSlab(null);
+              setSlabForm({ min_amount: '', max_amount: '', charge_amount: '', is_active: true });
+              setSlabNotice(null);
+              setIsSlabModalOpen(true);
+            }}
+            className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 text-xs font-black transition shadow-2xs cursor-pointer group"
+            title="Configure Upstream API Cost Slabs for Live Bill Payments"
           >
-            <span
-              className={`w-6 h-6 rounded-full bg-white shadow-md transform transition-all duration-300 flex items-center justify-center`}
-            >
-              {isTogglingLiveBill ? (
-                <RefreshCw className="w-3 h-3 text-slate-700 animate-spin" />
-              ) : liveBillPayEnabled ? (
-                <Check className="w-3 h-3 text-emerald-600 font-bold" />
-              ) : (
-                <X className="w-3 h-3 text-slate-500" />
-              )}
+            <Sliders className="w-4 h-4 text-purple-600 group-hover:rotate-45 transition-transform" />
+            <span>API Charge Slabs</span>
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-purple-600 text-white font-mono shadow-xs">
+              {apiSlabs.length}
             </span>
           </button>
+
+          {/* TOGGLE SWITCH */}
+          <div className="flex items-center gap-3.5 bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl shadow-inner">
+            <div className="text-right">
+              <div className="flex items-center gap-1.5 justify-end">
+                <Zap className={`w-3.5 h-3.5 ${liveBillPayEnabled ? 'text-emerald-600 fill-emerald-600/20' : 'text-slate-400'}`} />
+                <span className="text-xs font-black text-slate-900">Live Bill Pay Menu</span>
+                <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${
+                  liveBillPayEnabled 
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                    : 'bg-rose-50 text-rose-700 border-rose-200'
+                }`}>
+                  {liveBillPayEnabled ? 'ACTIVE / VISIBLE' : 'OFF / BLOCKED'}
+                </span>
+              </div>
+              <p className="text-[10px] text-slate-500 mt-0.5">
+                {liveBillPayEnabled 
+                  ? 'User panel menu is visible & route accessible' 
+                  : 'User menu is hidden & route URL blocked'}
+              </p>
+            </div>
+
+            {/* TOGGLE BUTTON */}
+            <button
+              type="button"
+              role="switch"
+              aria-checked={liveBillPayEnabled}
+              disabled={isTogglingLiveBill}
+              onClick={handleToggleLiveBill}
+              className={`relative inline-flex h-8 w-14 shrink-0 cursor-pointer items-center rounded-full p-1 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 shadow-inner ${
+                liveBillPayEnabled ? 'bg-emerald-600 justify-end' : 'bg-slate-300 justify-start'
+              } ${isTogglingLiveBill ? 'opacity-70 cursor-not-allowed' : ''}`}
+              title={liveBillPayEnabled ? 'Click to Turn OFF Live Bill Pay on User Panel' : 'Click to Turn ON Live Bill Pay on User Panel'}
+            >
+              <span
+                className={`w-6 h-6 rounded-full bg-white shadow-md transform transition-all duration-300 flex items-center justify-center`}
+              >
+                {isTogglingLiveBill ? (
+                  <RefreshCw className="w-3 h-3 text-slate-700 animate-spin" />
+                ) : liveBillPayEnabled ? (
+                  <Check className="w-3 h-3 text-emerald-600 font-bold" />
+                ) : (
+                  <X className="w-3 h-3 text-slate-500" />
+                )}
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -448,9 +604,9 @@ export const AdminLiveBillPayHistory: React.FC = () => {
               </span>
             </div>
             <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-              <span className="text-slate-400 font-medium">Earned Charges</span>
-              <span className="font-bold text-purple-700 font-mono">
-                ₹{totalEarnedCharges.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              <span className="text-slate-400 font-medium">Net Admin Margin</span>
+              <span className="font-bold text-emerald-700 font-mono">
+                {totalNetProfit >= 0 ? '+' : ''}₹{totalNetProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </span>
             </div>
           </div>
@@ -499,11 +655,25 @@ export const AdminLiveBillPayHistory: React.FC = () => {
                 {successCount} Successful
               </span>
             </div>
-            <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-              <span className="text-slate-400 font-medium">Earned Fees</span>
-              <span className="font-bold text-purple-700 font-mono">
-                + ₹{totalEarnedCharges.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-              </span>
+            <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-col gap-1 text-[11px]">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400 font-medium">Earned User Fees</span>
+                <span className="font-bold text-purple-700 font-mono">
+                  + ₹{totalEarnedCharges.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400 font-medium">Upstream API Cost</span>
+                <span className="font-bold text-amber-700 font-mono">
+                  - ₹{totalApiCost.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div className="flex items-center justify-between pt-1 border-t border-dashed border-slate-100">
+                <span className="text-slate-700 font-extrabold">Net Profit</span>
+                <span className="font-black text-emerald-700 font-mono text-xs">
+                  {totalNetProfit >= 0 ? '+' : ''}₹{totalNetProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -656,7 +826,9 @@ export const AdminLiveBillPayHistory: React.FC = () => {
                   <th className="p-3.5">Card (Last 4)</th>
                   <th className="p-3.5">Customer Name & Mobile</th>
                   <th className="p-3.5">Bill Amount (₹)</th>
-                  <th className="p-3.5">Charge (₹)</th>
+                  <th className="p-3.5 text-right">User Charge (₹)</th>
+                  <th className="p-3.5 text-right">API Charge (₹)</th>
+                  <th className="p-3.5 text-right">Final Profit (₹)</th>
                   <th className="p-3.5">Mode</th>
                   <th className="p-3.5">Status</th>
                   <th className="p-3.5">Transaction Ref IDs</th>
@@ -710,12 +882,47 @@ export const AdminLiveBillPayHistory: React.FC = () => {
                         <p className="font-bold text-slate-900">{item.customer_name || 'VALUED CARD HOLDER'}</p>
                         <p className="text-[10px] text-slate-500 font-mono">{item.customer_mobile || item.mobile}</p>
                       </td>
+                      {/* Bill Amount */}
                       <td className="p-3.5 font-black text-slate-900 text-xs font-mono">
                         ₹{Number(item.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </td>
-                      <td className="p-3.5 font-bold text-pink-600 text-xs font-mono">
+
+                      {/* User Charge (Collected from Retailer) */}
+                      <td className="p-3.5 font-bold text-pink-600 text-xs font-mono text-right whitespace-nowrap">
                         +₹{getServiceCharge(item).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </td>
+
+                      {/* API Charge (Upstream Dynamic Cost) */}
+                      <td className="p-3.5 text-xs font-mono text-right whitespace-nowrap">
+                        {(item.status === 'success' || item.status === 'approved') ? (
+                          <span className="font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg inline-block">
+                            ₹{computeLiveBillApiCharge(item.amount, apiSlabs).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 font-sans text-[11px]">—</span>
+                        )}
+                      </td>
+
+                      {/* Final Net Profit (User Charge - API Charge) */}
+                      <td className="p-3.5 text-xs font-mono text-right whitespace-nowrap">
+                        {(item.status === 'success' || item.status === 'approved') ? (() => {
+                          const uChg = getServiceCharge(item);
+                          const aChg = computeLiveBillApiCharge(item.amount, apiSlabs);
+                          const profit = uChg - aChg;
+                          return (
+                            <span className={`font-black px-2 py-0.5 rounded-lg border inline-block ${
+                              profit >= 0
+                                ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                                : 'text-rose-700 bg-rose-50 border-rose-200'
+                            }`}>
+                              {profit >= 0 ? '+' : ''}₹{profit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </span>
+                          );
+                        })() : (
+                          <span className="text-slate-400 font-sans text-[11px]">—</span>
+                        )}
+                      </td>
+
                       <td className="p-3.5 font-sans">
                         <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
                           {item.payment_mode || 'Cash'}
@@ -923,6 +1130,221 @@ export const AdminLiveBillPayHistory: React.FC = () => {
                 className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm transition"
               >
                 Close & Refresh
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* UPSTREAM API CHARGE SLABS MODAL */}
+      {isSlabModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full p-6 shadow-2xl space-y-5 text-slate-900 relative max-h-[90vh] overflow-y-auto">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-purple-50 text-purple-600 rounded-2xl border border-purple-200">
+                  <Sliders className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-base text-slate-900">Live Bill Pay - Upstream API Charge Slabs</h3>
+                  <p className="text-xs text-slate-500">Configure dynamic cost slabs charged by upstream gateway. Net Profit = User Charge − API Charge.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setIsSlabModalOpen(false);
+                  setEditingSlab(null);
+                  setSlabNotice(null);
+                }}
+                className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Slab Notice */}
+            {slabNotice && (
+              <div className={`p-3 rounded-2xl border text-xs font-bold flex items-center gap-2 ${
+                slabNotice.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
+              }`}>
+                {slabNotice.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
+                <span>{slabNotice.message}</span>
+              </div>
+            )}
+
+            {/* Add / Edit Form */}
+            <form onSubmit={handleSaveSlab} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-black uppercase text-slate-700 tracking-wider flex items-center gap-1.5">
+                  <Plus className="w-3.5 h-3.5 text-purple-600" />
+                  <span>{editingSlab ? 'Edit API Slab' : 'Create New API Charge Slab'}</span>
+                </h4>
+                {editingSlab && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingSlab(null);
+                      setSlabForm({ min_amount: '', max_amount: '', charge_amount: '', is_active: true });
+                    }}
+                    className="text-[11px] text-slate-500 hover:text-slate-800 font-bold underline cursor-pointer"
+                  >
+                    Cancel Editing
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-[10px] font-extrabold uppercase text-slate-500">Min Amount (₹)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    placeholder="e.g. 50001"
+                    value={slabForm.min_amount}
+                    onChange={(e) => setSlabForm({ ...slabForm, min_amount: e.target.value })}
+                    className="w-full mt-1 px-3 py-2 text-xs font-mono font-bold bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-600"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-extrabold uppercase text-slate-500">Max Amount (₹)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    placeholder="e.g. 100000"
+                    value={slabForm.max_amount}
+                    onChange={(e) => setSlabForm({ ...slabForm, max_amount: e.target.value })}
+                    className="w-full mt-1 px-3 py-2 text-xs font-mono font-bold bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-600"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-extrabold uppercase text-slate-500">API Charge (₹)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    placeholder="e.g. 32.00"
+                    value={slabForm.charge_amount}
+                    onChange={(e) => setSlabForm({ ...slabForm, charge_amount: e.target.value })}
+                    className="w-full mt-1 px-3 py-2 text-xs font-mono font-bold bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-600"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-1">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={slabForm.is_active}
+                    onChange={(e) => setSlabForm({ ...slabForm, is_active: e.target.checked })}
+                    className="rounded text-purple-600 focus:ring-purple-500"
+                  />
+                  <span className="text-xs font-bold text-slate-700">Active Slab</span>
+                </label>
+
+                <button
+                  type="submit"
+                  disabled={savingSlab}
+                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-black transition shadow-xs cursor-pointer disabled:opacity-50"
+                >
+                  {savingSlab ? 'Saving...' : editingSlab ? 'Update Slab' : 'Save Slab'}
+                </button>
+              </div>
+            </form>
+
+            {/* Slabs List Table */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-black uppercase text-slate-700 tracking-wider">
+                  Configured API Slabs ({apiSlabs.length})
+                </h4>
+                <span className="text-[11px] text-slate-400 font-medium">Higher amounts auto-scale at ₹16 / 50k</span>
+              </div>
+
+              {apiSlabs.length === 0 ? (
+                <div className="p-8 text-center text-slate-400 text-xs font-medium bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                  No custom slabs found. Using default ₹16 per ₹50,000 calculation.
+                </div>
+              ) : (
+                <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-100 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200">
+                      <tr>
+                        <th className="py-2.5 px-3">Range (Amount ₹)</th>
+                        <th className="py-2.5 px-3 text-right">API Cost (₹)</th>
+                        <th className="py-2.5 px-3 text-center">Status</th>
+                        <th className="py-2.5 px-3 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-mono">
+                      {apiSlabs.map((s) => (
+                        <tr key={s.id} className="hover:bg-slate-50 transition">
+                          <td className="py-2.5 px-3 font-bold text-slate-800">
+                            ₹{Number(s.min_amount).toLocaleString('en-IN')} — ₹{Number(s.max_amount).toLocaleString('en-IN')}
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-black text-amber-700">
+                            ₹{Number(s.charge_amount).toFixed(2)}
+                          </td>
+                          <td className="py-2.5 px-3 text-center font-sans">
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                              s.is_active !== false ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-500'
+                            }`}>
+                              {s.is_active !== false ? 'Active' : 'Disabled'}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-sans">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingSlab(s);
+                                  setSlabForm({
+                                    min_amount: String(s.min_amount),
+                                    max_amount: String(s.max_amount),
+                                    charge_amount: String(s.charge_amount),
+                                    is_active: s.is_active !== false
+                                  });
+                                  setSlabNotice(null);
+                                }}
+                                className="p-1 rounded-lg text-slate-500 hover:text-purple-600 hover:bg-purple-50 transition cursor-pointer"
+                                title="Edit Slab"
+                              >
+                                <Edit className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteSlab(s.id)}
+                                className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                                title="Delete Slab"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="pt-2 flex justify-end border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSlabModalOpen(false);
+                  setEditingSlab(null);
+                  setSlabNotice(null);
+                }}
+                className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs shadow-xs transition cursor-pointer"
+              >
+                Close
               </button>
             </div>
 

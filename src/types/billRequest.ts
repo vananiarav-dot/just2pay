@@ -6,6 +6,16 @@ export interface ChargeSlab {
   created_at?: string;
 }
 
+export interface LiveBillApiSlab {
+  id: string;
+  min_amount: number;
+  max_amount: number;
+  charge_amount: number;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface CreditCardBillRequest {
   id: string;
   user_id: string;
