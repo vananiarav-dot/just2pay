@@ -156,15 +156,16 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
       };
 
       const t0 = ctx.currentTime + 0.05;
-      // 6 progressive "trak-trak-trak" feeds spread over 4.2 seconds
-      playTrakBurst(t0 + 0.00, 10, 0.045); // Line 1: Header (0.45s)
-      playTrakBurst(t0 + 0.70, 10, 0.045); // Line 2: RRN & TID (0.45s)
-      playTrakBurst(t0 + 1.40, 12, 0.045); // Line 3: Swipe Amount (0.54s)
-      playTrakBurst(t0 + 2.15, 10, 0.045); // Line 4: Fee & Mode (0.45s)
-      playTrakBurst(t0 + 2.85, 10, 0.045); // Line 5: Net Credit (0.45s)
-      playTrakBurst(t0 + 3.55, 10, 0.045); // Line 6: Stamp & Barcode (0.45s)
+      // 7 progressive "trak-trak-trak" feeds spread over 7.5 seconds (7 to 8 seconds)
+      playTrakBurst(t0 + 0.00, 10, 0.048); // Line 1: Header (0.00s - 0.48s)
+      playTrakBurst(t0 + 1.05, 10, 0.048); // Line 2: Bank & TID (1.05s - 1.53s)
+      playTrakBurst(t0 + 2.10, 11, 0.048); // Line 3: RRN & Card (2.10s - 2.62s)
+      playTrakBurst(t0 + 3.20, 12, 0.048); // Line 4: Swipe Amount (3.20s - 3.77s)
+      playTrakBurst(t0 + 4.30, 11, 0.048); // Line 5: Fee & Mode (4.30s - 4.82s)
+      playTrakBurst(t0 + 5.35, 11, 0.048); // Line 6: Net Credit (5.35s - 5.87s)
+      playTrakBurst(t0 + 6.35, 12, 0.048); // Line 7: Barcode & Status (6.35s - 6.92s)
 
-      // Mechanical cutter 'snip-clack' at 4.25s
+      // Mechanical cutter 'snip-clack' at 7.3s
       setTimeout(() => {
         try {
           const cutOsc = ctx.createOscillator();
@@ -179,7 +180,7 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
           cutOsc.start();
           cutOsc.stop(ctx.currentTime + 0.08);
         } catch {}
-      }, 4250);
+      }, 7300);
     } catch (e) {
       console.warn('Audio playback not supported:', e);
     }
@@ -322,7 +323,7 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
         setIsPrinting(true);
         setTimeout(() => {
           setIsPrinting(false);
-        }, 4800);
+        }, 7800);
         setSubmitSuccess(res.message);
         setAmount('');
         setRrnNumber('');
@@ -582,7 +583,7 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
                 style={{ perspective: '1000px' }}
                 className={`absolute bottom-[calc(100%-18px)] left-0 right-0 mx-auto w-[240px] max-w-[90%] transition-all ${
                   isPrinting || submitSuccess || printedSlipData
-                    ? 'duration-[4500ms] cubic-bezier(0.12, 0.8, 0.32, 1) translate-y-0 opacity-100 scale-100 pointer-events-auto'
+                    ? 'duration-[7500ms] cubic-bezier(0.12, 0.8, 0.32, 1) translate-y-0 opacity-100 scale-100 pointer-events-auto'
                     : 'duration-300 translate-y-[100%] opacity-0 scale-95 pointer-events-none'
                 } transform origin-bottom z-10`}
               >
