@@ -152,7 +152,7 @@ export const EReceiptModal: React.FC<EReceiptModalProps> = ({ bill, onClose, isO
           >
             {/* Receipt Brand Header */}
             <div className="text-center border-b border-slate-200 pb-4 mb-4">
-              <h2 className="text-lg font-black tracking-tight text-indigo-900 uppercase">AsEasySwipe Digital</h2>
+              <h2 className="text-lg font-black tracking-tight text-indigo-900 uppercase">Just2Pay Digital</h2>
               <p className="text-[10px] text-slate-500 font-medium">B2B Fintech Banking Portal & Bill Settlement</p>
               <p className="text-[9px] text-slate-400">GSTIN: 27AAAAA0000A1Z5 | Helpline: 1800-123-4567</p>
             </div>
@@ -263,7 +263,7 @@ export const EReceiptModal: React.FC<EReceiptModalProps> = ({ bill, onClose, isO
 
             {/* Footer Seal */}
             <div className="pt-4 text-center space-y-1 text-[9px] text-slate-500">
-              <p className="font-bold">Thank you for using AsEasySwipe Financial Portal</p>
+              <p className="font-bold">Thank you for using Just2Pay Financial Portal</p>
               <p>Computer generated e-Receipt. Valid without signature.</p>
             </div>
           </div>

@@ -175,7 +175,7 @@ export const DistributorCommissionDashboard: React.FC = () => {
           <ShieldCheck className="w-4 h-4 text-emerald-600" />
           <span>Security & Compliance Guaranteed • 256-Bit Financial Encryption</span>
         </div>
-        <span className="font-semibold text-slate-600">AsEasySwipe Enterprise Network</span>
+        <span className="font-semibold text-slate-600">Just2Pay Enterprise Network</span>
       </div>
     </div>
   );

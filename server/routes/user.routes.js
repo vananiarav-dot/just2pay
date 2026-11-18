@@ -456,7 +456,7 @@ router.post('/create-subuser', verifyToken, requireRoles(['admin', 'super_distri
         }
         const numbers = existingIds
           .map(id => {
-            const match = String(id).match(/aseasyswipe_(\d+)/i);
+            const match = String(id).match(/(?:aseasyswipe|just2pay)_(\d+)/i);
             return match ? parseInt(match[1], 10) : 0;
           })
           .filter(n => !isNaN(n));
@@ -466,7 +466,7 @@ router.post('/create-subuser', verifyToken, requireRoles(['admin', 'super_distri
       } catch (err) {
         console.error('Error generating user ID:', err);
       }
-      return `aseasyswipe_${String(nextNum).padStart(3, '0')}`;
+      return `just2pay_${String(nextNum).padStart(3, '0')}`;
     }
 
     const newId = await generateNextUserId();
@@ -514,7 +514,7 @@ router.post('/create-subuser', verifyToken, requireRoles(['admin', 'super_distri
       firm_name: userFirm,
       home_address: (home_address || '').trim(),
       firm_address: (firm_address || '').trim(),
-      email: email || `${mobile_number}@aseasyswipe.com`,
+      email: email || `${mobile_number}@just2pay.in`,
       mobile_number,
       password: defaultPasswordHash,
       plain_password: 'Password@123',

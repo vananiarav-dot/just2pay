@@ -5,7 +5,7 @@
 
 -- 1. USERS PROFILES TABLE (Active Production Columns Only)
 CREATE TABLE IF NOT EXISTS public.users_profiles (
-    id TEXT PRIMARY KEY, -- e.g., 'aseasyswipe_001', 'aseasyswipe_002'
+    id TEXT PRIMARY KEY, -- e.g., 'just2pay_001', 'just2pay_002'
     name TEXT NOT NULL,
     firm_name TEXT NOT NULL,
     email TEXT,
@@ -47,7 +47,7 @@ ALTER TABLE public.users_profiles ADD COLUMN IF NOT EXISTS last_name TEXT;
 
 -- 1B. ADMIN PROFILES TABLE (Separate Dedicated Admin Accounts SQL Table - No TPIN)
 CREATE TABLE IF NOT EXISTS public.admin_profiles (
-    id TEXT PRIMARY KEY, -- e.g., 'aseasyswipe_admin_001'
+    id TEXT PRIMARY KEY, -- e.g., 'just2pay_admin_001'
     name TEXT NOT NULL,
     firm_name TEXT NOT NULL DEFAULT 'Super Admin HQ',
     email TEXT UNIQUE,
@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS public.qr_masters (
     is_active BOOLEAN DEFAULT true, -- On/Off Toggle status
     is_selected BOOLEAN DEFAULT false, -- Set Active QR for User Panel
     bank_name TEXT DEFAULT 'HDFC Bank',
-    account_holder_name TEXT DEFAULT 'AsEasySwipe Digital',
+    account_holder_name TEXT DEFAULT 'Just2Pay Digital',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -402,10 +402,10 @@ ALTER TABLE public.system_settings DISABLE ROW LEVEL SECURITY;
 INSERT INTO public.admin_profiles (
     id, name, firm_name, email, mobile_number, password, role, status, mpin
 ) VALUES (
-    'aseasyswipe_admin_001',
+    'just2pay_admin_001',
     'Super Admin HQ',
-    'AsEasySwipe Headquarter',
-    'admin@aseasyswipe.com',
+    'Just2Pay Headquarter',
+    'admin@just2pay.in',
     '9999999999',
     '$2a$10$7R.x5xZ/d7Y9pZkH9sY8uO.X87qg0W8nK3Y8W/eX3p.3.pB3kP.x4Q',
     'admin',

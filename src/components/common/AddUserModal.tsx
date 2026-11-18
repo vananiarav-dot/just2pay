@@ -127,7 +127,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
 
   if (createdCredentials) {
     const handleCopy = () => {
-      const shareText = `🎉 *AsEasySwipe Account Credentials*\n\n` +
+      const shareText = `🎉 *Just2Pay Account Credentials*\n\n` +
         `👤 *Name:* ${createdCredentials.user.name}\n` +
         `📱 *User ID / Mobile:* ${createdCredentials.user.mobile_number}\n` +
         `🔑 *Temporary Password:* ${createdCredentials.generatedPassword}\n` +

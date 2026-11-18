@@ -928,7 +928,7 @@ export default function App() {
                   {user.name || 'Super Admin HQ'}
                 </span>
                 <span className="text-[10px] text-slate-400 font-medium truncate max-w-[140px]">
-                  {user.email || user.mobile_number || 'admin@aseasyswipe.com'}
+                  {user.email || user.mobile_number || 'admin@just2pay.in'}
                 </span>
               </div>
             </button>
