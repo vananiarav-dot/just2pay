@@ -54,6 +54,10 @@ UPDATE public.qr_payment_requests
 SET user_id = REPLACE(user_id, 'aseasyswipe_', 'just2pay_')
 WHERE user_id LIKE 'aseasyswipe_%';
 
+UPDATE public.qr_payment_requests 
+SET processed_by = REPLACE(processed_by, 'aseasyswipe_', 'just2pay_')
+WHERE processed_by LIKE 'aseasyswipe_%';
+
 UPDATE public.wallet_ledger 
 SET user_id = REPLACE(user_id, 'aseasyswipe_', 'just2pay_')
 WHERE user_id LIKE 'aseasyswipe_%';
@@ -61,6 +65,10 @@ WHERE user_id LIKE 'aseasyswipe_%';
 UPDATE public.credit_card_bill_requests 
 SET user_id = REPLACE(user_id, 'aseasyswipe_', 'just2pay_')
 WHERE user_id LIKE 'aseasyswipe_%';
+
+UPDATE public.credit_card_bill_requests 
+SET processed_by = REPLACE(processed_by, 'aseasyswipe_', 'just2pay_')
+WHERE processed_by LIKE 'aseasyswipe_%';
 
 UPDATE public.payout_beneficiaries 
 SET user_id = REPLACE(user_id, 'aseasyswipe_', 'just2pay_')
@@ -74,9 +82,13 @@ UPDATE public.kyc_verifications
 SET user_id = REPLACE(user_id, 'aseasyswipe_', 'just2pay_')
 WHERE user_id LIKE 'aseasyswipe_%';
 
+UPDATE public.kyc_verifications 
+SET reviewed_by = REPLACE(reviewed_by, 'aseasyswipe_', 'just2pay_')
+WHERE reviewed_by LIKE 'aseasyswipe_%';
+
 UPDATE public.api_fund_requests 
-SET user_id = REPLACE(user_id, 'aseasyswipe_', 'just2pay_')
-WHERE user_id LIKE 'aseasyswipe_%';
+SET submitted_by = REPLACE(submitted_by, 'aseasyswipe_', 'just2pay_')
+WHERE submitted_by LIKE 'aseasyswipe_%';
 
 -- STEP 4: Update admin_profiles
 UPDATE public.admin_profiles 
@@ -135,11 +147,6 @@ ALTER TABLE public.payout_verifications
 
 ALTER TABLE public.kyc_verifications 
   ADD CONSTRAINT kyc_verifications_user_id_fkey 
-  FOREIGN KEY (user_id) REFERENCES public.users_profiles(id) 
-  ON UPDATE CASCADE ON DELETE CASCADE;
-
-ALTER TABLE public.api_fund_requests 
-  ADD CONSTRAINT api_fund_requests_user_id_fkey 
   FOREIGN KEY (user_id) REFERENCES public.users_profiles(id) 
   ON UPDATE CASCADE ON DELETE CASCADE;
 
