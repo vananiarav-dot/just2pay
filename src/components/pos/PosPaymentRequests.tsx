@@ -472,506 +472,497 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
       {/* POS WORKSTATION: 2 SIDE-BY-SIDE SECTIONS (VISIBLE TO ALL) */}
       <div className="space-y-6">
         {/* 2 Side-by-Side Sections Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           
           {/* LEFT SECTION (5 Cols): Interactive POS Machine Mockup + Thermal Printing Slip */}
           <div className="lg:col-span-5 flex flex-col items-center">
-            <div className="w-full max-w-sm mx-auto flex flex-col items-center select-none">
+            <div className="w-full max-w-[270px] mx-auto flex flex-col items-center select-none relative">
               
               {/* Printing Status Badge */}
               {isPrinting && (
-                <div className="mb-2 px-3 py-1 rounded-full bg-emerald-600 text-white text-[10px] font-bold flex items-center gap-1.5 shadow-md animate-bounce">
-                  <Sparkles className="w-3 h-3 animate-spin" />
-                  <span>🖨️ Thermal Slip Printing...</span>
+                <div className="mb-1.5 px-2.5 py-0.5 rounded-full bg-emerald-600 text-white text-[9px] font-bold flex items-center gap-1 shadow-sm animate-pulse">
+                  <Sparkles className="w-2.5 h-2.5 animate-spin" />
+                  <span>🖨️ Printing Thermal Slip...</span>
                 </div>
               )}
 
-              {/* The Thermal Paper Slip (Animated slide-out from paper slit) */}
-              <div className="w-[86%] relative z-0 -mb-4 transition-all duration-700 ease-out">
-                <div className={`bg-gradient-to-b from-amber-50/95 via-white to-amber-50/90 text-slate-800 rounded-t-2xl p-4 shadow-2xl border-x-2 border-t-2 border-dashed border-amber-300 font-mono text-[10px] space-y-1.5 transition-all duration-1000 ease-out transform ${
-                  isPrinting || submitSuccess
-                    ? 'translate-y-0 opacity-100 scale-100'
-                    : 'translate-y-5 opacity-80 scale-98'
-                }`}>
-                  <div className="flex items-center justify-between pb-1.5 border-b border-dashed border-slate-300">
+              {/* The Thermal Paper Slip (Emerges completely upwards from the machine printer head) */}
+              <div className={`w-[90%] transition-all duration-700 ease-out transform origin-bottom overflow-hidden ${
+                isPrinting || submitSuccess || printedSlipData
+                  ? 'max-h-[380px] opacity-100 -translate-y-1 mb-1.5 scale-100 pointer-events-auto'
+                  : 'max-h-0 opacity-0 translate-y-6 mb-0 scale-95 pointer-events-none'
+              }`}>
+                <div className="bg-gradient-to-b from-amber-50/98 via-white to-amber-50/95 text-slate-800 rounded-t-xl p-3 shadow-xl border-x border-t border-dashed border-amber-300 font-mono text-[9px] space-y-1.5">
+                  <div className="flex items-center justify-between pb-1 border-b border-dashed border-slate-300">
                     <div>
-                      <p className="font-black text-xs tracking-wider text-slate-900">JUST2PAY EDC SWIPE</p>
-                      <p className="text-[9px] text-slate-500 uppercase font-semibold">
+                      <p className="font-black text-[11px] tracking-wider text-slate-900 leading-none">JUST2PAY EDC SWIPE</p>
+                      <p className="text-[8px] text-slate-500 uppercase font-semibold mt-0.5">
                         {printedSlipData?.bankName || selectedMachine?.bank_name || 'HDFC Bank'} • {printedSlipData?.terminalId || selectedMachine?.terminal_id || 'TID_8841'}
                       </p>
                     </div>
-                    {(isPrinting || submitSuccess || printedSlipData) && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsPrinting(false);
-                          setSubmitSuccess(null);
-                        }}
-                        className="px-2 py-0.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 text-[9px] font-bold cursor-pointer transition shadow-xs"
-                        title="Tear off slip"
-                      >
-                        ✕ Tear Slip
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsPrinting(false);
+                        setSubmitSuccess(null);
+                        setPrintedSlipData(null);
+                      }}
+                      className="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-rose-100 hover:text-rose-700 text-slate-600 text-[8px] font-bold cursor-pointer transition shadow-2xs"
+                      title="Tear off receipt"
+                    >
+                      ✕ Tear
+                    </button>
                   </div>
 
-                  <p className="text-[8px] text-slate-400 text-center">
+                  <p className="text-[7px] text-slate-400 text-center">
                     {printedSlipData?.date || new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} • {printedSlipData?.time || new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
                   </p>
 
-                  <div className="space-y-1 py-1">
+                  <div className="space-y-0.5 py-0.5">
                     <div className="flex justify-between">
-                      <span className="text-slate-500">RRN NUMBER:</span>
+                      <span className="text-slate-500">RRN:</span>
                       <span className="font-bold text-slate-900 font-mono">{printedSlipData?.rrn || rrnNumber || '••••••••••••'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-500">CARD NUMBER:</span>
+                      <span className="text-slate-500">CARD:</span>
                       <span className="font-bold text-slate-900 font-mono">•••• •••• •••• {printedSlipData?.cardLast4 || cardLast4 || '****'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-500">SETTLEMENT:</span>
+                      <span className="text-slate-500">MODE:</span>
                       <span className="font-bold text-slate-900">{(printedSlipData?.settlementType || settlementType) === 'T0' ? '⚡ T+0 (INSTANT)' : '📅 T+1 (CLEARING)'}</span>
                     </div>
-                    <div className="flex justify-between text-xs font-black pt-1 border-t border-dashed border-slate-300">
-                      <span>SWIPE AMOUNT:</span>
+                    <div className="flex justify-between text-[11px] font-black pt-1 border-t border-dashed border-slate-300">
+                      <span>SWIPE AMT:</span>
                       <span className="text-slate-950 font-mono">
                         ₹{printedSlipData?.amount ? Number(printedSlipData.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 }) : (numAmount > 0 ? numAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '0.00')}
                       </span>
                     </div>
-                    <div className="flex justify-between text-[9px] text-slate-500">
-                      <span>PLATFORM FEE ({effectiveChargePct.toFixed(2)}%):</span>
+                    <div className="flex justify-between text-[8px] text-slate-500">
+                      <span>FEE ({effectiveChargePct.toFixed(2)}%):</span>
                       <span className="text-rose-600 font-mono">-₹{(printedSlipData?.chargeAmount || calcChargeAmount).toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between font-bold text-emerald-800 text-[11px] pt-0.5 border-t border-slate-200">
+                    <div className="flex justify-between font-bold text-emerald-800 text-[10px] pt-0.5 border-t border-slate-200">
                       <span>NET CREDIT:</span>
                       <span className="font-mono">₹{(printedSlipData?.netAmount || calcNetAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                     </div>
                   </div>
 
-                  <div className="pt-2 text-center border-t border-dashed border-slate-300">
-                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
-                      submitSuccess || isPrinting
-                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' 
-                        : 'bg-amber-100 text-amber-800 border border-amber-300'
-                    }`}>
-                      {submitSuccess || isPrinting ? '✓ SUBMITTED PENDING REVIEW' : '● READY FOR SUBMISSION'}
+                  <div className="pt-1.5 text-center border-t border-dashed border-slate-300">
+                    <span className="inline-block px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300">
+                      ✓ SUBMITTED PENDING REVIEW
                     </span>
-                    <p className="text-[8px] text-slate-400 mt-1">*** CUSTOMER SWIPE COPY ***</p>
+                    <p className="text-[7px] text-slate-400 mt-0.5">*** CUSTOMER SWIPE COPY ***</p>
                   </div>
 
                   {/* Decorative jagged tear line */}
-                  <div className="flex justify-center gap-1 pt-1 opacity-40">
-                    {Array.from({ length: 18 }).map((_, i) => (
+                  <div className="flex justify-center gap-1 pt-0.5 opacity-40">
+                    {Array.from({ length: 16 }).map((_, i) => (
                       <span key={i} className="w-1.5 h-1 bg-slate-400 rotate-45 transform inline-block" />
                     ))}
                   </div>
                 </div>
               </div>
 
-                {/* POS Machine Device Body */}
-                <div className="w-full bg-gradient-to-b from-slate-900 via-slate-800 to-slate-950 rounded-[2.8rem] p-5 shadow-2xl border-4 border-slate-700/80 relative z-10 space-y-4">
-                  
-                  {/* Thermal Paper Feeder Slot */}
-                  <div className="w-44 h-3.5 mx-auto bg-slate-950 rounded-full border-2 border-slate-800 shadow-inner flex items-center justify-center">
-                    <div className="w-32 h-1 bg-slate-900 rounded-full" />
+              {/* POS Machine Device Body */}
+              <div className="w-full bg-gradient-to-b from-slate-900 via-slate-800 to-slate-950 rounded-[2.2rem] p-3 shadow-xl border-2 border-slate-700/80 relative z-10 space-y-2">
+                
+                {/* Thermal Paper Feeder Slot at TOP */}
+                <div className="relative pt-0.5 pb-0.5">
+                  <div className="w-36 h-2.5 mx-auto bg-slate-950 rounded-full border border-slate-700 shadow-inner flex items-center justify-center relative overflow-hidden">
+                    {!(isPrinting || submitSuccess || printedSlipData) ? (
+                      <div className="w-20 h-1 bg-amber-100/70 rounded-full shadow-2xs" title="Paper roll ready" />
+                    ) : (
+                      <div className="w-24 h-1.5 bg-emerald-400 animate-pulse rounded-full" />
+                    )}
+                  </div>
+                </div>
+
+                {/* Brand Header & Status Light */}
+                <div className="flex items-center justify-between px-1.5 pt-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-5 h-5 rounded-md bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400 font-black text-[10px]">
+                      J2P
+                    </div>
+                    <span className="text-[10px] font-black tracking-widest text-slate-200 uppercase">
+                      Just2Pay <span className="text-emerald-400">EDC</span>
+                    </span>
                   </div>
 
-                  {/* Brand Header & Status Light */}
-                  <div className="flex items-center justify-between px-2 pt-1">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-lg bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400 font-black text-xs">
-                        J2P
-                      </div>
-                      <span className="text-[11px] font-black tracking-widest text-slate-200 uppercase">
-                        Just2Pay <span className="text-emerald-400">EDC</span>
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400" />
-                      <span className="text-[9px] font-mono text-emerald-300 font-bold uppercase tracking-wider">ONLINE</span>
-                    </div>
+                  <div className="flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-xs shadow-emerald-400" />
+                    <span className="text-[8px] font-mono text-emerald-300 font-bold uppercase tracking-wider">ONLINE</span>
                   </div>
+                </div>
 
-                  {/* LCD Display Screen */}
-                  <div className="bg-gradient-to-b from-slate-950 via-[#0a0f1d] to-slate-950 border-2 border-slate-700/60 rounded-2xl p-4 shadow-inner text-white font-mono space-y-3 relative overflow-hidden">
-                    {/* Screen Status Bar */}
-                    <div className="flex items-center justify-between text-[9px] text-slate-400 pb-2 border-b border-slate-800">
-                      <span className="truncate max-w-[140px] font-bold text-slate-300">
-                        {selectedMachine?.bank_name || 'HDFC Bank'}
-                      </span>
-                      <div className="flex items-center gap-1.5 text-slate-400">
-                        <span className="text-[8px] px-1 py-0.2 rounded bg-slate-800 text-slate-300">4G LTE</span>
-                        <span>98%</span>
-                      </div>
-                    </div>
-
-                    {/* Screen Center: Live Amount Display */}
-                    <div className="text-center py-2">
-                      <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
-                        {settlementType === 'T0' ? '⚡ T+0 INSTANT SWIPE' : '📅 T+1 CLEARING SWIPE'}
-                      </span>
-                      <div className="text-2xl sm:text-3xl font-black text-emerald-400 font-mono tracking-tight my-1 drop-shadow-md">
-                        ₹{numAmount > 0 ? numAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '0.00'}
-                      </div>
-                      <p className="text-[9px] text-slate-400">
-                        TID: {selectedMachine?.terminal_id || 'HDFC_TID_8841'}
-                      </p>
-                    </div>
-
-                    {/* Screen Info Pill */}
-                    <div className="bg-slate-900/90 rounded-xl p-2.5 text-[9px] space-y-1 border border-slate-800">
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">RRN:</span>
-                        <span className="font-bold text-amber-300 tracking-wider">
-                          {rrnNumber || '••••••••••••'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">CARD:</span>
-                        <span className="font-bold text-slate-300">
-                          {cardLast4 ? `•••• •••• •••• ${cardLast4}` : 'SWIPE / CHIP INSERT'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-emerald-400 font-bold pt-1 border-t border-slate-800">
-                        <span>NET CREDITED:</span>
-                        <span>₹{calcNetAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                      </div>
+                {/* LCD Display Screen */}
+                <div className="bg-gradient-to-b from-slate-950 via-[#0a0f1d] to-slate-950 border border-slate-700/60 rounded-xl p-2.5 shadow-inner text-white font-mono space-y-1.5 relative overflow-hidden">
+                  {/* Screen Status Bar */}
+                  <div className="flex items-center justify-between text-[8px] text-slate-400 pb-1 border-b border-slate-800">
+                    <span className="truncate max-w-[120px] font-bold text-slate-300">
+                      {selectedMachine?.bank_name || 'HDFC Bank'}
+                    </span>
+                    <div className="flex items-center gap-1 text-slate-400">
+                      <span className="text-[7px] px-1 py-0.2 rounded bg-slate-800 text-slate-300">4G</span>
+                      <span>98%</span>
                     </div>
                   </div>
 
-                  {/* Contactless Wave & NFC Zone */}
-                  <div className="flex items-center justify-center gap-2 py-1 text-slate-400">
-                    <Radio className="w-4 h-4 text-emerald-400 rotate-90" />
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Contactless NFC / Chip</span>
-                  </div>
-
-                  {/* Realistic Keypad Grid */}
-                  <div className="grid grid-cols-3 gap-2 px-1 pt-1">
-                    {[
-                      ['1', ''], ['2', 'ABC'], ['3', 'DEF'],
-                      ['4', 'GHI'], ['5', 'JKL'], ['6', 'MNO'],
-                      ['7', 'PQRS'], ['8', 'TUV'], ['9', 'WXYZ'],
-                      ['CLEAR', 'red'], ['0', ''], ['ENTER', 'green']
-                    ].map(([key, sub], idx) => {
-                      const isClear = key === 'CLEAR';
-                      const isEnter = key === 'ENTER';
-                      return (
-                        <div
-                          key={idx}
-                          className={`h-9 rounded-xl flex flex-col items-center justify-center shadow-md border transition ${
-                            isClear
-                              ? 'bg-rose-950/80 border-rose-800/80 text-rose-300'
-                              : isEnter
-                              ? 'bg-emerald-950/80 border-emerald-800/80 text-emerald-300'
-                              : 'bg-slate-800/90 border-slate-700/80 text-slate-200'
-                          }`}
-                        >
-                          <span className="text-xs font-black leading-none">{key}</span>
-                          {sub && !isClear && !isEnter && (
-                            <span className="text-[7px] text-slate-500 leading-none mt-0.5">{sub}</span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Bottom Chip / Card Reader Slot */}
-                  <div className="pt-2">
-                    <div className="w-36 h-2 mx-auto bg-slate-950 rounded-full border border-slate-700/80 shadow-inner" />
-                    <p className="text-[8px] font-mono text-center text-slate-500 mt-1 uppercase tracking-widest">
-                      EMV CHIP INSERTION SLOT
+                  {/* Screen Center: Live Amount Display */}
+                  <div className="text-center py-1">
+                    <span className="text-[8px] uppercase font-bold text-slate-400 block tracking-wider">
+                      {settlementType === 'T0' ? '⚡ T+0 INSTANT SWIPE' : '📅 T+1 CLEARING SWIPE'}
+                    </span>
+                    <div className="text-xl sm:text-2xl font-black text-emerald-400 font-mono tracking-tight my-0.5 drop-shadow-sm">
+                      ₹{numAmount > 0 ? numAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '0.00'}
+                    </div>
+                    <p className="text-[8px] text-slate-400">
+                      TID: {selectedMachine?.terminal_id || 'HDFC_TID_8841'}
                     </p>
                   </div>
+
+                  {/* Screen Info Pill */}
+                  <div className="bg-slate-900/90 rounded-lg p-1.5 text-[8px] space-y-0.5 border border-slate-800">
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">RRN:</span>
+                      <span className="font-bold text-amber-300 tracking-wider">
+                        {rrnNumber || '••••••••••••'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">CARD:</span>
+                      <span className="font-bold text-slate-300">
+                        {cardLast4 ? `•••• •••• •••• ${cardLast4}` : 'SWIPE / INSERT'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-emerald-400 font-bold pt-0.5 border-t border-slate-800">
+                      <span>NET CREDITED:</span>
+                      <span>₹{calcNetAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contactless Wave & NFC Zone */}
+                <div className="flex items-center justify-center gap-1.5 py-0.5 text-slate-400">
+                  <Radio className="w-3 h-3 text-emerald-400 rotate-90" />
+                  <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400">Contactless NFC / Chip</span>
+                </div>
+
+                {/* Realistic Keypad Grid */}
+                <div className="grid grid-cols-3 gap-1.5 px-0.5">
+                  {[
+                    ['1', ''], ['2', 'ABC'], ['3', 'DEF'],
+                    ['4', 'GHI'], ['5', 'JKL'], ['6', 'MNO'],
+                    ['7', 'PQRS'], ['8', 'TUV'], ['9', 'WXYZ'],
+                    ['CLEAR', 'red'], ['0', ''], ['ENTER', 'green']
+                  ].map(([key, sub], idx) => {
+                    const isClear = key === 'CLEAR';
+                    const isEnter = key === 'ENTER';
+                    return (
+                      <div
+                        key={idx}
+                        className={`h-6.5 rounded-lg flex flex-col items-center justify-center shadow-xs border transition ${
+                          isClear
+                            ? 'bg-rose-950/80 border-rose-800/80 text-rose-300'
+                            : isEnter
+                            ? 'bg-emerald-950/80 border-emerald-800/80 text-emerald-300'
+                            : 'bg-slate-800/90 border-slate-700/80 text-slate-200'
+                        }`}
+                      >
+                        <span className="text-[10px] font-black leading-none">{key}</span>
+                        {sub && !isClear && !isEnter && (
+                          <span className="text-[6px] text-slate-500 leading-none mt-0.5">{sub}</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Bottom Chip / Card Reader Slot */}
+                <div className="pt-1">
+                  <div className="w-28 h-1.5 mx-auto bg-slate-950 rounded-full border border-slate-700/80 shadow-inner" />
+                  <p className="text-[7px] font-mono text-center text-slate-500 mt-0.5 uppercase tracking-widest">
+                    EMV CHIP INSERTION SLOT
+                  </p>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* RIGHT SECTION (7 Cols): Embedded Swipe Request Form */}
-            <div className="lg:col-span-7 bg-white rounded-3xl border border-slate-200 shadow-sm p-5 sm:p-7 space-y-5">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-xs">
-                    <CreditCard className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-extrabold text-slate-900">Record POS Card Swipe</h3>
-                    <p className="text-xs text-slate-500">Fill in transaction details to load spendable funds</p>
-                  </div>
+          {/* RIGHT SECTION (7 Cols): Compact Embedded Swipe Request Form */}
+          <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 shadow-xs p-4 sm:p-5 space-y-3.5">
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-xs">
+                  <CreditCard className="w-4 h-4" />
                 </div>
-                <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider">
-                  Live Form
-                </span>
+                <div>
+                  <h3 className="text-sm font-extrabold text-slate-900 leading-tight">Record POS Card Swipe</h3>
+                  <p className="text-[11px] text-slate-500">Fill in transaction details to load spendable funds</p>
+                </div>
+              </div>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[9px] font-black uppercase tracking-wider">
+                Live Form
+              </span>
+            </div>
+
+            {submitError && (
+              <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center gap-2 animate-in fade-in">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{submitError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmitRequest} className="space-y-3">
+              {/* Select Machine */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Select POS Terminal {machines.length > 1 ? `(${machines.length} Assigned)` : ''} *
+                </label>
+                {machines.length === 0 ? (
+                  <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium">
+                    તમને કોઈ POS મશીન અસાઇન કરેલ નથી. કૃપા કરીને એડમિનનો સંપર્ક કરો.
+                  </div>
+                ) : (
+                  <select
+                    value={selectedMachineId}
+                    onChange={(e) => setSelectedMachineId(e.target.value)}
+                    className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-bold text-slate-800 cursor-pointer"
+                  >
+                    {machines.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.machine_name} (TID: {m.terminal_id}) - {m.bank_name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
-              {submitError && (
-                <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center gap-2.5 animate-in fade-in">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{submitError}</span>
+              {/* Settlement Mode Selection: T+0 vs T+1 */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">Settlement Type *</label>
+                <div className={`grid ${isT0Allowed && isT1Allowed ? 'grid-cols-2' : 'grid-cols-1'} gap-2.5`}>
+                  {/* T+0 Card */}
+                  {isT0Allowed && (
+                    <div
+                      onClick={() => setSettlementType('T0')}
+                      className={`p-2.5 rounded-xl border-2 cursor-pointer transition flex flex-col justify-between ${
+                        settlementType === 'T0'
+                          ? 'border-amber-500 bg-amber-50/60 shadow-xs ring-1 ring-amber-500/20'
+                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-xs font-black text-amber-900">⚡ T+0 Instant</span>
+                        <input
+                          type="radio"
+                          checked={settlementType === 'T0'}
+                          onChange={() => setSettlementType('T0')}
+                          className="text-amber-600 scale-90"
+                        />
+                      </div>
+                      <p className="text-[10px] text-slate-600 leading-tight">
+                        Funds credited <b>today</b> directly into spendable POS Wallet.
+                      </p>
+                      <span className="text-[9px] font-bold text-amber-800 mt-1 block">
+                        Fee: {Number(user.pos_t0_charge_percent !== undefined && user.pos_t0_charge_percent !== null ? user.pos_t0_charge_percent : (selectedMachine?.default_t0_charge_percent || 1.20)).toFixed(2)}%
+                      </span>
+                    </div>
+                  )}
+
+                  {/* T+1 Card */}
+                  {isT1Allowed && (
+                    <div
+                      onClick={() => setSettlementType('T1')}
+                      className={`p-2.5 rounded-xl border-2 cursor-pointer transition flex flex-col justify-between ${
+                        settlementType === 'T1'
+                          ? 'border-cyan-500 bg-cyan-50/60 shadow-xs ring-1 ring-cyan-500/20'
+                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-xs font-black text-cyan-900">📅 T+1 Clearing</span>
+                        <input
+                          type="radio"
+                          checked={settlementType === 'T1'}
+                          onChange={() => setSettlementType('T1')}
+                          className="text-cyan-600 scale-90"
+                        />
+                      </div>
+                      <p className="text-[10px] text-slate-600 leading-tight">
+                        Overnight clearing. Settle into spendable POS Wallet <b>tomorrow</b>.
+                      </p>
+                      <span className="text-[9px] font-bold text-cyan-800 mt-1 block">
+                        Fee: {Number(user.pos_t1_charge_percent !== undefined && user.pos_t1_charge_percent !== null ? user.pos_t1_charge_percent : (selectedMachine?.default_t1_charge_percent || 0.80)).toFixed(2)}%
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Swipe Amount */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Swipe Amount (₹) *</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-400 text-xs">₹</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="1"
+                    required
+                    placeholder="Enter swiped amount"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    className="w-full pl-7 pr-3 py-1.5 text-xs font-mono font-bold rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+              </div>
+
+              {/* Live Fee Breakdown Card */}
+              {numAmount > 0 && (
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1 text-[11px]">
+                  <div className="flex justify-between text-slate-600">
+                    <span>Swipe Amount:</span>
+                    <span className="font-mono font-bold text-slate-900">₹{numAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-600">
+                    <span>Platform Fee ({effectiveChargePct.toFixed(2)}%):</span>
+                    <span className="font-mono font-bold text-rose-600">-₹{calcChargeAmount.toFixed(2)}</span>
+                  </div>
+                  <div className="pt-1 border-t border-slate-200 flex justify-between font-black text-slate-900 text-xs">
+                    <span>Net Wallet Credit:</span>
+                    <span className="font-mono text-emerald-700">₹{calcNetAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                  </div>
                 </div>
               )}
 
-              <form onSubmit={handleSubmitRequest} className="space-y-4">
-                {/* Select Machine */}
+              {/* RRN and Card Details (Single Row 2 Columns) */}
+              <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Select POS Terminal {machines.length > 1 ? `(${machines.length} Assigned)` : ''} *
-                  </label>
-                  {machines.length === 0 ? (
-                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium">
-                      તમને કોઈ POS મશીન અસાઇન કરેલ નથી. કૃપા કરીને એડમિનનો સંપર્ક કરો.
-                    </div>
-                  ) : (
-                    <select
-                      value={selectedMachineId}
-                      onChange={(e) => setSelectedMachineId(e.target.value)}
-                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-bold text-slate-800 cursor-pointer"
-                    >
-                      {machines.map((m) => (
-                        <option key={m.id} value={m.id}>
-                          {m.machine_name} (TID: {m.terminal_id}) - {m.bank_name}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                  {machines.length > 1 && (
-                    <p className="text-[10px] text-slate-400 mt-1">
-                      તમને {machines.length} મશીનો અસાઇન થયેલા છે. સ્લિપ મુજબ યોગ્ય મશીન સિલેક્ટ કરો.
-                    </p>
-                  )}
-                </div>
-
-                {/* Settlement Mode Selection: T+0 vs T+1 */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Settlement Type *</label>
-                  <div className={`grid ${isT0Allowed && isT1Allowed ? 'grid-cols-2' : 'grid-cols-1'} gap-3`}>
-                    {/* T+0 Card */}
-                    {isT0Allowed && (
-                      <div
-                        onClick={() => setSettlementType('T0')}
-                        className={`p-3.5 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
-                          settlementType === 'T0'
-                            ? 'border-amber-500 bg-amber-50/60 shadow-xs ring-1 ring-amber-500/20'
-                            : 'border-slate-200 hover:border-slate-300 bg-white'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-black text-amber-900">⚡ T+0 Instant</span>
-                          <input
-                            type="radio"
-                            checked={settlementType === 'T0'}
-                            onChange={() => setSettlementType('T0')}
-                            className="text-amber-600"
-                          />
-                        </div>
-                        <p className="text-[11px] text-slate-600 leading-tight">
-                          Funds credited <b>today</b> directly into spendable POS Wallet.
-                        </p>
-                        <span className="text-[10px] font-bold text-amber-800 mt-2 block">
-                          Fee: {Number(user.pos_t0_charge_percent !== undefined && user.pos_t0_charge_percent !== null ? user.pos_t0_charge_percent : (selectedMachine?.default_t0_charge_percent || 1.20)).toFixed(2)}%
-                        </span>
-                      </div>
-                    )}
-
-                    {/* T+1 Card */}
-                    {isT1Allowed && (
-                      <div
-                        onClick={() => setSettlementType('T1')}
-                        className={`p-3.5 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
-                          settlementType === 'T1'
-                            ? 'border-cyan-500 bg-cyan-50/60 shadow-xs ring-1 ring-cyan-500/20'
-                            : 'border-slate-200 hover:border-slate-300 bg-white'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-black text-cyan-900">📅 T+1 Clearing</span>
-                          <input
-                            type="radio"
-                            checked={settlementType === 'T1'}
-                            onChange={() => setSettlementType('T1')}
-                            className="text-cyan-600"
-                          />
-                        </div>
-                        <p className="text-[11px] text-slate-600 leading-tight">
-                          Overnight clearing. Settle into spendable POS Wallet <b>tomorrow</b>.
-                        </p>
-                        <span className="text-[10px] font-bold text-cyan-800 mt-2 block">
-                          Fee: {Number(user.pos_t1_charge_percent !== undefined && user.pos_t1_charge_percent !== null ? user.pos_t1_charge_percent : (selectedMachine?.default_t1_charge_percent || 0.80)).toFixed(2)}%
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Swipe Amount */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Swipe Amount (₹) *</label>
-                  <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-400">₹</span>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="1"
-                      required
-                      placeholder="Enter swiped amount"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      className="w-full pl-8 pr-4 py-2.5 text-sm font-mono font-bold rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    />
-                  </div>
-                </div>
-
-                {/* Live Fee Breakdown Card */}
-                {numAmount > 0 && (
-                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
-                    <div className="flex justify-between text-slate-600">
-                      <span>Swipe Amount:</span>
-                      <span className="font-mono font-bold text-slate-900">₹{numAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                    </div>
-                    <div className="flex justify-between text-slate-600">
-                      <span>Platform Fee ({effectiveChargePct.toFixed(2)}%):</span>
-                      <span className="font-mono font-bold text-rose-600">-₹{calcChargeAmount.toFixed(2)}</span>
-                    </div>
-                    <div className="pt-2 border-t border-slate-200 flex justify-between font-black text-slate-900 text-sm">
-                      <span>Net Wallet Credit:</span>
-                      <span className="font-mono text-emerald-700">₹{calcNetAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                    </div>
-                    <div className="text-[10px] text-slate-500 pt-1">
-                      {settlementType === 'T0'
-                        ? '⚡ Will be credited to your spendable POS Wallet as soon as approved.'
-                        : '🟣 Will show in your POS T+1 (Tomorrow) clearance balance and settle next day.'}
-                    </div>
-                  </div>
-                )}
-
-                {/* RRN and Card Details */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="col-span-2">
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-bold text-slate-700">
-                        RRN / Ref Transaction Number (12 Digits) *
-                      </label>
-                      <span className={`text-[10px] font-mono font-bold ${
-                        rrnNumber.length === 12 ? 'text-emerald-600' : 'text-slate-400'
-                      }`}>
-                        {rrnNumber.length}/12 Digits
-                      </span>
-                    </div>
-                    <input
-                      type="text"
-                      required
-                      maxLength={12}
-                      placeholder="Enter 12-digit RRN number from EDC slip"
-                      value={rrnNumber}
-                      onChange={(e) => setRrnNumber(e.target.value.replace(/\D/g, '').slice(0, 12))}
-                      className="w-full px-3.5 py-2 text-xs font-mono font-bold rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 tracking-wider"
-                    />
-                  </div>
-
-                  <div className="col-span-2">
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Card Last 4 Digits</label>
-                    <input
-                      type="text"
-                      maxLength={4}
-                      placeholder="e.g. 5432"
-                      value={cardLast4}
-                      onChange={(e) => setCardLast4(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                      className="w-full px-3.5 py-2 text-xs font-mono font-bold rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    />
-                  </div>
-
-                  {/* Slip Photo Upload */}
-                  <div className="col-span-2">
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      POS Swipe Slip Photo *
+                  <div className="flex items-center justify-between mb-0.5">
+                    <label className="block text-[11px] font-bold text-slate-700">
+                      RRN (12 Digits) *
                     </label>
-                    
-                    {slipPreview ? (
-                      <div className="relative rounded-2xl border-2 border-emerald-400 overflow-hidden bg-slate-900 group">
-                        <img 
-                          src={slipPreview} 
-                          alt="Slip Receipt" 
-                          className="w-full h-44 object-contain bg-slate-950"
-                        />
-                        <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                          <label className="px-3 py-1.5 rounded-xl bg-white/90 text-slate-900 text-xs font-bold hover:bg-white transition cursor-pointer flex items-center gap-1.5 shadow-md">
-                            <Camera className="w-3.5 h-3.5" />
-                            <span>Change Photo</span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              capture="environment"
-                              onChange={handleSlipUpload}
-                              className="hidden"
-                            />
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSlipPreview(null);
-                              setSlipUrl('');
-                            }}
-                            className="px-3 py-1.5 rounded-xl bg-rose-600 text-white text-xs font-bold hover:bg-rose-500 transition cursor-pointer flex items-center gap-1.5 shadow-md"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>Remove</span>
-                          </button>
-                        </div>
-                        <div className="absolute bottom-2 left-2 px-2.5 py-1 rounded-lg bg-emerald-600/90 text-white text-[10px] font-bold flex items-center gap-1 shadow-xs">
-                          <CheckCircle2 className="w-3 h-3" />
-                          <span>Slip Photo Attached</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <label className={`w-full p-4 rounded-2xl border-2 border-dashed border-slate-300 hover:border-emerald-500 bg-slate-50/70 hover:bg-emerald-50/30 transition flex flex-col items-center justify-center gap-2 cursor-pointer text-center ${
-                        isCompressing ? 'opacity-50 cursor-wait' : ''
-                      }`}>
-                        <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
-                          <Camera className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold text-slate-800">
-                            {isCompressing ? 'Compressing Slip Photo...' : 'Click to Upload or Capture Slip Photo'}
-                          </p>
-                          <p className="text-[10px] text-slate-500 mt-0.5">
-                            Supports Camera capture, JPG, PNG from mobile or computer
-                          </p>
-                        </div>
+                    <span className={`text-[9px] font-mono font-bold ${
+                      rrnNumber.length === 12 ? 'text-emerald-600' : 'text-slate-400'
+                    }`}>
+                      {rrnNumber.length}/12
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    maxLength={12}
+                    placeholder="12-digit RRN from EDC"
+                    value={rrnNumber}
+                    onChange={(e) => setRrnNumber(e.target.value.replace(/\D/g, '').slice(0, 12))}
+                    className="w-full px-3 py-1.5 text-xs font-mono font-bold rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 tracking-wider"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Card Last 4 Digits</label>
+                  <input
+                    type="text"
+                    maxLength={4}
+                    placeholder="e.g. 5432"
+                    value={cardLast4}
+                    onChange={(e) => setCardLast4(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    className="w-full px-3 py-1.5 text-xs font-mono font-bold rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+              </div>
+
+              {/* Slip Photo Upload (Compact) */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  POS Swipe Slip Photo *
+                </label>
+                
+                {slipPreview ? (
+                  <div className="relative rounded-xl border border-emerald-400 overflow-hidden bg-slate-900 group">
+                    <img 
+                      src={slipPreview} 
+                      alt="Slip Receipt" 
+                      className="w-full h-28 object-contain bg-slate-950"
+                    />
+                    <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <label className="px-2.5 py-1 rounded-lg bg-white/90 text-slate-900 text-[10px] font-bold hover:bg-white transition cursor-pointer flex items-center gap-1 shadow-xs">
+                        <Camera className="w-3 h-3" />
+                        <span>Change</span>
                         <input
                           type="file"
                           accept="image/*"
                           capture="environment"
-                          disabled={isCompressing}
                           onChange={handleSlipUpload}
                           className="hidden"
                         />
                       </label>
-                    )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlipPreview(null);
+                          setSlipUrl('');
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-rose-600 text-white text-[10px] font-bold hover:bg-rose-500 transition cursor-pointer flex items-center gap-1 shadow-xs"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Remove</span>
+                      </button>
+                    </div>
+                    <div className="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded bg-emerald-600/90 text-white text-[9px] font-bold flex items-center gap-1 shadow-2xs">
+                      <CheckCircle2 className="w-2.5 h-2.5" />
+                      <span>Photo Attached</span>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <label className={`w-full p-2.5 rounded-xl border-2 border-dashed border-slate-200 hover:border-emerald-500 bg-slate-50/70 hover:bg-emerald-50/30 transition flex items-center justify-center gap-2.5 cursor-pointer text-left ${
+                    isCompressing ? 'opacity-50 cursor-wait' : ''
+                  }`}>
+                    <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                      <Camera className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-800">
+                        {isCompressing ? 'Compressing Photo...' : 'Click to Upload / Capture Slip Photo'}
+                      </p>
+                      <p className="text-[9px] text-slate-400">
+                        Mobile Camera, JPG, PNG from device
+                      </p>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      disabled={isCompressing}
+                      onChange={handleSlipUpload}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
 
-                {/* Submit Button */}
-                <div className="pt-2">
-                  <button
-                    type="submit"
-                    disabled={submitting || machines.length === 0 || userAllowedSettlement === 'NONE'}
-                    className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow-lg shadow-emerald-600/30 transition cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 transform active:scale-[0.99]"
-                  >
-                    {submitting ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        <span>Submitting Swipe Request...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Zap className="w-4 h-4" />
-                        <span>Submit {settlementType === 'T0' ? 'T+0 (Instant)' : 'T+1 (Clearing)'} Swipe Request</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
+              {/* Submit Button */}
+              <div className="pt-1">
+                <button
+                  type="submit"
+                  disabled={submitting || machines.length === 0 || userAllowedSettlement === 'NONE'}
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5 transform active:scale-[0.99]"
+                >
+                  {submitting ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Submitting Slip...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-3.5 h-3.5" />
+                      <span>Submit {settlementType === 'T0' ? 'T+0 (Instant)' : 'T+1 (Clearing)'} Swipe Request</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
           </div>
         </div>
 
