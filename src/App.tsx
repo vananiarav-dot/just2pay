@@ -16,6 +16,7 @@ import { RetailerDashboard } from './components/dashboards/RetailerDashboard';
 import { QRMasterManagement } from './components/qr/QRMasterManagement';
 import { QRPaymentRequests } from './components/qr/QRPaymentRequests';
 import { QRProofGallery } from './components/qr/QRProofGallery';
+import { QRTrackingHistory } from './components/qr/QRTrackingHistory';
 import { BankManagement } from './components/bank/BankManagement';
 import { UserBillPaymentRequest } from './components/bills/UserBillPaymentRequest';
 import { AdminBillRequestsManagement } from './components/bills/AdminBillRequestsManagement';
@@ -39,7 +40,7 @@ import {
   Menu, LogOut, Wallet, Clock, ChevronDown, ChevronRight, Key, ShieldCheck,
   Zap, Bell, Settings, FileText, CreditCard, Landmark, X, SlidersHorizontal,
   LayoutDashboard, Users, ArrowRightLeft, RefreshCw, Images, Sliders, KeyRound, Lock, QrCode,
-  Volume2, VolumeX
+  Volume2, VolumeX, History
 } from 'lucide-react';
 import { AdminSoundSettingsModal } from './components/common/AdminSoundSettingsModal';
 import { AdminSoundToastContainer } from './components/common/AdminSoundToastContainer';
@@ -89,6 +90,7 @@ export default function App() {
       return 'change_password';
     }
     if (p.includes('qr-master') || p.includes('qr_master')) return 'qr_master';
+    if (p.includes('qr-tracking') || p.includes('qr_tracking') || p.includes('tracking')) return role === 'admin' ? 'qr_tracking' : 'dashboard';
     if (p.includes('qr-gallery') || p.includes('qr_gallery')) return role === 'admin' ? 'qr_gallery' : 'dashboard';
     if (p.includes('qr-requests') || p.includes('qr_requests')) return 'qr_requests';
     if (p.includes('users')) return 'users';
@@ -114,6 +116,7 @@ export default function App() {
     if (tab === 'live_bill_pay') return '/live-bill-pay';
     if (tab === 'bill_request') return '/bill-request';
     if (tab === 'qr_master') return '/qr-master';
+    if (tab === 'qr_tracking') return '/qr-tracking';
     if (tab === 'qr_requests') return '/qr-requests';
     if (tab === 'qr_gallery') return '/qr-gallery';
     return '/dashboard';
@@ -406,6 +409,7 @@ export default function App() {
         { id: 'admin_kyc', label: 'KYC Verification', icon: ShieldCheck, badgeKey: 'admin_kyc', desc: 'Merchant identity verification' },
         { id: 'admin_statement', label: 'Account Passbook', icon: FileText, desc: 'Ledger statements & transactions' },
         { id: 'bank_entry', label: 'Bank Entry', icon: Landmark, desc: 'Bank accounts & deposit entries' },
+        { id: 'qr_tracking', label: 'QR Tracking History', icon: History, desc: 'Per-QR breakdown, rent cost & net profit' },
         { id: 'qr_gallery', label: 'QR Proof Gallery', icon: Images, desc: 'Approved UPI payment slips' },
         { id: 'ccbiller', label: 'ccbiller', icon: Sliders, desc: 'Card switch configuration' },
         { id: 'change_password', label: 'Security & Password', icon: Key, desc: 'Account access credentials' },
@@ -1056,6 +1060,11 @@ export default function App() {
           )}
           {activeTab === 'change_password' && <ChangePasswordPage />}
           {activeTab === 'qr_master' && <QRMasterManagement />}
+          {activeTab === 'qr_tracking' && (
+            <ProtectedRoute allowedRoles={['admin']}>
+              <QRTrackingHistory />
+            </ProtectedRoute>
+          )}
           {activeTab === 'qr_requests' && <QRPaymentRequests />}
           {activeTab === 'qr_gallery' && (
             <ProtectedRoute allowedRoles={['admin']}>
@@ -1063,7 +1072,7 @@ export default function App() {
             </ProtectedRoute>
           )}
           {activeTab === 'users' && renderDashboardByRole(user.role)}
-          {activeTab !== 'dashboard' && activeTab !== 'admin_kyc' && activeTab !== 'admin_payout' && activeTab !== 'api_fund_request' && activeTab !== 'admin_statement' && activeTab !== 'user_statement' && activeTab !== 'payout_transfer' && activeTab !== 'bank_entry' && activeTab !== 'admin_bill_requests' && activeTab !== 'live_bill_history' && activeTab !== 'ccbiller' && activeTab !== 'live_bill_pay' && activeTab !== 'bill_request' && activeTab !== 'qr_master' && activeTab !== 'qr_requests' && activeTab !== 'qr_gallery' && activeTab !== 'manage_tpin' && activeTab !== 'change_mpin' && activeTab !== 'change_password' && activeTab !== 'users' && renderDashboardByRole(user.role)}
+          {activeTab !== 'dashboard' && activeTab !== 'admin_kyc' && activeTab !== 'admin_payout' && activeTab !== 'api_fund_request' && activeTab !== 'admin_statement' && activeTab !== 'user_statement' && activeTab !== 'payout_transfer' && activeTab !== 'bank_entry' && activeTab !== 'admin_bill_requests' && activeTab !== 'live_bill_history' && activeTab !== 'ccbiller' && activeTab !== 'live_bill_pay' && activeTab !== 'bill_request' && activeTab !== 'qr_master' && activeTab !== 'qr_tracking' && activeTab !== 'qr_requests' && activeTab !== 'qr_gallery' && activeTab !== 'manage_tpin' && activeTab !== 'change_mpin' && activeTab !== 'change_password' && activeTab !== 'users' && renderDashboardByRole(user.role)}
         </main>
 
         {/* Floating Sound Toast Container (Admin Only) */}

@@ -3,7 +3,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { userApi } from '../../services/api';
 import { 
-  LogOut, Users, ChevronRight, X, Key, KeyRound, Lock, QrCode, FileText, CreditCard, LayoutDashboard, Landmark, Receipt, Zap, Clock, ArrowRightLeft, ShieldCheck, Images, Sliders
+  LogOut, Users, ChevronRight, X, Key, KeyRound, Lock, QrCode, FileText, CreditCard, LayoutDashboard, Landmark, Receipt, Zap, Clock, ArrowRightLeft, ShieldCheck, Images, Sliders, History
 } from 'lucide-react';
 
 export interface SidebarNavItem {
@@ -155,6 +155,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           id: 'qr_master',
           label: 'QR Master',
           icon: QrCode
+        },
+        {
+          id: 'qr_tracking',
+          label: 'QR Tracking History',
+          icon: History
         },
         {
           id: 'change_password',

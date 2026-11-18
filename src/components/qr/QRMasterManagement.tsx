@@ -3,14 +3,15 @@ import { qrApi } from '../../services/api';
 import { supabase } from '../../lib/supabase';
 import { useSettingsStore } from '../../store/settingsStore';
 import type { QrMaster, QrPaymentRequest } from '../../types/qr';
+import { QRTrackingHistory } from './QRTrackingHistory';
 import { 
   QrCode, Plus, Power, RefreshCw, Copy, Check, Eye, Trash2, 
   Upload, Building2, Phone, Percent, Edit, AlertCircle, CheckCircle2, Star,
-  ChevronDown, FileText, Wallet
+  ChevronDown, FileText, Wallet, History
 } from 'lucide-react';
 
 export const QRMasterManagement: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'master' | 'set_qr'>('set_qr');
+  const [activeTab, setActiveTab] = useState<'master' | 'set_qr' | 'tracking'>('set_qr');
   const [qrList, setQrList] = useState<QrMaster[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -275,6 +276,15 @@ export const QRMasterManagement: React.FC = () => {
             }`}
           >
             QR Master Entry
+          </button>
+          <button
+            onClick={() => setActiveTab('tracking')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+              activeTab === 'tracking' ? 'bg-white text-purple-700 shadow-sm border border-purple-200' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <History className="w-3.5 h-3.5" />
+            <span>QR Tracking History</span>
           </button>
         </div>
 
@@ -907,6 +917,10 @@ export const QRMasterManagement: React.FC = () => {
           </div>
         );
       })()}
+
+      {activeTab === 'tracking' && (
+        <QRTrackingHistory onBackToMaster={() => setActiveTab('master')} />
+      )}
 
     </div>
   );
