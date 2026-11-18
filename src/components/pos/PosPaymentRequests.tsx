@@ -107,88 +107,79 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
     });
   };
 
-  // Synthesize realistic POS thermal printer motor buzzing, paper feed friction and cutter sound
+  // Synthesize authentic POS thermal printer "trak trak trak" mechanical ratchet clicks and paper cutter sound
   const playPosPrintSound = () => {
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
 
-      // Helper to generate a thermal printer line-print buzz & friction
-      const playPulse = (start: number, dur: number, freq: number) => {
-        // Motor buzzing tone
-        const osc = ctx.createOscillator();
-        const oscGain = ctx.createGain();
-        const oscFilter = ctx.createBiquadFilter();
+      // Generates a burst of mechanical "trak-trak-trak" ratchet clicks
+      const playTrakBurst = (start: number, count: number, speed: number) => {
+        for (let i = 0; i < count; i++) {
+          const t = start + i * speed;
+          // 1. Mechanical clack impact
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          const filter = ctx.createBiquadFilter();
 
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(freq, start);
-        osc.frequency.linearRampToValueAtTime(freq * 0.92, start + dur);
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(150 + (i % 2) * 40, t);
+          osc.frequency.exponentialRampToValueAtTime(35, t + 0.022);
 
-        oscFilter.type = 'bandpass';
-        oscFilter.frequency.setValueAtTime(280, start);
-        oscFilter.Q.setValueAtTime(3, start);
+          filter.type = 'bandpass';
+          filter.frequency.setValueAtTime(950 + (i % 3) * 120, t);
+          filter.Q.setValueAtTime(4.5, t);
 
-        oscGain.gain.setValueAtTime(0.08, start);
-        oscGain.gain.linearRampToValueAtTime(0.06, start + dur * 0.8);
-        oscGain.gain.linearRampToValueAtTime(0.001, start + dur);
+          gain.gain.setValueAtTime(0.09, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.02);
 
-        osc.connect(oscFilter);
-        oscFilter.connect(oscGain);
-        oscGain.connect(ctx.destination);
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(ctx.destination);
 
-        osc.start(start);
-        osc.stop(start + dur);
+          osc.start(t);
+          osc.stop(t + 0.022);
 
-        // White noise for paper friction against thermal printhead
-        const bufferSize = Math.floor(ctx.sampleRate * dur);
-        const noiseBuf = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-        const data = noiseBuf.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-          data[i] = (Math.random() * 2 - 1) * 0.5;
+          // 2. Micro paper friction pop
+          const noiseOsc = ctx.createOscillator();
+          const noiseGain = ctx.createGain();
+          noiseOsc.type = 'sawtooth';
+          noiseOsc.frequency.setValueAtTime(3200, t);
+          noiseGain.gain.setValueAtTime(0.025, t);
+          noiseGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.015);
+          noiseOsc.connect(noiseGain);
+          noiseGain.connect(ctx.destination);
+          noiseOsc.start(t);
+          noiseOsc.stop(t + 0.016);
         }
-        const noiseSource = ctx.createBufferSource();
-        noiseSource.buffer = noiseBuf;
-
-        const noiseFilter = ctx.createBiquadFilter();
-        noiseFilter.type = 'highpass';
-        noiseFilter.frequency.setValueAtTime(1800, start);
-
-        const noiseGain = ctx.createGain();
-        noiseGain.gain.setValueAtTime(0.045, start);
-        noiseGain.gain.linearRampToValueAtTime(0.001, start + dur);
-
-        noiseSource.connect(noiseFilter);
-        noiseFilter.connect(noiseGain);
-        noiseGain.connect(ctx.destination);
-
-        noiseSource.start(start);
-        noiseSource.stop(start + dur);
       };
 
       const t0 = ctx.currentTime + 0.05;
-      // 4 distinct feeding pulses over 2.4 seconds as slip emerges
-      playPulse(t0 + 0.0, 0.42, 195);
-      playPulse(t0 + 0.58, 0.44, 185);
-      playPulse(t0 + 1.18, 0.46, 205);
-      playPulse(t0 + 1.78, 0.42, 190);
+      // 6 progressive "trak-trak-trak" feeds spread over 4.2 seconds
+      playTrakBurst(t0 + 0.00, 10, 0.045); // Line 1: Header (0.45s)
+      playTrakBurst(t0 + 0.70, 10, 0.045); // Line 2: RRN & TID (0.45s)
+      playTrakBurst(t0 + 1.40, 12, 0.045); // Line 3: Swipe Amount (0.54s)
+      playTrakBurst(t0 + 2.15, 10, 0.045); // Line 4: Fee & Mode (0.45s)
+      playTrakBurst(t0 + 2.85, 10, 0.045); // Line 5: Net Credit (0.45s)
+      playTrakBurst(t0 + 3.55, 10, 0.045); // Line 6: Stamp & Barcode (0.45s)
 
-      // Paper cutter 'snip' click sound at 2.35s
+      // Mechanical cutter 'snip-clack' at 4.25s
       setTimeout(() => {
         try {
           const cutOsc = ctx.createOscillator();
           const cutGain = ctx.createGain();
           cutOsc.type = 'triangle';
-          cutOsc.frequency.setValueAtTime(130, ctx.currentTime);
-          cutOsc.frequency.exponentialRampToValueAtTime(35, ctx.currentTime + 0.07);
-          cutGain.gain.setValueAtTime(0.16, ctx.currentTime);
-          cutGain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + 0.07);
+          cutOsc.frequency.setValueAtTime(140, ctx.currentTime);
+          cutOsc.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + 0.08);
+          cutGain.gain.setValueAtTime(0.18, ctx.currentTime);
+          cutGain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + 0.08);
           cutOsc.connect(cutGain);
           cutGain.connect(ctx.destination);
           cutOsc.start();
-          cutOsc.stop(ctx.currentTime + 0.07);
+          cutOsc.stop(ctx.currentTime + 0.08);
         } catch {}
-      }, 2350);
+      }, 4250);
     } catch (e) {
       console.warn('Audio playback not supported:', e);
     }
@@ -331,7 +322,7 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
         setIsPrinting(true);
         setTimeout(() => {
           setIsPrinting(false);
-        }, 2600);
+        }, 4800);
         setSubmitSuccess(res.message);
         setAmount('');
         setRrnNumber('');
@@ -565,32 +556,29 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
         {/* 2 Side-by-Side Sections Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           
-          {/* LEFT SECTION (5 Cols): 3D Interactive POS Machine Mockup + Thermal Printing Slip */}
+          {/* LEFT SECTION (5 Cols): Straight Front-Facing Smart Android Touchscreen POS Terminal (PhonePe / Pax A920 Style) */}
           <div className="lg:col-span-5 flex flex-col items-center">
-            <div 
-              style={{ perspective: '1200px' }} 
-              className="w-full max-w-[275px] mx-auto flex flex-col items-center select-none relative"
-            >
+            <div className="w-full max-w-[285px] mx-auto flex flex-col items-center select-none relative">
               
               {/* Printing Status Badge */}
               {isPrinting && (
                 <div className="mb-2 px-3 py-1 rounded-full bg-emerald-600 text-white text-[9px] font-bold flex items-center gap-1.5 shadow-md animate-pulse z-30">
                   <Sparkles className="w-3 h-3 animate-spin" />
-                  <span>🖨️ Printing Thermal Slip...</span>
+                  <span>🖨️ Printing Thermal Slip... (ટ્રક... ટ્રક...)</span>
                 </div>
               )}
 
               {/* The Thermal Paper Slip (Emerges slowly & realistically from slot with 3D Curled Head) */}
               <div 
                 style={{ perspective: '1000px' }}
-                className={`w-[92%] transition-all duration-[2400ms] cubic-bezier(0.2, 0.8, 0.2, 1) transform origin-bottom overflow-visible z-20 ${
+                className={`w-[90%] transition-all duration-[4500ms] cubic-bezier(0.22, 0.85, 0.25, 1) transform origin-bottom overflow-visible z-20 ${
                   isPrinting || submitSuccess || printedSlipData
                     ? 'max-h-[460px] opacity-100 -translate-y-2 mb-2 scale-100 pointer-events-auto'
                     : 'max-h-0 opacity-0 translate-y-12 mb-0 scale-90 pointer-events-none'
                 }`}
               >
                 {/* 3D Curled Receipt Card with forward curl */}
-                <div className="bg-gradient-to-b from-amber-100/95 via-amber-50/98 to-white text-slate-800 rounded-t-[2.2rem] rounded-b-md p-3.5 shadow-[0_20px_35px_-8px_rgba(0,0,0,0.35),0_10px_15px_-5px_rgba(0,0,0,0.15)] border-x border-t-4 border-amber-300/80 font-mono text-[9px] space-y-1.5 transform -rotate-x-[7deg] origin-bottom transition-transform duration-700">
+                <div className="bg-gradient-to-b from-amber-100/95 via-amber-50/98 to-white text-slate-800 rounded-t-[2.2rem] rounded-b-md p-3.5 shadow-[0_20px_35px_-8px_rgba(0,0,0,0.35),0_10px_15px_-5px_rgba(0,0,0,0.15)] border-x border-t-4 border-amber-300/80 font-mono text-[9px] space-y-1.5 transform -rotate-x-[6deg] origin-bottom transition-transform duration-700">
                   
                   {/* Curled Top Cylinder Head Simulation */}
                   <div className="relative -mt-2 -mx-2 mb-2.5 pt-1.5 pb-1 px-3 bg-gradient-to-b from-amber-200/90 via-amber-100/95 to-amber-50 rounded-t-[2rem] border-b border-amber-200 shadow-inner flex items-center justify-between">
@@ -667,52 +655,58 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
                 </div>
               </div>
 
-              {/* 3D POS Machine Chassis (Tilted desk perspective, beveled shell, multi-layer depth shadow) */}
-              <div 
-                style={{ 
-                  transform: 'rotateX(7deg) rotateY(-2deg)', 
-                  transformStyle: 'preserve-3d' 
-                }}
-                className="w-full bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950 rounded-[2.3rem] p-3.5 shadow-[0_30px_50px_-10px_rgba(0,0,0,0.7),inset_0_2px_3px_rgba(255,255,255,0.2),inset_0_-5px_10px_rgba(0,0,0,0.8),-6px_8px_16px_rgba(0,0,0,0.45)] border-t border-l-2 border-slate-600/50 border-r-2 border-b-4 border-slate-950 relative z-10 space-y-2.5 transition-transform duration-500 hover:rotate-x-[5deg]"
-              >
+              {/* Android Smart Touchscreen POS Terminal (PhonePe / Pax A920 Two-Tone Styling: Straight Front-Facing) */}
+              <div className="w-full bg-gradient-to-b from-white via-slate-50 to-slate-100 rounded-[2.5rem] p-3 shadow-[0_25px_50px_-10px_rgba(0,0,0,0.35),inset_0_2px_3px_rgba(255,255,255,1),inset_0_-4px_8px_rgba(0,0,0,0.15)] border-4 border-slate-200/90 relative z-10 space-y-2">
                 
-                {/* 3D Cylindrical Paper Roll Chamber at Top */}
-                <div className="relative -mt-1 pt-1 pb-1 px-1 bg-gradient-to-b from-slate-750 via-slate-800 to-slate-900 rounded-t-[2rem] border-t border-slate-500/40 shadow-inner">
+                {/* Purple Side Grip Panels (PhonePe Two-Tone Flanks) */}
+                <div className="absolute left-0 top-6 bottom-8 w-2 bg-gradient-to-r from-[#5f259f] to-[#4c1d80] rounded-l-full shadow-inner" />
+                <div className="absolute right-0 top-6 bottom-8 w-2 bg-gradient-to-l from-[#5f259f] to-[#4c1d80] rounded-r-full shadow-inner" />
+
+                {/* Right-Edge Magnetic Stripe Card Swipe Track */}
+                <div className="absolute -right-1 top-24 bottom-28 w-1.5 bg-slate-900 rounded-full border-l border-purple-300/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.9)]" title="Magnetic Stripe Card Swipe Slot">
+                  <div className="w-0.5 h-6 mx-auto mt-4 bg-slate-700 rounded-full" />
+                </div>
+
+                {/* Cylindrical Paper Roll Chamber at Top */}
+                <div className="relative pt-0.5 pb-0.5 px-2 bg-gradient-to-b from-slate-200 via-white to-slate-100 rounded-t-[2.2rem] border-t border-slate-300/80 shadow-2xs">
                   {/* Metallic Serrated Paper Slit */}
-                  <div className="w-40 h-3 mx-auto bg-slate-950 rounded-full border border-slate-700/90 shadow-[inset_0_2px_4px_rgba(0,0,0,0.95)] flex items-center justify-center relative overflow-hidden">
+                  <div className="w-40 h-2.5 mx-auto bg-slate-950 rounded-full border border-slate-700 shadow-[inset_0_2px_4px_rgba(0,0,0,0.95)] flex items-center justify-center relative overflow-hidden">
                     {!(isPrinting || submitSuccess || printedSlipData) ? (
-                      <div className="w-24 h-1 bg-amber-100/70 rounded-full shadow-2xs" title="Thermal paper roll loaded" />
+                      <div className="w-24 h-1 bg-amber-100/80 rounded-full shadow-2xs" title="Thermal paper roll loaded" />
                     ) : (
                       <div className="w-28 h-1.5 bg-emerald-400 animate-pulse rounded-full" />
                     )}
                   </div>
                 </div>
 
-                {/* Brand Header & 3D Status Light */}
+                {/* Brand Header & Status Bar */}
                 <div className="flex items-center justify-between px-2 pt-0.5">
                   <div className="flex items-center gap-1.5">
-                    <div className="w-5 h-5 rounded-md bg-emerald-500/25 border border-emerald-400/40 shadow-[0_2px_4px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.2)] flex items-center justify-center text-emerald-400 font-black text-[10px]">
-                      J2P
+                    <div className="w-5 h-5 rounded-full bg-[#5f259f] text-white flex items-center justify-center font-black text-[9px] shadow-xs">
+                      JP
                     </div>
-                    <span className="text-[10px] font-black tracking-widest text-slate-200 uppercase drop-shadow-xs">
-                      Just2Pay <span className="text-emerald-400">EDC</span>
+                    <span className="text-[10px] font-black tracking-wider text-slate-800 uppercase">
+                      Just2Pay <span className="text-[#5f259f]">SmartPOS</span>
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-1.5 bg-slate-950/60 px-2 py-0.5 rounded-full border border-slate-800">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-xs shadow-emerald-400" />
-                    <span className="text-[8px] font-mono text-emerald-300 font-bold uppercase tracking-wider">ONLINE</span>
+                  <div className="flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-xs" />
+                    <span className="text-[8px] font-mono text-emerald-700 font-bold uppercase tracking-wider">ONLINE</span>
                   </div>
                 </div>
 
-                {/* 3D Recessed Glass LCD Display with Diagonal Sheen */}
-                <div className="bg-gradient-to-b from-slate-950 via-[#060c18] to-slate-950 border-2 border-slate-800/80 rounded-xl p-2.5 shadow-[inset_0_4px_8px_rgba(0,0,0,0.95),inset_0_-1px_2px_rgba(255,255,255,0.06)] text-white font-mono space-y-1.5 relative overflow-hidden">
+                {/* Full-Glass Android Touchscreen Display (No physical buttons!) */}
+                <div className="bg-gradient-to-b from-[#090d16] via-[#0d1322] to-[#090d16] border-2 border-slate-800 rounded-2xl p-2.5 shadow-[inset_0_4px_8px_rgba(0,0,0,0.95),inset_0_-1px_2px_rgba(255,255,255,0.06)] text-white font-mono space-y-2 relative overflow-hidden">
                   {/* Diagonal Glass Sheen Glare */}
-                  <div className="absolute -inset-1 bg-gradient-to-tr from-transparent via-white/[0.05] to-transparent pointer-events-none rotate-12 scale-150 transform" />
+                  <div className="absolute -inset-1 bg-gradient-to-tr from-transparent via-white/[0.04] to-transparent pointer-events-none rotate-12 scale-150 transform" />
 
-                  {/* Screen Status Bar */}
+                  {/* Android Top Status Bar */}
                   <div className="flex items-center justify-between text-[8px] text-slate-400 pb-1 border-b border-slate-800/80 relative z-10">
-                    <span className="truncate max-w-[120px] font-bold text-slate-300">
+                    <span className="font-bold text-slate-300">
+                      {new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    <span className="truncate max-w-[100px] text-slate-400 font-semibold">
                       {selectedMachine?.bank_name || 'HDFC Bank'}
                     </span>
                     <div className="flex items-center gap-1 text-slate-400">
@@ -721,12 +715,14 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
                     </div>
                   </div>
 
-                  {/* Screen Center: Live Amount Display with OLED Emerald Glow */}
-                  <div className="text-center py-1 relative z-10">
-                    <span className="text-[8px] uppercase font-bold text-slate-400 block tracking-wider">
-                      {settlementType === 'T0' ? '⚡ T+0 INSTANT SWIPE' : '📅 T+1 CLEARING SWIPE'}
+                  {/* Live Transaction Touch Display Card */}
+                  <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/90 border border-slate-700/60 rounded-xl p-2.5 text-center relative z-10 shadow-inner">
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-[8px] uppercase tracking-wider font-bold mb-1 ${
+                      settlementType === 'T0' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                    }`}>
+                      {settlementType === 'T0' ? '⚡ T+0 Instant Settlement' : '📅 T+1 Overnight Clearing'}
                     </span>
-                    <div className="text-xl sm:text-2xl font-black text-emerald-400 font-mono tracking-tight my-0.5 drop-shadow-[0_0_8px_rgba(16,185,129,0.35)]">
+                    <div className="text-2xl sm:text-3xl font-black text-emerald-400 font-mono tracking-tight my-0.5 drop-shadow-[0_0_8px_rgba(16,185,129,0.35)]">
                       ₹{numAmount > 0 ? numAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '0.00'}
                     </div>
                     <p className="text-[8px] text-slate-400">
@@ -734,74 +730,60 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
                     </p>
                   </div>
 
-                  {/* Screen Info Pill */}
-                  <div className="bg-slate-900/90 rounded-lg p-1.5 text-[8px] space-y-0.5 border border-slate-800/80 relative z-10 shadow-inner">
+                  {/* Live Card & RRN Readout */}
+                  <div className="bg-slate-900/80 rounded-xl p-2 text-[8px] space-y-1 border border-slate-800 relative z-10">
                     <div className="flex justify-between">
-                      <span className="text-slate-500">RRN:</span>
-                      <span className="font-bold text-amber-300 tracking-wider">
-                        {rrnNumber || '••••••••••••'}
+                      <span className="text-slate-400">RRN:</span>
+                      <span className="font-bold text-amber-300 tracking-wider font-mono">
+                        {rrnNumber || '•••• •••• ••••'}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-500">CARD:</span>
-                      <span className="font-bold text-slate-300">
-                        {cardLast4 ? `•••• •••• •••• ${cardLast4}` : 'SWIPE / INSERT'}
+                      <span className="text-slate-400">CARD:</span>
+                      <span className="font-bold text-slate-300 font-mono">
+                        {cardLast4 ? `•••• •••• ${cardLast4}` : 'SWIPE / TAP CARD'}
                       </span>
                     </div>
-                    <div className="flex justify-between text-emerald-400 font-bold pt-0.5 border-t border-slate-800">
-                      <span>NET CREDITED:</span>
-                      <span>₹{calcNetAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    <div className="flex justify-between text-emerald-400 font-bold pt-1 border-t border-slate-800">
+                      <span>NET WALLET CREDIT:</span>
+                      <span className="font-mono">₹{calcNetAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                     </div>
+                  </div>
+
+                  {/* Android Smart POS Quick Touch Tiles (PhonePe style!) */}
+                  <div className="grid grid-cols-3 gap-1.5 pt-0.5 relative z-10">
+                    <div className="p-1.5 rounded-lg bg-blue-950/70 border border-blue-800/60 text-center shadow-xs">
+                      <CreditCard className="w-3.5 h-3.5 mx-auto text-blue-400 mb-0.5" />
+                      <span className="text-[7px] text-blue-200 block font-bold leading-tight">Card Swipe</span>
+                    </div>
+                    <div className="p-1.5 rounded-lg bg-slate-900/70 border border-slate-800 text-center shadow-xs">
+                      <FileText className="w-3.5 h-3.5 mx-auto text-slate-400 mb-0.5" />
+                      <span className="text-[7px] text-slate-300 block font-bold leading-tight">History</span>
+                    </div>
+                    <div className="p-1.5 rounded-lg bg-slate-900/70 border border-slate-800 text-center shadow-xs">
+                      <Sparkles className="w-3.5 h-3.5 mx-auto text-amber-400 mb-0.5" />
+                      <span className="text-[7px] text-amber-200 block font-bold leading-tight">Reports</span>
+                    </div>
+                  </div>
+
+                  {/* Contactless Wave / NFC Zone on Glass */}
+                  <div className="flex items-center justify-center gap-1.5 py-1 text-slate-400 border-t border-slate-800/80 relative z-10">
+                    <Radio className="w-3 h-3 text-[#5f259f] rotate-90" />
+                    <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400">Contactless NFC / Tap to Pay</span>
                   </div>
                 </div>
 
-                {/* Contactless Wave & NFC Zone */}
-                <div className="flex items-center justify-center gap-1.5 py-0.5 text-slate-400">
-                  <Radio className="w-3 h-3 text-emerald-400 rotate-90" />
-                  <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400">Contactless NFC / Chip</span>
-                </div>
-
-                {/* 3D Tactile Embossed Keypad Grid */}
-                <div className="grid grid-cols-3 gap-1.5 px-0.5">
-                  {[
-                    ['1', ''], ['2', 'ABC'], ['3', 'DEF'],
-                    ['4', 'GHI'], ['5', 'JKL'], ['6', 'MNO'],
-                    ['7', 'PQRS'], ['8', 'TUV'], ['9', 'WXYZ'],
-                    ['CLEAR', 'red'], ['0', ''], ['ENTER', 'green']
-                  ].map(([key, sub], idx) => {
-                    const isClear = key === 'CLEAR';
-                    const isEnter = key === 'ENTER';
-                    return (
-                      <div
-                        key={idx}
-                        className={`h-7 rounded-lg flex flex-col items-center justify-center border transition-all duration-100 cursor-default ${
-                          isClear
-                            ? 'bg-gradient-to-b from-rose-900 to-rose-950 border-rose-700/60 text-rose-200 shadow-[0_2.5px_0_#4c0519,0_3px_5px_rgba(0,0,0,0.5)] border-t border-rose-500/40 hover:translate-y-[1px] hover:shadow-[0_1.5px_0_#4c0519] active:translate-y-[2px] active:shadow-none'
-                            : isEnter
-                            ? 'bg-gradient-to-b from-emerald-800 to-emerald-950 border-emerald-600/60 text-emerald-200 shadow-[0_2.5px_0_#022c22,0_3px_5px_rgba(0,0,0,0.5)] border-t border-emerald-400/40 hover:translate-y-[1px] hover:shadow-[0_1.5px_0_#022c22] active:translate-y-[2px] active:shadow-none'
-                            : 'bg-gradient-to-b from-slate-700 via-slate-800 to-slate-850 border-slate-600/50 text-slate-100 shadow-[0_2.5px_0_#020617,0_3px_5px_rgba(0,0,0,0.4)] border-t border-slate-500/40 hover:translate-y-[1px] hover:shadow-[0_1.5px_0_#020617] active:translate-y-[2px] active:shadow-none'
-                        }`}
-                      >
-                        <span className="text-[10px] font-black leading-none drop-shadow-xs">{key}</span>
-                        {sub && !isClear && !isEnter && (
-                          <span className="text-[6px] text-slate-400 leading-none mt-0.5 font-bold">{sub}</span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* 3D Deep EMV Chip Card Insertion Cavity */}
-                <div className="pt-1 pb-0.5">
-                  <div className="w-32 h-2 mx-auto bg-slate-950 rounded-full border-t border-slate-800 border-b border-slate-700/60 shadow-[inset_0_3px_5px_rgba(0,0,0,0.95)]" />
-                  <p className="text-[7px] font-mono text-center text-slate-500 mt-1 uppercase tracking-widest">
+                {/* Bottom EMV Chip Card Insertion Slot */}
+                <div className="pt-0.5 pb-0.5">
+                  <div className="w-32 h-1.5 mx-auto bg-slate-950 rounded-full border border-slate-400 shadow-[inset_0_2px_4px_rgba(0,0,0,0.95)]" />
+                  <p className="text-[7px] font-mono text-center text-slate-500 mt-0.5 uppercase tracking-widest font-semibold">
                     EMV CHIP INSERTION SLOT
                   </p>
                 </div>
               </div>
 
               {/* Realistic Desktop Countertop Contact Shadow */}
-              <div className="w-56 h-3.5 mx-auto bg-black/45 blur-md rounded-full -mt-2 transform scale-y-50 pointer-events-none" />
+              <div className="w-56 h-3 mx-auto bg-black/35 blur-md rounded-full mt-1 transform scale-y-50 pointer-events-none" />
             </div>
           </div>
 
