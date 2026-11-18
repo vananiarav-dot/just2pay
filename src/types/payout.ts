@@ -11,6 +11,16 @@ export interface PayoutSlab {
   updated_at?: string;
 }
 
+export interface PayoutApiSlab {
+  id: string;
+  min_amount: number;
+  max_amount: number;
+  charge_amount: number;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface PayoutCalculation {
   amount: number;
   charge_amount: number;

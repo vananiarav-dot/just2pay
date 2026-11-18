@@ -1,8 +1,14 @@
 import express from 'express';
 import axios from 'axios';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { db } from '../db/store.js';
 import { supabase } from '../db/supabase.js';
 import { verifyToken, requireRoles } from '../middleware/auth.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
@@ -307,6 +313,134 @@ router.delete('/slabs/:id', verifyToken, requireRoles(['admin']), async (req, re
   } catch (err) {
     console.error('Delete Payout Slab Error:', err);
     return res.status(500).json({ success: false, message: 'Failed to delete payout slab' });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// DYNAMIC UPSTREAM PAYOUT API CHARGE SLABS (Admin Only - Gateway Cost)
+// -----------------------------------------------------------------------------
+const DEFAULT_PAYOUT_API_SLABS = [
+  { id: 'poslab_api_01', min_amount: 1, max_amount: 1000, charge_amount: 5, is_active: true },
+  { id: 'poslab_api_02', min_amount: 1001, max_amount: 25000, charge_amount: 8, is_active: true },
+  { id: 'poslab_api_03', min_amount: 25001, max_amount: 50000, charge_amount: 12, is_active: true },
+  { id: 'poslab_api_04', min_amount: 50001, max_amount: 200000, charge_amount: 18, is_active: true }
+];
+
+const getPayoutApiSlabsFilePath = () => path.join(__dirname, '../db/payout_api_slabs.json');
+
+const loadPayoutApiSlabs = () => {
+  try {
+    const filePath = getPayoutApiSlabsFilePath();
+    if (fs.existsSync(filePath)) {
+      const content = fs.readFileSync(filePath, 'utf8');
+      const parsed = JSON.parse(content);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {
+    console.warn('Failed reading payout_api_slabs.json:', e.message);
+  }
+  return DEFAULT_PAYOUT_API_SLABS;
+};
+
+const savePayoutApiSlabs = (slabs) => {
+  try {
+    const filePath = getPayoutApiSlabsFilePath();
+    fs.writeFileSync(filePath, JSON.stringify(slabs, null, 2), 'utf8');
+  } catch (e) {
+    console.error('Failed saving payout_api_slabs.json:', e.message);
+  }
+};
+
+// GET /api/payout/api-slabs - Fetch all Upstream Payout API cost slabs
+router.get('/api-slabs', verifyToken, async (req, res) => {
+  try {
+    const slabs = loadPayoutApiSlabs();
+    return res.status(200).json({ success: true, slabs });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Failed to fetch payout API slabs' });
+  }
+});
+
+// POST /api/payout/api-slabs - Create new Upstream Payout API slab (Admin only)
+router.post('/api-slabs', verifyToken, requireRoles(['admin']), async (req, res) => {
+  try {
+    const { min_amount, max_amount, charge_amount, is_active } = req.body;
+    if (min_amount === undefined || max_amount === undefined || charge_amount === undefined) {
+      return res.status(400).json({ success: false, message: 'min_amount, max_amount, and charge_amount are required' });
+    }
+
+    const slabs = loadPayoutApiSlabs();
+    const newSlab = {
+      id: `poslab_api_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+      min_amount: parseFloat(min_amount),
+      max_amount: parseFloat(max_amount),
+      charge_amount: parseFloat(charge_amount),
+      is_active: is_active !== false,
+      created_at: new Date().toISOString()
+    };
+
+    slabs.push(newSlab);
+    slabs.sort((a, b) => a.min_amount - b.min_amount);
+    savePayoutApiSlabs(slabs);
+
+    return res.status(201).json({
+      success: true,
+      message: 'Payout API charge slab created successfully',
+      slab: newSlab,
+      slabs
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Failed to create payout API slab' });
+  }
+});
+
+// PUT /api/payout/api-slabs/:id - Update existing Upstream Payout API slab (Admin only)
+router.put('/api-slabs/:id', verifyToken, requireRoles(['admin']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { min_amount, max_amount, charge_amount, is_active } = req.body;
+
+    const slabs = loadPayoutApiSlabs();
+    const index = slabs.findIndex(s => s.id === id);
+    if (index === -1) {
+      return res.status(404).json({ success: false, message: 'Slab not found' });
+    }
+
+    if (min_amount !== undefined) slabs[index].min_amount = parseFloat(min_amount);
+    if (max_amount !== undefined) slabs[index].max_amount = parseFloat(max_amount);
+    if (charge_amount !== undefined) slabs[index].charge_amount = parseFloat(charge_amount);
+    if (is_active !== undefined) slabs[index].is_active = Boolean(is_active);
+    slabs[index].updated_at = new Date().toISOString();
+
+    slabs.sort((a, b) => a.min_amount - b.min_amount);
+    savePayoutApiSlabs(slabs);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Payout API charge slab updated successfully',
+      slab: slabs[index],
+      slabs
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Failed to update payout API slab' });
+  }
+});
+
+// DELETE /api/payout/api-slabs/:id - Delete Upstream Payout API slab (Admin only)
+router.delete('/api-slabs/:id', verifyToken, requireRoles(['admin']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    let slabs = loadPayoutApiSlabs();
+    slabs = slabs.filter(s => s.id !== id);
+    savePayoutApiSlabs(slabs);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Payout API charge slab deleted successfully',
+      slabs
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Failed to delete payout API slab' });
   }
 });
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { payoutApi } from '../../services/api';
-import type { PayoutSlab, PayoutTransaction, PayoutVerification, VerificationStats } from '../../types/payout';
+import type { PayoutSlab, PayoutApiSlab, PayoutTransaction, PayoutVerification, VerificationStats } from '../../types/payout';
 import { PayoutReceiptModal } from './PayoutReceiptModal';
 import {
   Layers, Plus, Trash2, Edit2, CheckCircle2,
@@ -11,12 +11,56 @@ import {
 } from 'lucide-react';
 import { useSettingsStore } from '../../store/settingsStore';
 
+/**
+ * Dynamic Upstream Payout API Charge computation based on admin configured slabs
+ */
+export const computePayoutApiCharge = (amount: number, slabs: PayoutApiSlab[]): number => {
+  const amt = Number(amount || 0);
+  if (amt <= 0) return 0;
+
+  const activeSlabs = (slabs || []).filter(s => s.is_active !== false);
+  if (activeSlabs.length > 0) {
+    const matched = activeSlabs.find(s => amt >= Number(s.min_amount) && amt <= Number(s.max_amount));
+    if (matched) return Number(matched.charge_amount || 0);
+  }
+
+  // Dynamic fallback: ₹5 up to 1000, ₹8 up to 25000, ₹12 up to 50000, ₹18 up to 200000
+  if (amt <= 1000) return 5;
+  if (amt <= 25000) return 8;
+  if (amt <= 50000) return 12;
+  return 18;
+};
+
 export const AdminPayoutManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'transactions' | 'verifications' | 'slabs'>('transactions');
 
   const { instantPayoutEnabled, toggleInstantPayout, fetchSettings: fetchPayoutSettings } = useSettingsStore();
   const [isTogglingPayout, setIsTogglingPayout] = useState<boolean>(false);
   const [toggleAlert, setToggleAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Upstream Payout API Slabs State
+  const [payoutApiSlabs, setPayoutApiSlabs] = useState<PayoutApiSlab[]>(() => {
+    try {
+      const cached = localStorage.getItem('just2pay_payout_api_slabs');
+      if (cached) return JSON.parse(cached);
+    } catch {}
+    return [
+      { id: 'poslab_api_01', min_amount: 1, max_amount: 1000, charge_amount: 5, is_active: true },
+      { id: 'poslab_api_02', min_amount: 1001, max_amount: 25000, charge_amount: 8, is_active: true },
+      { id: 'poslab_api_03', min_amount: 25001, max_amount: 50000, charge_amount: 12, is_active: true },
+      { id: 'poslab_api_04', min_amount: 50001, max_amount: 200000, charge_amount: 18, is_active: true }
+    ];
+  });
+  const [showPayoutApiSlabModal, setShowPayoutApiSlabModal] = useState<boolean>(false);
+  const [editingPayoutApiSlab, setEditingPayoutApiSlab] = useState<PayoutApiSlab | null>(null);
+  const [payoutApiSlabForm, setPayoutApiSlabForm] = useState({
+    min_amount: '',
+    max_amount: '',
+    charge_amount: '',
+    is_active: true
+  });
+  const [payoutApiSlabNotice, setPayoutApiSlabNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [savingPayoutApiSlab, setSavingPayoutApiSlab] = useState<boolean>(false);
 
   // Bank Verifications (Penny Drop) State
   const [verifications, setVerifications] = useState<PayoutVerification[]>([]);
@@ -176,10 +220,94 @@ export const AdminPayoutManagement: React.FC = () => {
     }
   };
 
+  // Fetch Upstream Payout API Slabs
+  const fetchPayoutApiSlabs = async () => {
+    try {
+      const res = await payoutApi.getApiSlabs();
+      if (res && res.success && Array.isArray(res.slabs)) {
+        setPayoutApiSlabs(res.slabs);
+        localStorage.setItem('just2pay_payout_api_slabs', JSON.stringify(res.slabs));
+      }
+    } catch (err) {
+      console.warn('Failed to fetch payout API slabs, using cached/default:', err);
+    }
+  };
+
+  const handleSavePayoutApiSlab = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const min = parseFloat(payoutApiSlabForm.min_amount);
+    const max = parseFloat(payoutApiSlabForm.max_amount);
+    const chg = parseFloat(payoutApiSlabForm.charge_amount);
+
+    if (isNaN(min) || isNaN(max) || isNaN(chg) || min < 0 || max < min || chg < 0) {
+      setPayoutApiSlabNotice({ type: 'error', message: 'Please enter valid positive numbers. Min must be <= Max.' });
+      return;
+    }
+
+    setSavingPayoutApiSlab(true);
+    setPayoutApiSlabNotice(null);
+    try {
+      if (editingPayoutApiSlab) {
+        const res = await payoutApi.updateApiSlab(editingPayoutApiSlab.id, {
+          min_amount: min,
+          max_amount: max,
+          charge_amount: chg,
+          is_active: payoutApiSlabForm.is_active
+        });
+        if (res.success && res.slabs) {
+          setPayoutApiSlabs(res.slabs);
+          localStorage.setItem('just2pay_payout_api_slabs', JSON.stringify(res.slabs));
+        } else {
+          setPayoutApiSlabs(prev => prev.map(s => s.id === editingPayoutApiSlab.id ? { ...s, min_amount: min, max_amount: max, charge_amount: chg, is_active: payoutApiSlabForm.is_active } : s));
+        }
+        setPayoutApiSlabNotice({ type: 'success', message: 'Payout API charge slab updated successfully!' });
+      } else {
+        const res = await payoutApi.createApiSlab({
+          min_amount: min,
+          max_amount: max,
+          charge_amount: chg,
+          is_active: payoutApiSlabForm.is_active
+        });
+        if (res.success && res.slabs) {
+          setPayoutApiSlabs(res.slabs);
+          localStorage.setItem('just2pay_payout_api_slabs', JSON.stringify(res.slabs));
+        } else {
+          const newS: PayoutApiSlab = { id: `poslab_api_${Date.now()}`, min_amount: min, max_amount: max, charge_amount: chg, is_active: payoutApiSlabForm.is_active };
+          setPayoutApiSlabs(prev => [...prev, newS].sort((a,b) => a.min_amount - b.min_amount));
+        }
+        setPayoutApiSlabNotice({ type: 'success', message: 'New Payout API charge slab created!' });
+      }
+      setEditingPayoutApiSlab(null);
+      setPayoutApiSlabForm({ min_amount: '', max_amount: '', charge_amount: '', is_active: true });
+    } catch (err: any) {
+      setPayoutApiSlabNotice({ type: 'error', message: err.response?.data?.message || err.message || 'Failed to save payout API slab' });
+    } finally {
+      setSavingPayoutApiSlab(false);
+    }
+  };
+
+  const handleDeletePayoutApiSlab = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this Payout API charge slab?')) return;
+    try {
+      const res = await payoutApi.deleteApiSlab(id);
+      if (res.success && res.slabs) {
+        setPayoutApiSlabs(res.slabs);
+        localStorage.setItem('just2pay_payout_api_slabs', JSON.stringify(res.slabs));
+      } else {
+        setPayoutApiSlabs(prev => prev.filter(s => s.id !== id));
+      }
+      setPayoutApiSlabNotice({ type: 'success', message: 'Payout API slab deleted successfully.' });
+    } catch (err: any) {
+      setPayoutApiSlabs(prev => prev.filter(s => s.id !== id));
+      setPayoutApiSlabNotice({ type: 'success', message: 'Slab deleted.' });
+    }
+  };
+
   useEffect(() => {
     fetchTransactions(true);
     fetchVerifications(true);
     fetchSlabs();
+    fetchPayoutApiSlabs();
     fetchPayoutSettings();
     fetchPayoutGlobalSettings();
   }, [fetchPayoutSettings]);
@@ -494,6 +622,12 @@ export const AdminPayoutManagement: React.FC = () => {
     0
   );
 
+  const totalPayoutApiCost = successTxns.reduce(
+    (sum, t) => sum + computePayoutApiCharge(t.amount, payoutApiSlabs),
+    0
+  );
+  const totalPayoutNetProfit = totalEarnedPayoutCharges - totalPayoutApiCost;
+
   const pendingTxns = summaryBaseTxns.filter(t => t.status === 'pending');
   const pendingTxnCount = pendingTxns.length;
   const pendingPayoutVolume = pendingTxns.reduce(
@@ -614,8 +748,29 @@ export const AdminPayoutManagement: React.FC = () => {
           </div>
         </div>
 
-        {/* TOP RIGHT CORNER: TOGGLE SWITCH */}
-        <div className="flex items-center self-end sm:self-auto gap-3.5 bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl shadow-inner">
+        {/* TOP RIGHT CORNER: DYNAMIC API SLABS BUTTON & TOGGLE SWITCH */}
+        <div className="flex items-center self-end sm:self-auto gap-3 flex-wrap">
+          {/* UPSTREAM API SLABS BUTTON */}
+          <button
+            type="button"
+            onClick={() => {
+              setEditingPayoutApiSlab(null);
+              setPayoutApiSlabForm({ min_amount: '', max_amount: '', charge_amount: '', is_active: true });
+              setPayoutApiSlabNotice(null);
+              setShowPayoutApiSlabModal(true);
+            }}
+            className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 text-xs font-black transition shadow-2xs cursor-pointer group"
+            title="Configure Upstream API Cost Slabs for Payout"
+          >
+            <Sliders className="w-4 h-4 text-purple-600 group-hover:rotate-45 transition-transform" />
+            <span>API Charge Slabs</span>
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-purple-600 text-white font-mono shadow-xs">
+              {payoutApiSlabs.length}
+            </span>
+          </button>
+
+          {/* TOGGLE SWITCH */}
+          <div className="flex items-center gap-3.5 bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl shadow-inner">
           <div className="text-right">
             <div className="flex items-center gap-1.5 justify-end">
               <ArrowRightLeft className={`w-3.5 h-3.5 ${instantPayoutEnabled ? 'text-emerald-600' : 'text-slate-400'}`} />
@@ -661,6 +816,7 @@ export const AdminPayoutManagement: React.FC = () => {
           </button>
         </div>
       </div>
+    </div>
 
       {/* FEEDBACK ALERT */}
       {toggleAlert && (
@@ -739,6 +895,25 @@ export const AdminPayoutManagement: React.FC = () => {
 
         {/* ACTION BUTTON */}
         <div className="flex items-center gap-2">
+          {activeTab === 'transactions' && (
+            <button
+              type="button"
+              onClick={() => {
+                setEditingPayoutApiSlab(null);
+                setPayoutApiSlabForm({ min_amount: '', max_amount: '', charge_amount: '', is_active: true });
+                setPayoutApiSlabNotice(null);
+                setShowPayoutApiSlabModal(true);
+              }}
+              className="px-3.5 py-2 bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 rounded-xl text-xs font-black flex items-center gap-2 shadow-2xs transition-all cursor-pointer group"
+              title="Configure Dynamic Upstream Payout API Charge Slabs"
+            >
+              <Sliders className="w-4 h-4 text-purple-600 group-hover:rotate-45 transition-transform" />
+              <span>Payout API Slabs</span>
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-purple-600 text-white font-mono font-black shadow-2xs">
+                {payoutApiSlabs.length}
+              </span>
+            </button>
+          )}
           {activeTab === 'slabs' && (
             <button
               onClick={openAddSlabModal}
@@ -862,9 +1037,9 @@ export const AdminPayoutManagement: React.FC = () => {
                   </span>
                 </div>
                 <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                  <span className="text-slate-400 font-medium">Earned Slab Fees</span>
-                  <span className="font-bold text-purple-700 font-mono">
-                    ₹{totalEarnedPayoutCharges.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  <span className="text-slate-400 font-medium">Net Platform Margin</span>
+                  <span className="font-bold text-emerald-700 font-mono">
+                    {totalPayoutNetProfit >= 0 ? '+' : ''}₹{totalPayoutNetProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
@@ -913,11 +1088,25 @@ export const AdminPayoutManagement: React.FC = () => {
                     {successTxnCount} Settled
                   </span>
                 </div>
-                <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                  <span className="text-slate-400 font-medium">Collected Slab Revenue</span>
-                  <span className="font-bold text-purple-700 font-mono">
-                    + ₹{totalEarnedPayoutCharges.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                  </span>
+                <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-col gap-1 text-[11px]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400 font-medium">Collected Slab Revenue</span>
+                    <span className="font-bold text-purple-700 font-mono">
+                      + ₹{totalEarnedPayoutCharges.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400 font-medium">Upstream API Cost</span>
+                    <span className="font-bold text-amber-700 font-mono">
+                      - ₹{totalPayoutApiCost.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between pt-1 border-t border-dashed border-slate-100">
+                    <span className="text-slate-700 font-extrabold">Net Admin Profit</span>
+                    <span className="font-black text-emerald-700 font-mono text-xs">
+                      {totalPayoutNetProfit >= 0 ? '+' : ''}₹{totalPayoutNetProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1088,7 +1277,9 @@ export const AdminPayoutManagement: React.FC = () => {
                     <th className="py-3 px-4">Merchant User</th>
                     <th className="py-3 px-4">Beneficiary & Bank</th>
                     <th className="py-3 px-4">Amount</th>
-                    <th className="py-3 px-4">Slab Fee</th>
+                    <th className="py-3 px-4 text-right">Slab Fee</th>
+                    <th className="py-3 px-4 text-right">API Charge (₹)</th>
+                    <th className="py-3 px-4 text-right">Final Profit (₹)</th>
                     <th className="py-3 px-4">Total Debited</th>
                     <th className="py-3 px-4">Bank UTR</th>
                     <th className="py-3 px-4">Status</th>
@@ -1116,8 +1307,35 @@ export const AdminPayoutManagement: React.FC = () => {
                       <td className="py-3 px-4 whitespace-nowrap font-black text-slate-900 font-mono">
                         ₹{Number(item.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </td>
-                      <td className="py-3 px-4 whitespace-nowrap text-amber-700 font-bold font-mono">
+                      <td className="py-3 px-4 whitespace-nowrap text-amber-700 font-bold font-mono text-right">
                         ₹{Number(item.slab_charge || 0).toFixed(2)}
+                      </td>
+                      <td className="py-3 px-4 whitespace-nowrap text-xs font-mono text-right">
+                        {item.status === 'success' ? (
+                          <span className="font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg inline-block">
+                            ₹{computePayoutApiCharge(item.amount, payoutApiSlabs).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 font-sans text-[11px]">—</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 whitespace-nowrap text-xs font-mono text-right">
+                        {item.status === 'success' ? (() => {
+                          const userFee = Number(item.slab_charge || 0);
+                          const apiCost = computePayoutApiCharge(item.amount, payoutApiSlabs);
+                          const netProfit = userFee - apiCost;
+                          return (
+                            <span className={`font-black px-2 py-0.5 rounded-lg border inline-block ${
+                              netProfit >= 0
+                                ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                                : 'text-rose-700 bg-rose-50 border-rose-200'
+                            }`}>
+                              {netProfit >= 0 ? '+' : ''}₹{netProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </span>
+                          );
+                        })() : (
+                          <span className="text-slate-400 font-sans text-[11px]">—</span>
+                        )}
                       </td>
                       <td className="py-3 px-4 whitespace-nowrap font-bold text-slate-900 font-mono">
                         ₹{Number(item.total_deducted || item.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
@@ -2033,6 +2251,221 @@ export const AdminPayoutManagement: React.FC = () => {
                 type="button"
                 onClick={() => setShowLiveStatusModal(false)}
                 className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* UPSTREAM PAYOUT API CHARGE SLABS MODAL */}
+      {showPayoutApiSlabModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full p-6 shadow-2xl space-y-5 text-slate-900 relative max-h-[90vh] overflow-y-auto">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-purple-50 text-purple-600 rounded-2xl border border-purple-200">
+                  <Sliders className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-base text-slate-900">Payout - Upstream API Charge Slabs</h3>
+                  <p className="text-xs text-slate-500">Configure dynamic cost slabs charged by upstream Payout gateway. Net Profit = Slab Fee − API Charge.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowPayoutApiSlabModal(false);
+                  setEditingPayoutApiSlab(null);
+                  setPayoutApiSlabNotice(null);
+                }}
+                className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Slab Notice */}
+            {payoutApiSlabNotice && (
+              <div className={`p-3 rounded-2xl border text-xs font-bold flex items-center gap-2 ${
+                payoutApiSlabNotice.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
+              }`}>
+                {payoutApiSlabNotice.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
+                <span>{payoutApiSlabNotice.message}</span>
+              </div>
+            )}
+
+            {/* Add / Edit Form */}
+            <form onSubmit={handleSavePayoutApiSlab} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-black uppercase text-slate-700 tracking-wider flex items-center gap-1.5">
+                  <Plus className="w-3.5 h-3.5 text-purple-600" />
+                  <span>{editingPayoutApiSlab ? 'Edit Payout API Slab' : 'Create New Payout API Charge Slab'}</span>
+                </h4>
+                {editingPayoutApiSlab && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingPayoutApiSlab(null);
+                      setPayoutApiSlabForm({ min_amount: '', max_amount: '', charge_amount: '', is_active: true });
+                    }}
+                    className="text-[11px] text-slate-500 hover:text-slate-800 font-bold underline cursor-pointer"
+                  >
+                    Cancel Editing
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-[10px] font-extrabold uppercase text-slate-500">Min Amount (₹)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    placeholder="e.g. 1001"
+                    value={payoutApiSlabForm.min_amount}
+                    onChange={(e) => setPayoutApiSlabForm({ ...payoutApiSlabForm, min_amount: e.target.value })}
+                    className="w-full mt-1 px-3 py-2 text-xs font-mono font-bold bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-600"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-extrabold uppercase text-slate-500">Max Amount (₹)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    placeholder="e.g. 25000"
+                    value={payoutApiSlabForm.max_amount}
+                    onChange={(e) => setPayoutApiSlabForm({ ...payoutApiSlabForm, max_amount: e.target.value })}
+                    className="w-full mt-1 px-3 py-2 text-xs font-mono font-bold bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-600"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-extrabold uppercase text-slate-500">API Cost (₹)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    placeholder="e.g. 8.00"
+                    value={payoutApiSlabForm.charge_amount}
+                    onChange={(e) => setPayoutApiSlabForm({ ...payoutApiSlabForm, charge_amount: e.target.value })}
+                    className="w-full mt-1 px-3 py-2 text-xs font-mono font-bold bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-600"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-1">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={payoutApiSlabForm.is_active}
+                    onChange={(e) => setPayoutApiSlabForm({ ...payoutApiSlabForm, is_active: e.target.checked })}
+                    className="rounded text-purple-600 focus:ring-purple-500"
+                  />
+                  <span className="text-xs font-bold text-slate-700">Active Slab</span>
+                </label>
+
+                <button
+                  type="submit"
+                  disabled={savingPayoutApiSlab}
+                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-black transition shadow-xs cursor-pointer disabled:opacity-50"
+                >
+                  {savingPayoutApiSlab ? 'Saving...' : editingPayoutApiSlab ? 'Update Slab' : 'Save Slab'}
+                </button>
+              </div>
+            </form>
+
+            {/* Slabs List Table */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-black uppercase text-slate-700 tracking-wider">
+                  Configured Payout API Slabs ({payoutApiSlabs.length})
+                </h4>
+                <span className="text-[11px] text-slate-400 font-medium">Applied automatically to compute net margin</span>
+              </div>
+
+              {payoutApiSlabs.length === 0 ? (
+                <div className="p-8 text-center text-slate-400 text-xs font-medium bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                  No custom API slabs found. Using default slab calculations.
+                </div>
+              ) : (
+                <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-100 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200">
+                      <tr>
+                        <th className="py-2.5 px-3">Range (Amount ₹)</th>
+                        <th className="py-2.5 px-3 text-right">API Cost (₹)</th>
+                        <th className="py-2.5 px-3 text-center">Status</th>
+                        <th className="py-2.5 px-3 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-mono">
+                      {payoutApiSlabs.map((s) => (
+                        <tr key={s.id} className="hover:bg-slate-50 transition">
+                          <td className="py-2.5 px-3 font-bold text-slate-800">
+                            ₹{Number(s.min_amount).toLocaleString('en-IN')} — ₹{Number(s.max_amount).toLocaleString('en-IN')}
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-black text-amber-700">
+                            ₹{Number(s.charge_amount).toFixed(2)}
+                          </td>
+                          <td className="py-2.5 px-3 text-center font-sans">
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                              s.is_active !== false ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-500'
+                            }`}>
+                              {s.is_active !== false ? 'Active' : 'Disabled'}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-sans">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingPayoutApiSlab(s);
+                                  setPayoutApiSlabForm({
+                                    min_amount: String(s.min_amount),
+                                    max_amount: String(s.max_amount),
+                                    charge_amount: String(s.charge_amount),
+                                    is_active: s.is_active !== false
+                                  });
+                                  setPayoutApiSlabNotice(null);
+                                }}
+                                className="p-1 rounded-lg text-slate-500 hover:text-purple-600 hover:bg-purple-50 transition cursor-pointer"
+                                title="Edit Slab"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeletePayoutApiSlab(s.id)}
+                                className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                                title="Delete Slab"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="pt-2 flex justify-end border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPayoutApiSlabModal(false);
+                  setEditingPayoutApiSlab(null);
+                  setPayoutApiSlabNotice(null);
+                }}
+                className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs shadow-xs transition cursor-pointer"
               >
                 Close
               </button>

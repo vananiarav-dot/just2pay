@@ -489,7 +489,7 @@ export const b2bApi = {
   }
 };
 
-import type { PayoutSlab, PayoutTransferPayload, PayoutTransaction, PayoutBeneficiary, PayoutVerification, VerificationStats, PayoutCalculation } from '../types/payout';
+import type { PayoutSlab, PayoutApiSlab, PayoutTransferPayload, PayoutTransaction, PayoutBeneficiary, PayoutVerification, VerificationStats, PayoutCalculation } from '../types/payout';
 
 export const payoutApi = {
   getSlabs: async (): Promise<{ success: boolean; slabs: PayoutSlab[] }> => {
@@ -509,6 +509,27 @@ export const payoutApi = {
 
   deleteSlab: async (id: string): Promise<{ success: boolean; message: string }> => {
     const response = await apiClient.delete(`/payout/slabs/${id}`);
+    return response.data;
+  },
+
+  // UPSTREAM PAYOUT API CHARGE SLABS (Admin Only - Gateway Cost)
+  getApiSlabs: async (): Promise<{ success: boolean; slabs: PayoutApiSlab[] }> => {
+    const response = await apiClient.get('/payout/api-slabs');
+    return response.data;
+  },
+
+  createApiSlab: async (data: Partial<PayoutApiSlab>): Promise<{ success: boolean; message: string; slab: PayoutApiSlab; slabs: PayoutApiSlab[] }> => {
+    const response = await apiClient.post('/payout/api-slabs', data);
+    return response.data;
+  },
+
+  updateApiSlab: async (id: string, data: Partial<PayoutApiSlab>): Promise<{ success: boolean; message: string; slab: PayoutApiSlab; slabs: PayoutApiSlab[] }> => {
+    const response = await apiClient.put(`/payout/api-slabs/${encodeURIComponent(id)}`, data);
+    return response.data;
+  },
+
+  deleteApiSlab: async (id: string): Promise<{ success: boolean; message: string; slabs: PayoutApiSlab[] }> => {
+    const response = await apiClient.delete(`/payout/api-slabs/${encodeURIComponent(id)}`);
     return response.data;
   },
 
