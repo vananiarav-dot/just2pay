@@ -552,8 +552,9 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
         </div>
       )}
 
-      {/* POS WORKSTATION: 2 SIDE-BY-SIDE SECTIONS (VISIBLE TO ALL) */}
-      <div className="space-y-6">
+      {/* POS WORKSTATION: 2 SIDE-BY-SIDE SECTIONS (ONLY FOR MERCHANTS / USERS, HIDDEN FOR ADMIN) */}
+      {!isAdmin && (
+        <div className="space-y-6">
         {/* 2 Side-by-Side Sections Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           
@@ -1078,6 +1079,7 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
           </div>
           </div>
         </div>
+      )}
 
       {/* Global Alerts */}
       {globalNotice && (
