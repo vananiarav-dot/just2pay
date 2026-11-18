@@ -61,6 +61,7 @@ export const AdminPayoutManagement: React.FC = () => {
   });
   const [payoutApiSlabNotice, setPayoutApiSlabNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [savingPayoutApiSlab, setSavingPayoutApiSlab] = useState<boolean>(false);
+  const [isFreezingPayoutApiCharges, setIsFreezingPayoutApiCharges] = useState<boolean>(false);
 
   // Bank Verifications (Penny Drop) State
   const [verifications, setVerifications] = useState<PayoutVerification[]>([]);
@@ -300,6 +301,26 @@ export const AdminPayoutManagement: React.FC = () => {
     } catch (err: any) {
       setPayoutApiSlabs(prev => prev.filter(s => s.id !== id));
       setPayoutApiSlabNotice({ type: 'success', message: 'Slab deleted.' });
+    }
+  };
+
+  const handleFreezePayoutApiCharges = async () => {
+    setIsFreezingPayoutApiCharges(true);
+    setPayoutApiSlabNotice(null);
+    try {
+      const res = await payoutApi.freezeApiCharges();
+      setPayoutApiSlabNotice({
+        type: 'success',
+        message: res.message || 'Historical API charges permanently locked.'
+      });
+      fetchTransactions();
+    } catch (err: any) {
+      setPayoutApiSlabNotice({
+        type: 'error',
+        message: err.response?.data?.message || err.message || 'Failed to lock historical records.'
+      });
+    } finally {
+      setIsFreezingPayoutApiCharges(false);
     }
   };
 
@@ -623,7 +644,7 @@ export const AdminPayoutManagement: React.FC = () => {
   );
 
   const totalPayoutApiCost = successTxns.reduce(
-    (sum, t) => sum + computePayoutApiCharge(t.amount, payoutApiSlabs),
+    (sum, t) => sum + (t.api_charge !== undefined && t.api_charge !== null ? Number(t.api_charge) : computePayoutApiCharge(t.amount, payoutApiSlabs)),
     0
   );
   const totalPayoutNetProfit = totalEarnedPayoutCharges - totalPayoutApiCost;
@@ -1311,18 +1332,25 @@ export const AdminPayoutManagement: React.FC = () => {
                         ₹{Number(item.slab_charge || 0).toFixed(2)}
                       </td>
                       <td className="py-3 px-4 whitespace-nowrap text-xs font-mono text-right">
-                        {item.status === 'success' ? (
-                          <span className="font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg inline-block">
-                            ₹{computePayoutApiCharge(item.amount, payoutApiSlabs).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                          </span>
-                        ) : (
+                        {item.status === 'success' ? (() => {
+                          const apiCost = (item.api_charge !== undefined && item.api_charge !== null)
+                            ? Number(item.api_charge)
+                            : computePayoutApiCharge(item.amount, payoutApiSlabs);
+                          return (
+                            <span className="font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg inline-block">
+                              ₹{apiCost.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </span>
+                          );
+                        })() : (
                           <span className="text-slate-400 font-sans text-[11px]">—</span>
                         )}
                       </td>
                       <td className="py-3 px-4 whitespace-nowrap text-xs font-mono text-right">
                         {item.status === 'success' ? (() => {
                           const userFee = Number(item.slab_charge || 0);
-                          const apiCost = computePayoutApiCharge(item.amount, payoutApiSlabs);
+                          const apiCost = (item.api_charge !== undefined && item.api_charge !== null)
+                            ? Number(item.api_charge)
+                            : computePayoutApiCharge(item.amount, payoutApiSlabs);
                           const netProfit = userFee - apiCost;
                           return (
                             <span className={`font-black px-2 py-0.5 rounded-lg border inline-block ${
@@ -2378,6 +2406,29 @@ export const AdminPayoutManagement: React.FC = () => {
                 </button>
               </div>
             </form>
+
+            {/* Historical Snapshot & Auto-Lock Protection Banner */}
+            <div className="bg-indigo-50/70 border border-indigo-200 rounded-2xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-1.5 font-black text-indigo-950">
+                  <ShieldCheck className="w-4 h-4 text-indigo-600 shrink-0" />
+                  <span>Historical Record Protection (Auto-Lock)</span>
+                </div>
+                <p className="text-[11px] text-indigo-700">
+                  Rate changes only apply to future payouts. Past records retain their frozen snapshot charges and never change.
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={isFreezingPayoutApiCharges}
+                onClick={handleFreezePayoutApiCharges}
+                className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shrink-0 flex items-center gap-1.5 transition shadow-2xs cursor-pointer disabled:opacity-50"
+                title="Lock all past payout transactions with current slab rates"
+              >
+                {isFreezingPayoutApiCharges ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
+                <span>{isFreezingPayoutApiCharges ? 'Locking...' : 'Lock Past Records'}</span>
+              </button>
+            </div>
 
             {/* Slabs List Table */}
             <div className="space-y-2">

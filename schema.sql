@@ -469,6 +469,8 @@ CREATE INDEX IF NOT EXISTS idx_payout_client_order ON public.payout_transactions
 
 ALTER TABLE IF EXISTS public.payout_charge_slabs DISABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.payout_transactions DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.payout_transactions ADD COLUMN IF NOT EXISTS api_charge NUMERIC(15,2);
+ALTER TABLE IF EXISTS public.bbps_bill_payments ADD COLUMN IF NOT EXISTS api_charge NUMERIC(15,2);
 
 -- =============================================================================
 -- 12. WALLET LEDGER TABLE (Bank Passbook Account Statements)

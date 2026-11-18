@@ -1256,7 +1256,7 @@ const sanitizeBbpsDbPayload = (entry) => {
   const allowed = [
     'id', 'user_id', 'firm_name', 'card_last4', 'biller_id', 'biller_name',
     'customer_name', 'customer_mobile', 'customer_pan', 'amount',
-    'service_charge', 'total_deducted', 'refunded', 'refunded_amount',
+    'service_charge', 'api_charge', 'total_deducted', 'refunded', 'refunded_amount',
     'payment_mode', 'client_transaction_id', 'fetch_request_id',
     'api_transaction_id', 'bbps_txn_ref_id', 'status', 'status_message',
     'customer_params', 'created_at', 'updated_at'
@@ -1377,6 +1377,9 @@ router.post('/pay-bill', verifyToken, async (req, res) => {
   const firmName = currentUser?.firm_name || req.user?.firm_name || '';
 
   // 5. PRE-INSERT TRANSACTION RECORD IN DATABASE
+  // Calculate Upstream Live Bill API Cost at the exact moment of execution (Permanent Snapshot)
+  const currentLiveBillApiCharge = calculateLiveBillApiCharge(numAmount);
+
   const newTxnEntry = {
     id: generatedClientTxnId,
     user_id: req.user.id,
@@ -1389,6 +1392,7 @@ router.post('/pay-bill', verifyToken, async (req, res) => {
     customer_pan: cleanPan,
     amount: numAmount,
     service_charge: serviceCharge,
+    api_charge: currentLiveBillApiCharge,
     total_deducted: totalDeduction,
     payment_mode: paymentMode || 'Cash',
     client_transaction_id: generatedClientTxnId,
@@ -1407,7 +1411,11 @@ router.post('/pay-bill', verifyToken, async (req, res) => {
       const dbPayload = sanitizeBbpsDbPayload(newTxnEntry);
       const { error: insertErr } = await supabase.from('bbps_bill_payments').upsert(dbPayload, { onConflict: 'client_transaction_id' });
       if (insertErr) {
-        console.error('[BBPS DB Pre-Entry Error]:', insertErr);
+        // Fallback: If api_charge column does not exist in bbps_bill_payments table yet, embed in customer_params
+        delete dbPayload.api_charge;
+        const currentParams = Array.isArray(dbPayload.customer_params) ? [...dbPayload.customer_params] : [];
+        dbPayload.customer_params = [...currentParams, { name: 'api_charge', value: currentLiveBillApiCharge }];
+        await supabase.from('bbps_bill_payments').upsert(dbPayload, { onConflict: 'client_transaction_id' });
       } else {
         console.log(`[BBPS DB Pre-Entry Success]: Successfully saved ${generatedClientTxnId} to bbps_bill_payments table.`);
       }
@@ -1705,8 +1713,16 @@ router.get('/history', verifyToken, async (req, res) => {
       const finalCharge = rawCharge > 0 ? rawCharge : computeSlabCharge(item.amount);
       const finalTotalDeducted = Number(item.total_deducted || 0) > 0 ? Number(item.total_deducted) : (Number(item.amount || 0) + finalCharge);
 
+      const apiSlabs = loadApiSlabs();
+      const resolvedApiCharge = (item.api_charge !== undefined && item.api_charge !== null)
+        ? Number(item.api_charge)
+        : (item.customer_params && Array.isArray(item.customer_params) && item.customer_params.find(p => p.name === 'api_charge'))
+          ? Number(item.customer_params.find(p => p.name === 'api_charge').value)
+          : calculateLiveBillApiCharge(item.amount, apiSlabs);
+
       return {
         ...item,
+        api_charge: resolvedApiCharge,
         firm_name: firmName,
         card_last4: cardLast4,
         user_name: userName,
@@ -1997,6 +2013,25 @@ const saveApiSlabs = (slabs) => {
   }
 };
 
+/**
+ * Deterministically compute upstream API charge for a given live bill payment amount
+ */
+export const calculateLiveBillApiCharge = (amount, customSlabs) => {
+  const num = Number(amount) || 0;
+  const slabs = (customSlabs || loadApiSlabs() || []).filter(s => s.is_active);
+  if (slabs.length === 0) {
+    if (num <= 50000) return 16;
+    if (num <= 100000) return 32;
+    if (num <= 150000) return 48;
+    return 64;
+  }
+  const matched = slabs.find(s => num >= s.min_amount && num <= s.max_amount);
+  if (matched) return Number(matched.charge_amount);
+  const maxSlab = slabs.reduce((prev, curr) => curr.max_amount > prev.max_amount ? curr : prev, slabs[0]);
+  if (maxSlab && num > maxSlab.max_amount) return Number(maxSlab.charge_amount);
+  return Number(slabs[0].charge_amount);
+};
+
 // GET /api/b2b/api-slabs - Fetch all Live Bill Pay upstream API charge slabs
 router.get('/api-slabs', verifyToken, async (req, res) => {
   try {
@@ -2087,6 +2122,70 @@ router.delete('/api-slabs/:id', verifyToken, requireRoles(['admin']), async (req
     });
   } catch (err) {
     return res.status(500).json({ success: false, message: 'Failed to delete API slab' });
+  }
+});
+
+// POST /api/b2b/freeze-api-charges (Admin Only - Permanently Lock Historical Live Bill API Charges)
+router.post('/freeze-api-charges', verifyToken, requireRoles(['admin']), async (req, res) => {
+  try {
+    const slabs = loadApiSlabs();
+    let lockedCount = 0;
+
+    // 1. Lock in-memory database
+    if (Array.isArray(db.bill_payments)) {
+      db.bill_payments.forEach(b => {
+        if (b.api_charge === undefined || b.api_charge === null) {
+          b.api_charge = calculateLiveBillApiCharge(b.amount, slabs);
+          lockedCount++;
+        }
+      });
+    }
+
+    // 2. Lock in Supabase
+    if (supabase) {
+      try {
+        const { data: rows } = await supabase
+          .from('bbps_bill_payments')
+          .select('id, amount, api_charge, customer_params');
+
+        if (Array.isArray(rows)) {
+          for (const row of rows) {
+            if (row.api_charge === null || row.api_charge === undefined) {
+              const charge = calculateLiveBillApiCharge(row.amount, slabs);
+              let updated = false;
+              try {
+                const { error } = await supabase
+                  .from('bbps_bill_payments')
+                  .update({ api_charge: charge })
+                  .eq('id', row.id);
+                if (!error) updated = true;
+              } catch (_) {}
+
+              if (!updated) {
+                const params = Array.isArray(row.customer_params) ? [...row.customer_params] : [];
+                params.push({ name: 'api_charge', value: charge });
+                await supabase
+                  .from('bbps_bill_payments')
+                  .update({ customer_params: params })
+                  .eq('id', row.id);
+              }
+              lockedCount++;
+            }
+          }
+        }
+      } catch (sbErr) {
+        console.warn('Freeze charges Supabase warning:', sbErr.message);
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Historical API charges locked successfully for ${lockedCount} bill payments.`,
+      lockedCount
+    });
+  } catch (err) {
+    console.error('Freeze API Charges Error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to freeze API charges.' });
   }
 });
 

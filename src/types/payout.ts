@@ -54,6 +54,7 @@ export interface PayoutTransaction {
   utr?: string;
   amount: number;
   slab_charge: number;
+  api_charge?: number;
   total_deducted: number;
   account_number: string;
   ifsc_code: string;

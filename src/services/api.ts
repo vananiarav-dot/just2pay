@@ -446,6 +446,11 @@ export const b2bApi = {
     return response.data;
   },
 
+  freezeApiCharges: async (): Promise<{ success: boolean; message: string; lockedCount: number }> => {
+    const response = await apiClient.post('/b2b/freeze-api-charges');
+    return response.data;
+  },
+
   // USEPAY FUND REQUEST / TOP-UP APIS
   getFundRequestActiveServices: async (): Promise<{ success: boolean; active_services: UsePayActiveServiceItem[]; total_active: number }> => {
     const response = await apiClient.get('/b2b/fund-request/active-services');
@@ -530,6 +535,11 @@ export const payoutApi = {
 
   deleteApiSlab: async (id: string): Promise<{ success: boolean; message: string; slabs: PayoutApiSlab[] }> => {
     const response = await apiClient.delete(`/payout/api-slabs/${encodeURIComponent(id)}`);
+    return response.data;
+  },
+
+  freezeApiCharges: async (): Promise<{ success: boolean; message: string; lockedCount: number }> => {
+    const response = await apiClient.post('/payout/freeze-api-charges');
     return response.data;
   },
 

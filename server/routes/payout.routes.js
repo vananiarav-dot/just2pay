@@ -351,6 +351,25 @@ const savePayoutApiSlabs = (slabs) => {
   }
 };
 
+/**
+ * Deterministically compute upstream API charge for a given payout transfer amount
+ */
+export const calculatePayoutApiCharge = (amount, customSlabs) => {
+  const num = Number(amount) || 0;
+  const slabs = (customSlabs || loadPayoutApiSlabs() || []).filter(s => s.is_active);
+  if (slabs.length === 0) {
+    if (num <= 1000) return 5;
+    if (num <= 25000) return 8;
+    if (num <= 50000) return 12;
+    return 18;
+  }
+  const matched = slabs.find(s => num >= s.min_amount && num <= s.max_amount);
+  if (matched) return Number(matched.charge_amount);
+  const maxSlab = slabs.reduce((prev, curr) => curr.max_amount > prev.max_amount ? curr : prev, slabs[0]);
+  if (maxSlab && num > maxSlab.max_amount) return Number(maxSlab.charge_amount);
+  return Number(slabs[0].charge_amount);
+};
+
 // GET /api/payout/api-slabs - Fetch all Upstream Payout API cost slabs
 router.get('/api-slabs', verifyToken, async (req, res) => {
   try {
@@ -441,6 +460,69 @@ router.delete('/api-slabs/:id', verifyToken, requireRoles(['admin']), async (req
     });
   } catch (err) {
     return res.status(500).json({ success: false, message: 'Failed to delete payout API slab' });
+  }
+});
+
+// POST /api/payout/freeze-api-charges (Admin Only - Permanently Lock Historical Payout API Charges)
+router.post('/freeze-api-charges', verifyToken, requireRoles(['admin']), async (req, res) => {
+  try {
+    const slabs = loadPayoutApiSlabs();
+    let lockedCount = 0;
+
+    // 1. Lock in-memory database
+    if (Array.isArray(db.payout_transactions)) {
+      db.payout_transactions.forEach(t => {
+        if (t.api_charge === undefined || t.api_charge === null) {
+          t.api_charge = calculatePayoutApiCharge(t.amount, slabs);
+          lockedCount++;
+        }
+      });
+    }
+
+    // 2. Lock in Supabase
+    if (supabase) {
+      try {
+        const { data: rows } = await supabase
+          .from('payout_transactions')
+          .select('id, amount, api_charge, api_response');
+
+        if (Array.isArray(rows)) {
+          for (const row of rows) {
+            if (row.api_charge === null || row.api_charge === undefined) {
+              const charge = calculatePayoutApiCharge(row.amount, slabs);
+              let updated = false;
+              try {
+                const { error } = await supabase
+                  .from('payout_transactions')
+                  .update({ api_charge: charge })
+                  .eq('id', row.id);
+                if (!error) updated = true;
+              } catch (_) {}
+
+              if (!updated) {
+                const resp = { ...(row.api_response || {}), api_charge: charge };
+                await supabase
+                  .from('payout_transactions')
+                  .update({ api_response: resp })
+                  .eq('id', row.id);
+              }
+              lockedCount++;
+            }
+          }
+        }
+      } catch (sbErr) {
+        console.warn('Freeze charges Supabase warning:', sbErr.message);
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Historical API charges locked successfully for ${lockedCount} payout transactions.`,
+      lockedCount
+    });
+  } catch (err) {
+    console.error('Freeze API Charges Error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to freeze API charges.' });
   }
 });
 
@@ -642,6 +724,9 @@ router.post('/transfer', verifyToken, async (req, res) => {
       }
     }
 
+    // Calculate Upstream API Cost at the exact moment of execution (Permanent Historical Snapshot)
+    const currentApiCharge = calculatePayoutApiCharge(numAmount);
+
     // Create Initial Transaction Record (Pending)
     newTxn = {
       id: `potxn_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
@@ -653,6 +738,7 @@ router.post('/transfer', verifyToken, async (req, res) => {
       utr: null,
       amount: numAmount,
       slab_charge: charge_amount,
+      api_charge: currentApiCharge,
       total_deducted: total_deducted,
       account_number: cleanAccount,
       ifsc_code: cleanIfsc,
@@ -672,12 +758,13 @@ router.post('/transfer', verifyToken, async (req, res) => {
 
     if (supabase) {
       try {
-        await supabase.from('payout_transactions').insert([{
+        const payload = {
           id: newTxn.id,
           user_id: newTxn.user_id,
           client_order_id: newTxn.client_order_id,
           amount: newTxn.amount,
           slab_charge: newTxn.slab_charge,
+          api_charge: newTxn.api_charge,
           total_deducted: newTxn.total_deducted,
           account_number: newTxn.account_number,
           ifsc_code: newTxn.ifsc_code,
@@ -689,7 +776,14 @@ router.post('/transfer', verifyToken, async (req, res) => {
           refunded_to_wallet: false,
           created_at: newTxn.created_at,
           updated_at: newTxn.updated_at
-        }]);
+        };
+        const { error: insErr } = await supabase.from('payout_transactions').insert([payload]);
+        if (insErr) {
+          // Fallback: If api_charge column does not exist in Supabase yet, store safely inside api_response JSONB
+          delete payload.api_charge;
+          payload.api_response = { api_charge: newTxn.api_charge };
+          await supabase.from('payout_transactions').insert([payload]);
+        }
       } catch (e) {
         console.warn('Supabase payout transaction insert warning:', e.message);
       }
@@ -1951,12 +2045,22 @@ router.get('/history', verifyToken, async (req, res) => {
 
         const { data, error } = await query;
         if (!error && Array.isArray(data)) {
-          transactions = data.map(item => ({
-            ...item,
-            user_name: item.users_profiles?.name || item.user_name || 'Merchant',
-            firm_name: item.users_profiles?.firm_name || '',
-            user_mobile: item.users_profiles?.mobile_number || item.user_mobile || item.mobile_number
-          }));
+          const slabs = loadPayoutApiSlabs();
+          transactions = data.map(item => {
+            const resolvedCharge = (item.api_charge !== undefined && item.api_charge !== null)
+              ? Number(item.api_charge)
+              : (item.api_response && item.api_response.api_charge !== undefined && item.api_response.api_charge !== null)
+                ? Number(item.api_response.api_charge)
+                : calculatePayoutApiCharge(item.amount, slabs);
+
+            return {
+              ...item,
+              api_charge: resolvedCharge,
+              user_name: item.users_profiles?.name || item.user_name || 'Merchant',
+              firm_name: item.users_profiles?.firm_name || '',
+              user_mobile: item.users_profiles?.mobile_number || item.user_mobile || item.mobile_number
+            };
+          });
           return res.status(200).json({ success: true, transactions });
         }
       } catch (e) {
@@ -1964,7 +2068,18 @@ router.get('/history', verifyToken, async (req, res) => {
       }
     }
 
-    transactions = db.payout_transactions || [];
+    const slabs = loadPayoutApiSlabs();
+    transactions = (db.payout_transactions || []).map(item => {
+      const resolvedCharge = (item.api_charge !== undefined && item.api_charge !== null)
+        ? Number(item.api_charge)
+        : (item.api_response && item.api_response.api_charge !== undefined && item.api_response.api_charge !== null)
+          ? Number(item.api_response.api_charge)
+          : calculatePayoutApiCharge(item.amount, slabs);
+      return {
+        ...item,
+        api_charge: resolvedCharge
+      };
+    });
     if (!isAdmin) {
       transactions = transactions.filter(t => t.user_id === req.user.id);
     }

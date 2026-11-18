@@ -168,6 +168,7 @@ export const AdminLiveBillPayHistory: React.FC = () => {
     is_active: true
   });
   const [slabNotice, setSlabNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [isFreezingLiveBillApiCharges, setIsFreezingLiveBillApiCharges] = useState(false);
 
   const { liveBillPayEnabled, toggleLiveBillPay, fetchSettings: fetchLiveBillSettings } = useSettingsStore();
   const [isTogglingLiveBill, setIsTogglingLiveBill] = useState(false);
@@ -276,6 +277,26 @@ export const AdminLiveBillPayHistory: React.FC = () => {
     } catch (err: any) {
       setApiSlabs(prev => prev.filter(s => s.id !== id));
       setSlabNotice({ type: 'success', message: 'Slab deleted.' });
+    }
+  };
+
+  const handleFreezeLiveBillApiCharges = async () => {
+    setIsFreezingLiveBillApiCharges(true);
+    setSlabNotice(null);
+    try {
+      const res = await b2bApi.freezeApiCharges();
+      setSlabNotice({
+        type: 'success',
+        message: res.message || 'Historical Live Bill API charges locked successfully.'
+      });
+      fetchAdminHistory();
+    } catch (err: any) {
+      setSlabNotice({
+        type: 'error',
+        message: err.response?.data?.message || err.message || 'Failed to lock historical records.'
+      });
+    } finally {
+      setIsFreezingLiveBillApiCharges(false);
     }
   };
 
@@ -447,7 +468,7 @@ export const AdminLiveBillPayHistory: React.FC = () => {
   );
 
   const totalApiCost = successTransactions.reduce(
-    (sum, item) => sum + computeLiveBillApiCharge(item.amount, apiSlabs),
+    (sum, item) => sum + (item.api_charge !== undefined && item.api_charge !== null ? Number(item.api_charge) : computeLiveBillApiCharge(item.amount, apiSlabs)),
     0
   );
 
@@ -894,11 +915,16 @@ export const AdminLiveBillPayHistory: React.FC = () => {
 
                       {/* API Charge (Upstream Dynamic Cost) */}
                       <td className="p-3.5 text-xs font-mono text-right whitespace-nowrap">
-                        {(item.status === 'success' || item.status === 'approved') ? (
-                          <span className="font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg inline-block">
-                            ₹{computeLiveBillApiCharge(item.amount, apiSlabs).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                          </span>
-                        ) : (
+                        {(item.status === 'success' || item.status === 'approved') ? (() => {
+                          const apiCost = (item.api_charge !== undefined && item.api_charge !== null)
+                            ? Number(item.api_charge)
+                            : computeLiveBillApiCharge(item.amount, apiSlabs);
+                          return (
+                            <span className="font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg inline-block">
+                              ₹{apiCost.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </span>
+                          );
+                        })() : (
                           <span className="text-slate-400 font-sans text-[11px]">—</span>
                         )}
                       </td>
@@ -907,7 +933,9 @@ export const AdminLiveBillPayHistory: React.FC = () => {
                       <td className="p-3.5 text-xs font-mono text-right whitespace-nowrap">
                         {(item.status === 'success' || item.status === 'approved') ? (() => {
                           const uChg = getServiceCharge(item);
-                          const aChg = computeLiveBillApiCharge(item.amount, apiSlabs);
+                          const aChg = (item.api_charge !== undefined && item.api_charge !== null)
+                            ? Number(item.api_charge)
+                            : computeLiveBillApiCharge(item.amount, apiSlabs);
                           const profit = uChg - aChg;
                           return (
                             <span className={`font-black px-2 py-0.5 rounded-lg border inline-block ${
@@ -1255,6 +1283,29 @@ export const AdminLiveBillPayHistory: React.FC = () => {
                 </button>
               </div>
             </form>
+
+            {/* Historical Snapshot & Auto-Lock Protection Banner */}
+            <div className="bg-indigo-50/70 border border-indigo-200 rounded-2xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-1.5 font-black text-indigo-950">
+                  <ShieldCheck className="w-4 h-4 text-indigo-600 shrink-0" />
+                  <span>Historical Record Protection (Auto-Lock)</span>
+                </div>
+                <p className="text-[11px] text-indigo-700">
+                  Rate changes only apply to future bill payments. Past records retain their frozen snapshot charges and never change.
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={isFreezingLiveBillApiCharges}
+                onClick={handleFreezeLiveBillApiCharges}
+                className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shrink-0 flex items-center gap-1.5 transition shadow-2xs cursor-pointer disabled:opacity-50"
+                title="Lock all past live bill payments with current slab rates"
+              >
+                {isFreezingLiveBillApiCharges ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
+                <span>{isFreezingLiveBillApiCharges ? 'Locking...' : 'Lock Past Records'}</span>
+              </button>
+            </div>
 
             {/* Slabs List Table */}
             <div className="space-y-2">
