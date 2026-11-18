@@ -107,6 +107,93 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
     });
   };
 
+  // Synthesize realistic POS thermal printer motor buzzing, paper feed friction and cutter sound
+  const playPosPrintSound = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+
+      // Helper to generate a thermal printer line-print buzz & friction
+      const playPulse = (start: number, dur: number, freq: number) => {
+        // Motor buzzing tone
+        const osc = ctx.createOscillator();
+        const oscGain = ctx.createGain();
+        const oscFilter = ctx.createBiquadFilter();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, start);
+        osc.frequency.linearRampToValueAtTime(freq * 0.92, start + dur);
+
+        oscFilter.type = 'bandpass';
+        oscFilter.frequency.setValueAtTime(280, start);
+        oscFilter.Q.setValueAtTime(3, start);
+
+        oscGain.gain.setValueAtTime(0.08, start);
+        oscGain.gain.linearRampToValueAtTime(0.06, start + dur * 0.8);
+        oscGain.gain.linearRampToValueAtTime(0.001, start + dur);
+
+        osc.connect(oscFilter);
+        oscFilter.connect(oscGain);
+        oscGain.connect(ctx.destination);
+
+        osc.start(start);
+        osc.stop(start + dur);
+
+        // White noise for paper friction against thermal printhead
+        const bufferSize = Math.floor(ctx.sampleRate * dur);
+        const noiseBuf = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = noiseBuf.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * 0.5;
+        }
+        const noiseSource = ctx.createBufferSource();
+        noiseSource.buffer = noiseBuf;
+
+        const noiseFilter = ctx.createBiquadFilter();
+        noiseFilter.type = 'highpass';
+        noiseFilter.frequency.setValueAtTime(1800, start);
+
+        const noiseGain = ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.045, start);
+        noiseGain.gain.linearRampToValueAtTime(0.001, start + dur);
+
+        noiseSource.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(ctx.destination);
+
+        noiseSource.start(start);
+        noiseSource.stop(start + dur);
+      };
+
+      const t0 = ctx.currentTime + 0.05;
+      // 4 distinct feeding pulses over 2.4 seconds as slip emerges
+      playPulse(t0 + 0.0, 0.42, 195);
+      playPulse(t0 + 0.58, 0.44, 185);
+      playPulse(t0 + 1.18, 0.46, 205);
+      playPulse(t0 + 1.78, 0.42, 190);
+
+      // Paper cutter 'snip' click sound at 2.35s
+      setTimeout(() => {
+        try {
+          const cutOsc = ctx.createOscillator();
+          const cutGain = ctx.createGain();
+          cutOsc.type = 'triangle';
+          cutOsc.frequency.setValueAtTime(130, ctx.currentTime);
+          cutOsc.frequency.exponentialRampToValueAtTime(35, ctx.currentTime + 0.07);
+          cutGain.gain.setValueAtTime(0.16, ctx.currentTime);
+          cutGain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + 0.07);
+          cutOsc.connect(cutGain);
+          cutGain.connect(ctx.destination);
+          cutOsc.start();
+          cutOsc.stop(ctx.currentTime + 0.07);
+        } catch {}
+      }, 2350);
+    } catch (e) {
+      console.warn('Audio playback not supported:', e);
+    }
+  };
+
   const handleSlipUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -240,7 +327,11 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
           time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
         };
         setPrintedSlipData(printedSlip);
+        playPosPrintSound();
         setIsPrinting(true);
+        setTimeout(() => {
+          setIsPrinting(false);
+        }, 2600);
         setSubmitSuccess(res.message);
         setAmount('');
         setRrnNumber('');
@@ -480,25 +571,29 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
               
               {/* Printing Status Badge */}
               {isPrinting && (
-                <div className="mb-1.5 px-2.5 py-0.5 rounded-full bg-emerald-600 text-white text-[9px] font-bold flex items-center gap-1 shadow-sm animate-pulse">
-                  <Sparkles className="w-2.5 h-2.5 animate-spin" />
+                <div className="mb-2 px-3 py-1 rounded-full bg-emerald-600 text-white text-[9px] font-bold flex items-center gap-1.5 shadow-md animate-pulse">
+                  <Sparkles className="w-3 h-3 animate-spin" />
                   <span>🖨️ Printing Thermal Slip...</span>
                 </div>
               )}
 
-              {/* The Thermal Paper Slip (Emerges completely upwards from the machine printer head) */}
-              <div className={`w-[90%] transition-all duration-700 ease-out transform origin-bottom overflow-hidden ${
-                isPrinting || submitSuccess || printedSlipData
-                  ? 'max-h-[380px] opacity-100 -translate-y-1 mb-1.5 scale-100 pointer-events-auto'
-                  : 'max-h-0 opacity-0 translate-y-6 mb-0 scale-95 pointer-events-none'
-              }`}>
-                <div className="bg-gradient-to-b from-amber-50/98 via-white to-amber-50/95 text-slate-800 rounded-t-xl p-3 shadow-xl border-x border-t border-dashed border-amber-300 font-mono text-[9px] space-y-1.5">
-                  <div className="flex items-center justify-between pb-1 border-b border-dashed border-slate-300">
-                    <div>
-                      <p className="font-black text-[11px] tracking-wider text-slate-900 leading-none">JUST2PAY EDC SWIPE</p>
-                      <p className="text-[8px] text-slate-500 uppercase font-semibold mt-0.5">
-                        {printedSlipData?.bankName || selectedMachine?.bank_name || 'HDFC Bank'} • {printedSlipData?.terminalId || selectedMachine?.terminal_id || 'TID_8841'}
-                      </p>
+              {/* The Thermal Paper Slip (Emerges slowly & realistically from slot with 3D Curled Head) */}
+              <div 
+                style={{ perspective: '1000px' }}
+                className={`w-[92%] transition-all duration-[2400ms] cubic-bezier(0.2, 0.8, 0.2, 1) transform origin-bottom overflow-visible ${
+                  isPrinting || submitSuccess || printedSlipData
+                    ? 'max-h-[460px] opacity-100 -translate-y-2 mb-2 scale-100 pointer-events-auto'
+                    : 'max-h-0 opacity-0 translate-y-12 mb-0 scale-90 pointer-events-none'
+                }`}
+              >
+                {/* 3D Curled Receipt Card with forward curl */}
+                <div className="bg-gradient-to-b from-amber-100/95 via-amber-50/98 to-white text-slate-800 rounded-t-[2.2rem] rounded-b-md p-3.5 shadow-[0_20px_35px_-8px_rgba(0,0,0,0.3),0_10px_15px_-5px_rgba(0,0,0,0.12)] border-x border-t-4 border-amber-300/80 font-mono text-[9px] space-y-1.5 transform -rotate-x-[6deg] origin-bottom transition-transform duration-700">
+                  
+                  {/* Curled Top Cylinder Head Simulation */}
+                  <div className="relative -mt-2 -mx-2 mb-2.5 pt-1.5 pb-1 px-3 bg-gradient-to-b from-amber-200/90 via-amber-100/95 to-amber-50 rounded-t-[2rem] border-b border-amber-200 shadow-inner flex items-center justify-between">
+                    <div className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                      <span className="text-[7.5px] font-black uppercase tracking-wider text-slate-700">● THERMAL RECEIPT ROLL</span>
                     </div>
                     <button
                       type="button"
@@ -507,16 +602,22 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
                         setSubmitSuccess(null);
                         setPrintedSlipData(null);
                       }}
-                      className="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-rose-100 hover:text-rose-700 text-slate-600 text-[8px] font-bold cursor-pointer transition shadow-2xs"
+                      className="px-1.5 py-0.5 rounded-md bg-white/90 hover:bg-rose-500 hover:text-white text-slate-700 text-[8px] font-black cursor-pointer transition shadow-2xs"
                       title="Tear off receipt"
                     >
                       ✕ Tear
                     </button>
                   </div>
 
-                  <p className="text-[7px] text-slate-400 text-center">
-                    {printedSlipData?.date || new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} • {printedSlipData?.time || new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
-                  </p>
+                  <div className="text-center pb-1 border-b border-dashed border-slate-300">
+                    <p className="font-black text-xs tracking-wider text-slate-900 leading-none">JUST2PAY EDC SWIPE</p>
+                    <p className="text-[8px] text-slate-500 uppercase font-semibold mt-0.5">
+                      {printedSlipData?.bankName || selectedMachine?.bank_name || 'HDFC Bank'} • {printedSlipData?.terminalId || selectedMachine?.terminal_id || 'TID_8841'}
+                    </p>
+                    <p className="text-[7px] text-slate-400 mt-0.5">
+                      {printedSlipData?.date || new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} • {printedSlipData?.time || new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
 
                   <div className="space-y-0.5 py-0.5">
                     <div className="flex justify-between">
