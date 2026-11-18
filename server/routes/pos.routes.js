@@ -250,25 +250,29 @@ router.post('/requests', verifyToken, async (req, res) => {
       if (data) user = data;
     }
 
-    // Validate POS Machine assignment
-    const assignedIds = Array.isArray(user?.assigned_pos_machine_ids) ? user.assigned_pos_machine_ids : [];
-    if (!pos_machine_id || !assignedIds.includes(pos_machine_id)) {
-      return res.status(403).json({
-        success: false,
-        message: 'This POS machine is not assigned to your account. Please select an assigned machine or contact admin.'
-      });
-    }
+    const isAdmin = req.user.role === 'admin';
 
-    // Validate Settlement Mode permission
-    const allowedMode = user?.pos_allowed_settlement_types || 'BOTH';
-    if (allowedMode === 'NONE') {
-      return res.status(403).json({ success: false, message: 'POS swipe services are currently disabled for your account.' });
-    }
-    if (allowedMode === 'T0_ONLY' && cleanSettlement !== 'T0') {
-      return res.status(403).json({ success: false, message: 'Only instant T+0 settlement is permitted for your account.' });
-    }
-    if (allowedMode === 'T1_ONLY' && cleanSettlement !== 'T1') {
-      return res.status(403).json({ success: false, message: 'Only overnight T+1 settlement is permitted for your account.' });
+    // Validate POS Machine assignment (retailer/subuser only)
+    if (!isAdmin) {
+      const assignedIds = Array.isArray(user?.assigned_pos_machine_ids) ? user.assigned_pos_machine_ids : [];
+      if (!pos_machine_id || !assignedIds.includes(pos_machine_id)) {
+        return res.status(403).json({
+          success: false,
+          message: 'This POS machine is not assigned to your account. Please select an assigned machine or contact admin.'
+        });
+      }
+
+      // Validate Settlement Mode permission
+      const allowedMode = user?.pos_allowed_settlement_types || 'BOTH';
+      if (allowedMode === 'NONE') {
+        return res.status(403).json({ success: false, message: 'POS swipe services are currently disabled for your account.' });
+      }
+      if (allowedMode === 'T0_ONLY' && cleanSettlement !== 'T0') {
+        return res.status(403).json({ success: false, message: 'Only instant T+0 settlement is permitted for your account.' });
+      }
+      if (allowedMode === 'T1_ONLY' && cleanSettlement !== 'T1') {
+        return res.status(403).json({ success: false, message: 'Only overnight T+1 settlement is permitted for your account.' });
+      }
     }
 
     // Find Machine
