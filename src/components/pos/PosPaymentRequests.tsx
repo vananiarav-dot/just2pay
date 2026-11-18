@@ -48,6 +48,21 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
   // View Slip Image Modal
   const [viewSlipUrl, setViewSlipUrl] = useState<string | null>(null);
 
+  // Helper permissions for settlements
+  const userAllowedSettlement = user.pos_allowed_settlement_types || 'BOTH';
+  const isT0Allowed = userAllowedSettlement === 'BOTH' || userAllowedSettlement === 'T0_ONLY';
+  const isT1Allowed = userAllowedSettlement === 'BOTH' || userAllowedSettlement === 'T1_ONLY';
+
+  const handleOpenSubmitModal = () => {
+    if (isT0Allowed) {
+      setSettlementType('T0');
+    } else if (isT1Allowed) {
+      setSettlementType('T1');
+    }
+    setSubmitError(null);
+    setShowSubmitModal(true);
+  };
+
   const loadData = async () => {
     try {
       setLoading(true);
@@ -260,16 +275,17 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
               </button>
             )}
 
-            <button
-              onClick={() => {
-                setShowSubmitModal(true);
-                setSubmitError(null);
-              }}
-              className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/30 transition transform active:scale-95 cursor-pointer whitespace-nowrap"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Submit Swipe Request</span>
-            </button>
+            {!isAdmin && (
+              <button
+                onClick={handleOpenSubmitModal}
+                disabled={machines.length === 0 || userAllowedSettlement === 'NONE'}
+                className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/30 transition transform active:scale-95 cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                title={machines.length === 0 ? 'No POS terminal assigned' : 'Submit POS swipe slip'}
+              >
+                <Plus className="w-4 h-4" />
+                <span>Submit Swipe Request</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -357,6 +373,32 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
         <div className="flex items-center gap-3 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold animate-in fade-in">
           <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
           <span>{submitSuccess}</span>
+        </div>
+      )}
+
+      {/* Retailer Notice: No POS Machine Assigned */}
+      {!isAdmin && !loading && machines.length === 0 && (
+        <div className="flex items-center gap-3 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold animate-in fade-in">
+          <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+          <div>
+            <p className="font-bold text-sm">કોઈ POS મશીન અસાઇન કરેલ નથી (No POS Machine Assigned)</p>
+            <p className="text-[11px] text-amber-700 font-normal mt-0.5">
+              કાર્ડ સ્વાઇપ સ્લિપ સબમિટ કરવા માટે કૃપા કરીને એડમિનનો સંપર્ક કરો જેથી તમારા એકાઉન્ટમાં POS મશીન અસાઇન થઈ શકે.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Retailer Notice: POS Blocked */}
+      {!isAdmin && !loading && userAllowedSettlement === 'NONE' && (
+        <div className="flex items-center gap-3 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-xs font-semibold animate-in fade-in">
+          <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+          <div>
+            <p className="font-bold text-sm">POS સેવા બંધ કરેલ છે (POS Service Blocked)</p>
+            <p className="text-[11px] text-rose-700 font-normal mt-0.5">
+              તમારા એકાઉન્ટ માટે POS કાર્ડ સ્વાઇપ સુવિધા એડમિન દ્વારા અસ્થાયી રૂપે બંધ કરવામાં આવી છે.
+            </p>
+          </div>
         </div>
       )}
 
@@ -619,75 +661,92 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
             <form onSubmit={handleSubmitRequest} className="space-y-4">
               {/* Select Machine */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Select POS Terminal *</label>
-                <select
-                  value={selectedMachineId}
-                  onChange={(e) => setSelectedMachineId(e.target.value)}
-                  className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-bold text-slate-800"
-                >
-                  {machines.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.machine_name} (TID: {m.terminal_id}) - {m.bank_name}
-                    </option>
-                  ))}
-                </select>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Select POS Terminal {machines.length > 1 ? `(${machines.length} Assigned)` : ''} *
+                </label>
+                {machines.length === 0 ? (
+                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium">
+                    તમને કોઈ POS મશીન અસાઇન કરેલ નથી. કૃપા કરીને એડમિનનો સંપર્ક કરો.
+                  </div>
+                ) : (
+                  <select
+                    value={selectedMachineId}
+                    onChange={(e) => setSelectedMachineId(e.target.value)}
+                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-bold text-slate-800"
+                  >
+                    {machines.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.machine_name} (TID: {m.terminal_id}) - {m.bank_name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {machines.length > 1 && (
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    તમને {machines.length} મશીનો અસાઇન થયેલા છે. સ્લિપ મુજબ યોગ્ય મશીન સિલેક્ટ કરો.
+                  </p>
+                )}
               </div>
 
               {/* Settlement Mode Selection: T+0 vs T+1 */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">Settlement Type *</label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className={`grid ${isT0Allowed && isT1Allowed ? 'grid-cols-2' : 'grid-cols-1'} gap-3`}>
                   {/* T+0 Card */}
-                  <div
-                    onClick={() => setSettlementType('T0')}
-                    className={`p-3.5 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
-                      settlementType === 'T0'
-                        ? 'border-amber-500 bg-amber-50/60 shadow-sm'
-                        : 'border-slate-200 hover:border-slate-300 bg-white'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-black text-amber-900">⚡ T+0 Instant</span>
-                      <input
-                        type="radio"
-                        checked={settlementType === 'T0'}
-                        onChange={() => setSettlementType('T0')}
-                        className="text-amber-600"
-                      />
+                  {isT0Allowed && (
+                    <div
+                      onClick={() => setSettlementType('T0')}
+                      className={`p-3.5 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
+                        settlementType === 'T0'
+                          ? 'border-amber-500 bg-amber-50/60 shadow-sm'
+                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-black text-amber-900">⚡ T+0 Instant</span>
+                        <input
+                          type="radio"
+                          checked={settlementType === 'T0'}
+                          onChange={() => setSettlementType('T0')}
+                          className="text-amber-600"
+                        />
+                      </div>
+                      <p className="text-[11px] text-slate-600 leading-tight">
+                        Funds credited <b>today</b> directly into spendable POS Wallet.
+                      </p>
+                      <span className="text-[10px] font-bold text-amber-800 mt-2 block">
+                        Fee: {Number(user.pos_t0_charge_percent !== undefined && user.pos_t0_charge_percent !== null ? user.pos_t0_charge_percent : (selectedMachine?.default_t0_charge_percent || 1.20)).toFixed(2)}%
+                      </span>
                     </div>
-                    <p className="text-[11px] text-slate-600 leading-tight">
-                      Funds credited <b>today</b> directly into spendable POS Wallet.
-                    </p>
-                    <span className="text-[10px] font-bold text-amber-800 mt-2 block">
-                      Fee: {Number(selectedMachine?.default_t0_charge_percent || 1.20).toFixed(2)}%
-                    </span>
-                  </div>
+                  )}
 
                   {/* T+1 Card */}
-                  <div
-                    onClick={() => setSettlementType('T1')}
-                    className={`p-3.5 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
-                      settlementType === 'T1'
-                        ? 'border-cyan-500 bg-cyan-50/60 shadow-sm'
-                        : 'border-slate-200 hover:border-slate-300 bg-white'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-black text-cyan-900">📅 T+1 Clearing</span>
-                      <input
-                        type="radio"
-                        checked={settlementType === 'T1'}
-                        onChange={() => setSettlementType('T1')}
-                        className="text-cyan-600"
-                      />
+                  {isT1Allowed && (
+                    <div
+                      onClick={() => setSettlementType('T1')}
+                      className={`p-3.5 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
+                        settlementType === 'T1'
+                          ? 'border-cyan-500 bg-cyan-50/60 shadow-sm'
+                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-black text-cyan-900">📅 T+1 Clearing</span>
+                        <input
+                          type="radio"
+                          checked={settlementType === 'T1'}
+                          onChange={() => setSettlementType('T1')}
+                          className="text-cyan-600"
+                        />
+                      </div>
+                      <p className="text-[11px] text-slate-600 leading-tight">
+                        Overnight clearing. Settle into spendable POS Wallet <b>tomorrow</b>.
+                      </p>
+                      <span className="text-[10px] font-bold text-cyan-800 mt-2 block">
+                        Fee: {Number(user.pos_t1_charge_percent !== undefined && user.pos_t1_charge_percent !== null ? user.pos_t1_charge_percent : (selectedMachine?.default_t1_charge_percent || 0.80)).toFixed(2)}%
+                      </span>
                     </div>
-                    <p className="text-[11px] text-slate-600 leading-tight">
-                      Overnight clearing. Settle into spendable POS Wallet <b>tomorrow</b>.
-                    </p>
-                    <span className="text-[10px] font-bold text-cyan-800 mt-2 block">
-                      Fee: {Number(selectedMachine?.default_t1_charge_percent || 0.80).toFixed(2)}%
-                    </span>
-                  </div>
+                  )}
                 </div>
               </div>
 

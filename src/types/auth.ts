@@ -22,6 +22,8 @@ export interface UserProfile {
   pos_t1_pending_balance?: number;
   pos_t0_charge_percent?: number;
   pos_t1_charge_percent?: number;
+  assigned_pos_machine_ids?: string[];
+  pos_allowed_settlement_types?: 'BOTH' | 'T0_ONLY' | 'T1_ONLY' | 'NONE';
   hold_balance: number;
   commission_balance: number;
   t_plus_one_balance: number;

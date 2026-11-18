@@ -76,6 +76,18 @@ router.get('/machines', verifyToken, async (req, res) => {
         : db.pos_machines.filter(m => m.is_active !== false);
     }
 
+    // For non-admin (retailer / user), only return machines that are assigned to them!
+    if (!isAdmin) {
+      const userId = req.user.id;
+      let caller = (db.users || []).find(u => u.id === userId);
+      if (!caller && supabase) {
+        const { data } = await supabase.from('users_profiles').select('*').eq('id', userId).maybeSingle();
+        if (data) caller = data;
+      }
+      const assignedIds = Array.isArray(caller?.assigned_pos_machine_ids) ? caller.assigned_pos_machine_ids : [];
+      machines = machines.filter(m => assignedIds.includes(m.id));
+    }
+
     return res.status(200).json({ success: true, machines });
   } catch (err) {
     console.error('Fetch POS machines error:', err);
@@ -235,6 +247,27 @@ router.post('/requests', verifyToken, async (req, res) => {
     if (!user && supabase) {
       const { data } = await supabase.from('users_profiles').select('*').eq('id', userId).maybeSingle();
       if (data) user = data;
+    }
+
+    // Validate POS Machine assignment
+    const assignedIds = Array.isArray(user?.assigned_pos_machine_ids) ? user.assigned_pos_machine_ids : [];
+    if (!pos_machine_id || !assignedIds.includes(pos_machine_id)) {
+      return res.status(403).json({
+        success: false,
+        message: 'This POS machine is not assigned to your account. Please select an assigned machine or contact admin.'
+      });
+    }
+
+    // Validate Settlement Mode permission
+    const allowedMode = user?.pos_allowed_settlement_types || 'BOTH';
+    if (allowedMode === 'NONE') {
+      return res.status(403).json({ success: false, message: 'POS swipe services are currently disabled for your account.' });
+    }
+    if (allowedMode === 'T0_ONLY' && cleanSettlement !== 'T0') {
+      return res.status(403).json({ success: false, message: 'Only instant T+0 settlement is permitted for your account.' });
+    }
+    if (allowedMode === 'T1_ONLY' && cleanSettlement !== 'T1') {
+      return res.status(403).json({ success: false, message: 'Only overnight T+1 settlement is permitted for your account.' });
     }
 
     // Find Machine

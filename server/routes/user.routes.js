@@ -398,7 +398,9 @@ router.post('/create-subuser', verifyToken, requireRoles(['admin', 'super_distri
     const { 
       name, firstName, middleName, lastName, firm_name, email, mobile_number, role, 
       target_distributor_id, home_address, firm_address, profile_photo_url,
-      qr_charge_percent, charge_percentage 
+      qr_charge_percent, charge_percentage,
+      assigned_pos_machine_ids, pos_allowed_settlement_types,
+      pos_t0_charge_percent, pos_t1_charge_percent
     } = req.body;
     const currentUser = req.user;
 
@@ -410,6 +412,24 @@ router.post('/create-subuser', verifyToken, requireRoles(['admin', 'super_distri
       userRole = 'distributor';
     } else if (currentUser.role === 'distributor') {
       userRole = 'user';
+    }
+
+    let userAssignedMachines = [];
+    let userAllowedSettlement = 'BOTH';
+    let userPosT0 = null;
+    let userPosT1 = null;
+
+    if (currentUser.role === 'admin') {
+      if (Array.isArray(assigned_pos_machine_ids)) userAssignedMachines = assigned_pos_machine_ids;
+      if (pos_allowed_settlement_types) userAllowedSettlement = pos_allowed_settlement_types;
+      if (pos_t0_charge_percent !== undefined && pos_t0_charge_percent !== null && pos_t0_charge_percent !== '') {
+        const val = parseFloat(pos_t0_charge_percent);
+        userPosT0 = isNaN(val) ? null : val;
+      }
+      if (pos_t1_charge_percent !== undefined && pos_t1_charge_percent !== null && pos_t1_charge_percent !== '') {
+        const val = parseFloat(pos_t1_charge_percent);
+        userPosT1 = isNaN(val) ? null : val;
+      }
     }
 
     const userFirm = firm_name || (userRole === 'distributor' ? 'Distributor Firm' : 'Retailer Firm');
@@ -530,6 +550,12 @@ router.post('/create-subuser', verifyToken, requireRoles(['admin', 'super_distri
       mpin_set: false,
       qr_charge_percent: userChargePct,
       charge_percentage: userChargePct,
+      pos_balance: 0.00,
+      pos_t1_pending_balance: 0.00,
+      assigned_pos_machine_ids: userAssignedMachines,
+      pos_allowed_settlement_types: userAllowedSettlement,
+      pos_t0_charge_percent: userPosT0,
+      pos_t1_charge_percent: userPosT1,
       distributor_id: distId,
       super_distributor_id: superDistId,
       kyc_status: userRole === 'admin' ? 'verified' : 'not_submitted',
@@ -699,7 +725,9 @@ router.put('/:id', verifyToken, requireRoles(['admin', 'super_distributor', 'dis
     const { 
       name, firstName, middleName, lastName, firm_name, mobile_number, role, 
       email, status, home_address, firm_address, profile_photo_url, target_distributor_id,
-      qr_charge_percent, charge_percentage 
+      qr_charge_percent, charge_percentage,
+      assigned_pos_machine_ids, pos_allowed_settlement_types,
+      pos_t0_charge_percent, pos_t1_charge_percent
     } = req.body;
 
     if (firstName !== undefined) targetUser.first_name = firstName;
@@ -719,11 +747,33 @@ router.put('/:id', verifyToken, requireRoles(['admin', 'super_distributor', 'dis
     if (firm_address !== undefined) targetUser.firm_address = (firm_address || '').trim();
     if (profile_photo_url !== undefined) targetUser.profile_photo_url = profile_photo_url;
 
-    // Only Admin can change user role, status or distributor mapping
+    // Only Admin can change user role, status or distributor mapping, or assign POS machines & charges
     if (currentUser.role === 'admin') {
       if (role) targetUser.role = role;
       if (status) targetUser.status = status;
       if (target_distributor_id !== undefined) targetUser.distributor_id = target_distributor_id || null;
+      if (assigned_pos_machine_ids !== undefined) {
+        targetUser.assigned_pos_machine_ids = Array.isArray(assigned_pos_machine_ids) ? assigned_pos_machine_ids : [];
+      }
+      if (pos_allowed_settlement_types !== undefined) {
+        targetUser.pos_allowed_settlement_types = pos_allowed_settlement_types;
+      }
+      if (pos_t0_charge_percent !== undefined) {
+        if (pos_t0_charge_percent === null || pos_t0_charge_percent === '') {
+          targetUser.pos_t0_charge_percent = null;
+        } else {
+          const val = parseFloat(pos_t0_charge_percent);
+          targetUser.pos_t0_charge_percent = isNaN(val) ? null : val;
+        }
+      }
+      if (pos_t1_charge_percent !== undefined) {
+        if (pos_t1_charge_percent === null || pos_t1_charge_percent === '') {
+          targetUser.pos_t1_charge_percent = null;
+        } else {
+          const val = parseFloat(pos_t1_charge_percent);
+          targetUser.pos_t1_charge_percent = isNaN(val) ? null : val;
+        }
+      }
     }
 
     let newChargeVal = undefined;

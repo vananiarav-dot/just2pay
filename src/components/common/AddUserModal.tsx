@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, Camera, User, Mail, Phone, MapPin, 
   Building2, Shield, AlertCircle, CheckCircle2, Loader2,
-  Copy, Check, Eye, EyeOff, Key
+  Copy, Check, Eye, EyeOff, Key, CreditCard
 } from 'lucide-react';
-import { userApi } from '../../services/api';
+import { userApi, posApi } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import type { UserProfile, UserRole } from '../../types/auth';
+import type { PosMachine } from '../../types/pos';
 
 interface AddUserModalProps {
   isOpen: boolean;
@@ -49,6 +50,13 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
   const [assignedDistributorId, setAssignedDistributorId] = useState<string>('');
   const [qrChargePercent, setQrChargePercent] = useState<string>('');
 
+  // POS Configuration States (Admin only)
+  const [availablePosMachines, setAvailablePosMachines] = useState<PosMachine[]>([]);
+  const [assignedPosMachineIds, setAssignedPosMachineIds] = useState<string[]>([]);
+  const [posAllowedSettlementTypes, setPosAllowedSettlementTypes] = useState<'BOTH' | 'T0_ONLY' | 'T1_ONLY' | 'NONE'>('BOTH');
+  const [posT0ChargePercent, setPosT0ChargePercent] = useState<string>('');
+  const [posT1ChargePercent, setPosT1ChargePercent] = useState<string>('');
+
   const parentOptions = React.useMemo(() => {
     const usersList = allUsers.length > 0 ? allUsers : distributors;
     if (role === 'distributor') {
@@ -81,6 +89,16 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
   const [copiedCredentials, setCopiedCredentials] = useState(false);
 
   useEffect(() => {
+    if (isOpen && currentUser?.role === 'admin') {
+      posApi.getMachines(true).then((res) => {
+        if (res.success && Array.isArray(res.machines)) {
+          setAvailablePosMachines(res.machines);
+        }
+      }).catch(err => console.error('Failed to load POS machines in modal:', err));
+    }
+  }, [isOpen, currentUser]);
+
+  useEffect(() => {
     if (isOpen) {
       if (userToEdit) {
         const parts = (userToEdit.name || '').trim().split(/\s+/);
@@ -101,6 +119,21 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
           : (userToEdit.charge_percentage !== undefined && userToEdit.charge_percentage !== null ? userToEdit.charge_percentage : '');
         setQrChargePercent(chargeVal !== '' ? String(chargeVal) : '');
         setPhotoPreview(userToEdit.profile_photo_url || null);
+
+        // POS Configuration
+        const posIds = Array.isArray(userToEdit.assigned_pos_machine_ids) ? userToEdit.assigned_pos_machine_ids : [];
+        setAssignedPosMachineIds(posIds);
+        setPosAllowedSettlementTypes(userToEdit.pos_allowed_settlement_types || 'BOTH');
+        setPosT0ChargePercent(
+          userToEdit.pos_t0_charge_percent !== undefined && userToEdit.pos_t0_charge_percent !== null
+            ? String(userToEdit.pos_t0_charge_percent)
+            : ''
+        );
+        setPosT1ChargePercent(
+          userToEdit.pos_t1_charge_percent !== undefined && userToEdit.pos_t1_charge_percent !== null
+            ? String(userToEdit.pos_t1_charge_percent)
+            : ''
+        );
       } else {
         setFirstName('');
         setMiddleName('');
@@ -114,6 +147,12 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
         setAssignedDistributorId('');
         setQrChargePercent('');
         setPhotoPreview(null);
+
+        // Reset POS Configuration
+        setAssignedPosMachineIds([]);
+        setPosAllowedSettlementTypes('BOTH');
+        setPosT0ChargePercent('');
+        setPosT1ChargePercent('');
       }
       setErrorMessage(null);
       setSuccessMessage(null);
@@ -271,7 +310,11 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
     try {
       const parsedCharge = qrChargePercent.trim() !== '' ? parseFloat(qrChargePercent) : 0;
       const finalCharge = isNaN(parsedCharge) ? 0 : parsedCharge;
-      const payload = {
+
+      const parsedT0 = posT0ChargePercent.trim() !== '' ? parseFloat(posT0ChargePercent) : null;
+      const parsedT1 = posT1ChargePercent.trim() !== '' ? parseFloat(posT1ChargePercent) : null;
+
+      const payload: any = {
         firstName,
         middleName,
         lastName,
@@ -288,6 +331,13 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
         profile_photo_url: photoPreview || ''
       };
 
+      if (currentUser?.role === 'admin') {
+        payload.assigned_pos_machine_ids = assignedPosMachineIds;
+        payload.pos_allowed_settlement_types = posAllowedSettlementTypes;
+        payload.pos_t0_charge_percent = parsedT0 !== null && !isNaN(parsedT0) ? parsedT0 : null;
+        payload.pos_t1_charge_percent = parsedT1 !== null && !isNaN(parsedT1) ? parsedT1 : null;
+      }
+
       if (userToEdit) {
         const res = await userApi.updateUser(userToEdit.id, payload);
         if (res.success) {
@@ -300,6 +350,12 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
           userToEdit.email = email;
           userToEdit.mobile_number = mobileNumber;
           userToEdit.role = role;
+          if (currentUser?.role === 'admin') {
+            userToEdit.assigned_pos_machine_ids = assignedPosMachineIds;
+            userToEdit.pos_allowed_settlement_types = posAllowedSettlementTypes;
+            userToEdit.pos_t0_charge_percent = payload.pos_t0_charge_percent;
+            userToEdit.pos_t1_charge_percent = payload.pos_t1_charge_percent;
+          }
           setSuccessMessage(res.message || 'User updated successfully!');
           if (onUserAdded) onUserAdded();
           setTimeout(() => {
@@ -680,6 +736,187 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
                 </div>
 
               </div>
+
+              {/* CARD 3: POS MACHINE & SETTLEMENT SETTINGS (ADMIN ONLY) */}
+              {currentUser?.role === 'admin' && (
+                <div className="bg-slate-50/80 border border-slate-200 rounded-3xl p-5 sm:p-6 space-y-5">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-700 shrink-0">
+                        <CreditCard className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-900 tracking-wide">POS Machine & Settlement Settings</h3>
+                        <p className="text-[10px] text-slate-500 font-medium">Assign specific POS terminals and configure T+0 / T+1 rates for this user.</p>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider border border-emerald-200">
+                      Admin Control
+                    </span>
+                  </div>
+
+                  {/* POS MACHINES MULTI-ASSIGNMENT */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-600">
+                        ASSIGN POS MACHINES ({assignedPosMachineIds.length} SELECTED)
+                      </label>
+                      {availablePosMachines.length > 0 && (
+                        <div className="flex items-center gap-2 text-[10px] font-bold">
+                          <button
+                            type="button"
+                            onClick={() => setAssignedPosMachineIds(availablePosMachines.map(m => m.id))}
+                            className="text-purple-600 hover:text-purple-800 cursor-pointer"
+                          >
+                            Select All
+                          </button>
+                          <span className="text-slate-300">|</span>
+                          <button
+                            type="button"
+                            onClick={() => setAssignedPosMachineIds([])}
+                            className="text-slate-500 hover:text-slate-700 cursor-pointer"
+                          >
+                            Clear All
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {availablePosMachines.length === 0 ? (
+                      <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-xs">
+                        No POS machines found in system. Add machines in <span className="font-bold">POS Master</span> first.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {availablePosMachines.map((m) => {
+                          const isAssigned = assignedPosMachineIds.includes(m.id);
+                          return (
+                            <label
+                              key={m.id}
+                              className={`flex items-start gap-3 p-3 rounded-2xl border transition cursor-pointer ${
+                                isAssigned 
+                                  ? 'bg-emerald-50/70 border-emerald-300 ring-1 ring-emerald-400' 
+                                  : 'bg-white border-slate-200 hover:border-slate-300'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isAssigned}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setAssignedPosMachineIds([...assignedPosMachineIds, m.id]);
+                                  } else {
+                                    setAssignedPosMachineIds(assignedPosMachineIds.filter(id => id !== m.id));
+                                  }
+                                }}
+                                className="mt-0.5 w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="text-xs font-bold text-slate-800 truncate">{m.machine_name}</div>
+                                <div className="text-[10px] text-slate-500 font-mono">TID: {m.terminal_id} | {m.bank_name}</div>
+                                <div className="text-[9px] text-slate-400 mt-0.5">
+                                  Def. Rates: T0: {m.default_t0_charge_percent}% | T1: {m.default_t1_charge_percent}%
+                                </div>
+                              </div>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <p className="text-[10px] text-slate-500 mt-1.5 font-medium uppercase tracking-tight">
+                      Only machines checked here will be visible in this user's POS swipe submission page.
+                    </p>
+                  </div>
+
+                  {/* ALLOWED SETTLEMENT TYPES */}
+                  <div>
+                    <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-600 mb-1.5">
+                      ALLOWED SETTLEMENT MODES (T+0 / T+1)
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {[
+                        { id: 'BOTH', label: '🟢 Both (T+0 & T+1)', desc: 'Retailer can pick either' },
+                        { id: 'T0_ONLY', label: '⚡ Only T+0 (Instant)', desc: 'Instant credit only' },
+                        { id: 'T1_ONLY', label: '📅 Only T+1 (Next Day)', desc: 'Overnight clearing only' },
+                        { id: 'NONE', label: '🚫 Disabled (Blocked)', desc: 'Cannot submit swipe' }
+                      ].map((opt) => (
+                        <label
+                          key={opt.id}
+                          onClick={() => setPosAllowedSettlementTypes(opt.id as any)}
+                          className={`p-3 rounded-2xl border text-left cursor-pointer transition flex flex-col justify-between ${
+                            posAllowedSettlementTypes === opt.id
+                              ? 'bg-purple-50/70 border-purple-400 ring-1 ring-purple-400'
+                              : 'bg-white border-slate-200 hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[11px] font-bold text-slate-800">{opt.label}</span>
+                            <input
+                              type="radio"
+                              name="posAllowedSettlement"
+                              checked={posAllowedSettlementTypes === opt.id}
+                              onChange={() => setPosAllowedSettlementTypes(opt.id as any)}
+                              className="w-3.5 h-3.5 text-purple-600"
+                            />
+                          </div>
+                          <span className="text-[9px] text-slate-500 leading-tight">{opt.desc}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* CUSTOM CHARGE RATES FOR T+0 & T+1 */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                    {/* T+0 Charge % */}
+                    <div>
+                      <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-600 mb-1.5">
+                        USER T+0 CHARGE (%)
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="e.g. 1.20 (Default machine rate if blank)"
+                          value={posT0ChargePercent}
+                          onChange={(e) => setPosT0ChargePercent(e.target.value)}
+                          className="w-full pl-4 pr-10 py-2.5 rounded-xl bg-white border border-slate-300 text-xs text-slate-900 placeholder-slate-400 font-mono focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-purple-600 transition"
+                        />
+                        <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400 text-xs font-bold">
+                          %
+                        </div>
+                      </div>
+                      <p className="text-[9px] text-slate-500 mt-1 font-medium">
+                        Custom rate deducted from this user for instant T+0 swipes.
+                      </p>
+                    </div>
+
+                    {/* T+1 Charge % */}
+                    <div>
+                      <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-600 mb-1.5">
+                        USER T+1 CHARGE (%)
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="e.g. 0.80 (Default machine rate if blank)"
+                          value={posT1ChargePercent}
+                          onChange={(e) => setPosT1ChargePercent(e.target.value)}
+                          className="w-full pl-4 pr-10 py-2.5 rounded-xl bg-white border border-slate-300 text-xs text-slate-900 placeholder-slate-400 font-mono focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-purple-600 transition"
+                        />
+                        <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400 text-xs font-bold">
+                          %
+                        </div>
+                      </div>
+                      <p className="text-[9px] text-slate-500 mt-1 font-medium">
+                        Custom rate deducted from this user for overnight T+1 swipes.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
             </div>
 
