@@ -557,31 +557,40 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           
           {/* LEFT SECTION (5 Cols): Straight Front-Facing Smart Android Touchscreen POS Terminal (PhonePe / Pax A920 Style) */}
-          <div className="lg:col-span-5 flex flex-col items-center">
-            <div className="w-full max-w-[285px] mx-auto flex flex-col items-center select-none relative">
-              
-              {/* Printing Status Badge */}
-              {isPrinting && (
-                <div className="mb-2 px-3 py-1 rounded-full bg-emerald-600 text-white text-[9px] font-bold flex items-center gap-1.5 shadow-md animate-pulse z-30">
+          <div className="lg:col-span-5 flex flex-col items-center pt-28 sm:pt-36 lg:pt-48 relative">
+            
+            {/* Countertop Desk Status Bar / Printing Indicator (Firmly anchored above machine headroom) */}
+            <div className="h-7 mb-2 flex items-center justify-center">
+              {isPrinting ? (
+                <div className="px-3 py-1 rounded-full bg-emerald-600 text-white text-[9px] font-bold flex items-center gap-1.5 shadow-md animate-pulse">
                   <Sparkles className="w-3 h-3 animate-spin" />
                   <span>🖨️ Printing Thermal Slip... (ટ્રક... ટ્રક...)</span>
                 </div>
+              ) : (
+                <div className="px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-200/80 text-slate-500 text-[8.5px] font-bold flex items-center gap-1.5 shadow-2xs">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>SMARTPOS DESK • READY</span>
+                </div>
               )}
+            </div>
 
-              {/* The Thermal Paper Slip (Emerges slowly & realistically from slot with 3D Curled Head) */}
+            {/* Anchored POS Machine Station (Stays 100% Fixed & Stationary on Desktop) */}
+            <div className="w-full max-w-[285px] mx-auto flex flex-col items-center select-none relative">
+              
+              {/* The Thermal Paper Slip (Emerges UPWARDS out of slot into headroom; POS Machine NEVER moves down!) */}
               <div 
                 style={{ perspective: '1000px' }}
-                className={`w-[90%] transition-all duration-[4500ms] cubic-bezier(0.22, 0.85, 0.25, 1) transform origin-bottom overflow-visible z-20 ${
+                className={`absolute bottom-[calc(100%-18px)] left-0 right-0 mx-auto w-[240px] max-w-[90%] transition-all ${
                   isPrinting || submitSuccess || printedSlipData
-                    ? 'max-h-[460px] opacity-100 -translate-y-2 mb-2 scale-100 pointer-events-auto'
-                    : 'max-h-0 opacity-0 translate-y-12 mb-0 scale-90 pointer-events-none'
-                }`}
+                    ? 'duration-[4500ms] cubic-bezier(0.12, 0.8, 0.32, 1) translate-y-0 opacity-100 scale-100 pointer-events-auto'
+                    : 'duration-300 translate-y-[100%] opacity-0 scale-95 pointer-events-none'
+                } transform origin-bottom z-10`}
               >
                 {/* 3D Curled Receipt Card with forward curl */}
                 <div className="bg-gradient-to-b from-amber-100/95 via-amber-50/98 to-white text-slate-800 rounded-t-[2.2rem] rounded-b-md p-3.5 shadow-[0_20px_35px_-8px_rgba(0,0,0,0.35),0_10px_15px_-5px_rgba(0,0,0,0.15)] border-x border-t-4 border-amber-300/80 font-mono text-[9px] space-y-1.5 transform -rotate-x-[6deg] origin-bottom transition-transform duration-700">
                   
                   {/* Curled Top Cylinder Head Simulation */}
-                  <div className="relative -mt-2 -mx-2 mb-2.5 pt-1.5 pb-1 px-3 bg-gradient-to-b from-amber-200/90 via-amber-100/95 to-amber-50 rounded-t-[2rem] border-b border-amber-200 shadow-inner flex items-center justify-between">
+                  <div className="relative -mt-2 -mx-2 mb-2 pt-1.5 pb-1 px-3 bg-gradient-to-b from-amber-200/90 via-amber-100/95 to-amber-50 rounded-t-[2rem] border-b border-amber-200 shadow-inner flex items-center justify-between">
                     <div className="flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
                       <span className="text-[7.5px] font-black uppercase tracking-wider text-slate-700">● THERMAL RECEIPT ROLL</span>
@@ -639,7 +648,7 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
                     </div>
                   </div>
 
-                  <div className="pt-1.5 text-center border-t border-dashed border-slate-300">
+                  <div className="pt-1 text-center border-t border-dashed border-slate-300">
                     <span className="inline-block px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300">
                       ✓ SUBMITTED PENDING REVIEW
                     </span>
@@ -656,25 +665,29 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
               </div>
 
               {/* Android Smart Touchscreen POS Terminal (PhonePe / Pax A920 Two-Tone Styling: Straight Front-Facing) */}
-              <div className="w-full bg-gradient-to-b from-white via-slate-50 to-slate-100 rounded-[2.5rem] p-3 shadow-[0_25px_50px_-10px_rgba(0,0,0,0.35),inset_0_2px_3px_rgba(255,255,255,1),inset_0_-4px_8px_rgba(0,0,0,0.15)] border-4 border-slate-200/90 relative z-10 space-y-2">
+              <div className="w-full bg-gradient-to-b from-white via-slate-50 to-slate-100 rounded-[2.5rem] p-3 shadow-[0_25px_50px_-10px_rgba(0,0,0,0.35),inset_0_2px_3px_rgba(255,255,255,1),inset_0_-4px_8px_rgba(0,0,0,0.15)] border-4 border-slate-200/90 relative z-20 space-y-2">
                 
-                {/* Purple Side Grip Panels (PhonePe Two-Tone Flanks) */}
-                <div className="absolute left-0 top-6 bottom-8 w-2 bg-gradient-to-r from-[#5f259f] to-[#4c1d80] rounded-l-full shadow-inner" />
-                <div className="absolute right-0 top-6 bottom-8 w-2 bg-gradient-to-l from-[#5f259f] to-[#4c1d80] rounded-r-full shadow-inner" />
+                {/* Purple Side Grip Panels (PhonePe Two-Tone Flanks with Emblem) */}
+                <div className="absolute -left-2 top-8 bottom-12 w-4 bg-gradient-to-r from-[#4c1d80] to-[#5f259f] rounded-l-2xl shadow-md border-r border-[#3b1666]" />
+                <div className="absolute -left-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-white shadow-md flex items-center justify-center border border-purple-200 z-30" title="Just2Pay Merchant SmartPOS">
+                  <span className="text-[8px] font-black text-[#5f259f]">JP</span>
+                </div>
+
+                <div className="absolute -right-2 top-8 bottom-12 w-4 bg-gradient-to-l from-[#4c1d80] to-[#5f259f] rounded-r-2xl shadow-md border-l border-[#3b1666]" />
 
                 {/* Right-Edge Magnetic Stripe Card Swipe Track */}
-                <div className="absolute -right-1 top-24 bottom-28 w-1.5 bg-slate-900 rounded-full border-l border-purple-300/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.9)]" title="Magnetic Stripe Card Swipe Slot">
-                  <div className="w-0.5 h-6 mx-auto mt-4 bg-slate-700 rounded-full" />
+                <div className="absolute -right-2.5 top-20 bottom-24 w-2 bg-slate-950 rounded-full border border-purple-900/60 shadow-[inset_0_2px_4px_rgba(0,0,0,0.9)] flex items-center justify-center z-30" title="Magnetic Stripe Card Swipe Slot">
+                  <div className="w-0.5 h-12 bg-slate-700/80 rounded-full" />
                 </div>
 
                 {/* Cylindrical Paper Roll Chamber at Top */}
-                <div className="relative pt-0.5 pb-0.5 px-2 bg-gradient-to-b from-slate-200 via-white to-slate-100 rounded-t-[2.2rem] border-t border-slate-300/80 shadow-2xs">
+                <div className="relative pt-1 pb-1 px-3 bg-gradient-to-b from-slate-200 via-white to-slate-100 rounded-t-[2.2rem] border-t border-slate-300/80 shadow-2xs">
                   {/* Metallic Serrated Paper Slit */}
-                  <div className="w-40 h-2.5 mx-auto bg-slate-950 rounded-full border border-slate-700 shadow-[inset_0_2px_4px_rgba(0,0,0,0.95)] flex items-center justify-center relative overflow-hidden">
+                  <div className="w-48 h-2.5 mx-auto bg-slate-950 rounded-full border border-slate-700 shadow-[inset_0_2px_4px_rgba(0,0,0,0.95)] flex items-center justify-center relative overflow-hidden">
                     {!(isPrinting || submitSuccess || printedSlipData) ? (
-                      <div className="w-24 h-1 bg-amber-100/80 rounded-full shadow-2xs" title="Thermal paper roll loaded" />
+                      <div className="w-28 h-1 bg-amber-100/80 rounded-full shadow-2xs" title="Thermal paper roll loaded" />
                     ) : (
-                      <div className="w-28 h-1.5 bg-emerald-400 animate-pulse rounded-full" />
+                      <div className="w-32 h-1.5 bg-emerald-400 animate-pulse rounded-full" />
                     )}
                   </div>
                 </div>
