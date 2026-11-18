@@ -565,13 +565,16 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
         {/* 2 Side-by-Side Sections Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           
-          {/* LEFT SECTION (5 Cols): Interactive POS Machine Mockup + Thermal Printing Slip */}
+          {/* LEFT SECTION (5 Cols): 3D Interactive POS Machine Mockup + Thermal Printing Slip */}
           <div className="lg:col-span-5 flex flex-col items-center">
-            <div className="w-full max-w-[270px] mx-auto flex flex-col items-center select-none relative">
+            <div 
+              style={{ perspective: '1200px' }} 
+              className="w-full max-w-[275px] mx-auto flex flex-col items-center select-none relative"
+            >
               
               {/* Printing Status Badge */}
               {isPrinting && (
-                <div className="mb-2 px-3 py-1 rounded-full bg-emerald-600 text-white text-[9px] font-bold flex items-center gap-1.5 shadow-md animate-pulse">
+                <div className="mb-2 px-3 py-1 rounded-full bg-emerald-600 text-white text-[9px] font-bold flex items-center gap-1.5 shadow-md animate-pulse z-30">
                   <Sparkles className="w-3 h-3 animate-spin" />
                   <span>🖨️ Printing Thermal Slip...</span>
                 </div>
@@ -580,14 +583,14 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
               {/* The Thermal Paper Slip (Emerges slowly & realistically from slot with 3D Curled Head) */}
               <div 
                 style={{ perspective: '1000px' }}
-                className={`w-[92%] transition-all duration-[2400ms] cubic-bezier(0.2, 0.8, 0.2, 1) transform origin-bottom overflow-visible ${
+                className={`w-[92%] transition-all duration-[2400ms] cubic-bezier(0.2, 0.8, 0.2, 1) transform origin-bottom overflow-visible z-20 ${
                   isPrinting || submitSuccess || printedSlipData
                     ? 'max-h-[460px] opacity-100 -translate-y-2 mb-2 scale-100 pointer-events-auto'
                     : 'max-h-0 opacity-0 translate-y-12 mb-0 scale-90 pointer-events-none'
                 }`}
               >
                 {/* 3D Curled Receipt Card with forward curl */}
-                <div className="bg-gradient-to-b from-amber-100/95 via-amber-50/98 to-white text-slate-800 rounded-t-[2.2rem] rounded-b-md p-3.5 shadow-[0_20px_35px_-8px_rgba(0,0,0,0.3),0_10px_15px_-5px_rgba(0,0,0,0.12)] border-x border-t-4 border-amber-300/80 font-mono text-[9px] space-y-1.5 transform -rotate-x-[6deg] origin-bottom transition-transform duration-700">
+                <div className="bg-gradient-to-b from-amber-100/95 via-amber-50/98 to-white text-slate-800 rounded-t-[2.2rem] rounded-b-md p-3.5 shadow-[0_20px_35px_-8px_rgba(0,0,0,0.35),0_10px_15px_-5px_rgba(0,0,0,0.15)] border-x border-t-4 border-amber-300/80 font-mono text-[9px] space-y-1.5 transform -rotate-x-[7deg] origin-bottom transition-transform duration-700">
                   
                   {/* Curled Top Cylinder Head Simulation */}
                   <div className="relative -mt-2 -mx-2 mb-2.5 pt-1.5 pb-1 px-3 bg-gradient-to-b from-amber-200/90 via-amber-100/95 to-amber-50 rounded-t-[2rem] border-b border-amber-200 shadow-inner flex items-center justify-between">
@@ -664,56 +667,66 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
                 </div>
               </div>
 
-              {/* POS Machine Device Body */}
-              <div className="w-full bg-gradient-to-b from-slate-900 via-slate-800 to-slate-950 rounded-[2.2rem] p-3 shadow-xl border-2 border-slate-700/80 relative z-10 space-y-2">
+              {/* 3D POS Machine Chassis (Tilted desk perspective, beveled shell, multi-layer depth shadow) */}
+              <div 
+                style={{ 
+                  transform: 'rotateX(7deg) rotateY(-2deg)', 
+                  transformStyle: 'preserve-3d' 
+                }}
+                className="w-full bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950 rounded-[2.3rem] p-3.5 shadow-[0_30px_50px_-10px_rgba(0,0,0,0.7),inset_0_2px_3px_rgba(255,255,255,0.2),inset_0_-5px_10px_rgba(0,0,0,0.8),-6px_8px_16px_rgba(0,0,0,0.45)] border-t border-l-2 border-slate-600/50 border-r-2 border-b-4 border-slate-950 relative z-10 space-y-2.5 transition-transform duration-500 hover:rotate-x-[5deg]"
+              >
                 
-                {/* Thermal Paper Feeder Slot at TOP */}
-                <div className="relative pt-0.5 pb-0.5">
-                  <div className="w-36 h-2.5 mx-auto bg-slate-950 rounded-full border border-slate-700 shadow-inner flex items-center justify-center relative overflow-hidden">
+                {/* 3D Cylindrical Paper Roll Chamber at Top */}
+                <div className="relative -mt-1 pt-1 pb-1 px-1 bg-gradient-to-b from-slate-750 via-slate-800 to-slate-900 rounded-t-[2rem] border-t border-slate-500/40 shadow-inner">
+                  {/* Metallic Serrated Paper Slit */}
+                  <div className="w-40 h-3 mx-auto bg-slate-950 rounded-full border border-slate-700/90 shadow-[inset_0_2px_4px_rgba(0,0,0,0.95)] flex items-center justify-center relative overflow-hidden">
                     {!(isPrinting || submitSuccess || printedSlipData) ? (
-                      <div className="w-20 h-1 bg-amber-100/70 rounded-full shadow-2xs" title="Paper roll ready" />
+                      <div className="w-24 h-1 bg-amber-100/70 rounded-full shadow-2xs" title="Thermal paper roll loaded" />
                     ) : (
-                      <div className="w-24 h-1.5 bg-emerald-400 animate-pulse rounded-full" />
+                      <div className="w-28 h-1.5 bg-emerald-400 animate-pulse rounded-full" />
                     )}
                   </div>
                 </div>
 
-                {/* Brand Header & Status Light */}
-                <div className="flex items-center justify-between px-1.5 pt-0.5">
+                {/* Brand Header & 3D Status Light */}
+                <div className="flex items-center justify-between px-2 pt-0.5">
                   <div className="flex items-center gap-1.5">
-                    <div className="w-5 h-5 rounded-md bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400 font-black text-[10px]">
+                    <div className="w-5 h-5 rounded-md bg-emerald-500/25 border border-emerald-400/40 shadow-[0_2px_4px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.2)] flex items-center justify-center text-emerald-400 font-black text-[10px]">
                       J2P
                     </div>
-                    <span className="text-[10px] font-black tracking-widest text-slate-200 uppercase">
+                    <span className="text-[10px] font-black tracking-widest text-slate-200 uppercase drop-shadow-xs">
                       Just2Pay <span className="text-emerald-400">EDC</span>
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1.5 bg-slate-950/60 px-2 py-0.5 rounded-full border border-slate-800">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-xs shadow-emerald-400" />
                     <span className="text-[8px] font-mono text-emerald-300 font-bold uppercase tracking-wider">ONLINE</span>
                   </div>
                 </div>
 
-                {/* LCD Display Screen */}
-                <div className="bg-gradient-to-b from-slate-950 via-[#0a0f1d] to-slate-950 border border-slate-700/60 rounded-xl p-2.5 shadow-inner text-white font-mono space-y-1.5 relative overflow-hidden">
+                {/* 3D Recessed Glass LCD Display with Diagonal Sheen */}
+                <div className="bg-gradient-to-b from-slate-950 via-[#060c18] to-slate-950 border-2 border-slate-800/80 rounded-xl p-2.5 shadow-[inset_0_4px_8px_rgba(0,0,0,0.95),inset_0_-1px_2px_rgba(255,255,255,0.06)] text-white font-mono space-y-1.5 relative overflow-hidden">
+                  {/* Diagonal Glass Sheen Glare */}
+                  <div className="absolute -inset-1 bg-gradient-to-tr from-transparent via-white/[0.05] to-transparent pointer-events-none rotate-12 scale-150 transform" />
+
                   {/* Screen Status Bar */}
-                  <div className="flex items-center justify-between text-[8px] text-slate-400 pb-1 border-b border-slate-800">
+                  <div className="flex items-center justify-between text-[8px] text-slate-400 pb-1 border-b border-slate-800/80 relative z-10">
                     <span className="truncate max-w-[120px] font-bold text-slate-300">
                       {selectedMachine?.bank_name || 'HDFC Bank'}
                     </span>
                     <div className="flex items-center gap-1 text-slate-400">
-                      <span className="text-[7px] px-1 py-0.2 rounded bg-slate-800 text-slate-300">4G</span>
+                      <span className="text-[7px] px-1 py-0.2 rounded bg-slate-800 text-slate-300 font-bold">4G LTE</span>
                       <span>98%</span>
                     </div>
                   </div>
 
-                  {/* Screen Center: Live Amount Display */}
-                  <div className="text-center py-1">
+                  {/* Screen Center: Live Amount Display with OLED Emerald Glow */}
+                  <div className="text-center py-1 relative z-10">
                     <span className="text-[8px] uppercase font-bold text-slate-400 block tracking-wider">
                       {settlementType === 'T0' ? '⚡ T+0 INSTANT SWIPE' : '📅 T+1 CLEARING SWIPE'}
                     </span>
-                    <div className="text-xl sm:text-2xl font-black text-emerald-400 font-mono tracking-tight my-0.5 drop-shadow-sm">
+                    <div className="text-xl sm:text-2xl font-black text-emerald-400 font-mono tracking-tight my-0.5 drop-shadow-[0_0_8px_rgba(16,185,129,0.35)]">
                       ₹{numAmount > 0 ? numAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '0.00'}
                     </div>
                     <p className="text-[8px] text-slate-400">
@@ -722,7 +735,7 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
                   </div>
 
                   {/* Screen Info Pill */}
-                  <div className="bg-slate-900/90 rounded-lg p-1.5 text-[8px] space-y-0.5 border border-slate-800">
+                  <div className="bg-slate-900/90 rounded-lg p-1.5 text-[8px] space-y-0.5 border border-slate-800/80 relative z-10 shadow-inner">
                     <div className="flex justify-between">
                       <span className="text-slate-500">RRN:</span>
                       <span className="font-bold text-amber-300 tracking-wider">
@@ -748,7 +761,7 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
                   <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400">Contactless NFC / Chip</span>
                 </div>
 
-                {/* Realistic Keypad Grid */}
+                {/* 3D Tactile Embossed Keypad Grid */}
                 <div className="grid grid-cols-3 gap-1.5 px-0.5">
                   {[
                     ['1', ''], ['2', 'ABC'], ['3', 'DEF'],
@@ -761,31 +774,34 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
                     return (
                       <div
                         key={idx}
-                        className={`h-6.5 rounded-lg flex flex-col items-center justify-center shadow-xs border transition ${
+                        className={`h-7 rounded-lg flex flex-col items-center justify-center border transition-all duration-100 cursor-default ${
                           isClear
-                            ? 'bg-rose-950/80 border-rose-800/80 text-rose-300'
+                            ? 'bg-gradient-to-b from-rose-900 to-rose-950 border-rose-700/60 text-rose-200 shadow-[0_2.5px_0_#4c0519,0_3px_5px_rgba(0,0,0,0.5)] border-t border-rose-500/40 hover:translate-y-[1px] hover:shadow-[0_1.5px_0_#4c0519] active:translate-y-[2px] active:shadow-none'
                             : isEnter
-                            ? 'bg-emerald-950/80 border-emerald-800/80 text-emerald-300'
-                            : 'bg-slate-800/90 border-slate-700/80 text-slate-200'
+                            ? 'bg-gradient-to-b from-emerald-800 to-emerald-950 border-emerald-600/60 text-emerald-200 shadow-[0_2.5px_0_#022c22,0_3px_5px_rgba(0,0,0,0.5)] border-t border-emerald-400/40 hover:translate-y-[1px] hover:shadow-[0_1.5px_0_#022c22] active:translate-y-[2px] active:shadow-none'
+                            : 'bg-gradient-to-b from-slate-700 via-slate-800 to-slate-850 border-slate-600/50 text-slate-100 shadow-[0_2.5px_0_#020617,0_3px_5px_rgba(0,0,0,0.4)] border-t border-slate-500/40 hover:translate-y-[1px] hover:shadow-[0_1.5px_0_#020617] active:translate-y-[2px] active:shadow-none'
                         }`}
                       >
-                        <span className="text-[10px] font-black leading-none">{key}</span>
+                        <span className="text-[10px] font-black leading-none drop-shadow-xs">{key}</span>
                         {sub && !isClear && !isEnter && (
-                          <span className="text-[6px] text-slate-500 leading-none mt-0.5">{sub}</span>
+                          <span className="text-[6px] text-slate-400 leading-none mt-0.5 font-bold">{sub}</span>
                         )}
                       </div>
                     );
                   })}
                 </div>
 
-                {/* Bottom Chip / Card Reader Slot */}
-                <div className="pt-1">
-                  <div className="w-28 h-1.5 mx-auto bg-slate-950 rounded-full border border-slate-700/80 shadow-inner" />
-                  <p className="text-[7px] font-mono text-center text-slate-500 mt-0.5 uppercase tracking-widest">
+                {/* 3D Deep EMV Chip Card Insertion Cavity */}
+                <div className="pt-1 pb-0.5">
+                  <div className="w-32 h-2 mx-auto bg-slate-950 rounded-full border-t border-slate-800 border-b border-slate-700/60 shadow-[inset_0_3px_5px_rgba(0,0,0,0.95)]" />
+                  <p className="text-[7px] font-mono text-center text-slate-500 mt-1 uppercase tracking-widest">
                     EMV CHIP INSERTION SLOT
                   </p>
                 </div>
               </div>
+
+              {/* Realistic Desktop Countertop Contact Shadow */}
+              <div className="w-56 h-3.5 mx-auto bg-black/45 blur-md rounded-full -mt-2 transform scale-y-50 pointer-events-none" />
             </div>
           </div>
 
