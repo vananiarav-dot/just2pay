@@ -238,8 +238,9 @@ router.post('/requests', verifyToken, async (req, res) => {
       return res.status(400).json({ success: false, message: 'settlement_type must be T0 or T1' });
     }
 
-    if (!rrn_number || !rrn_number.trim()) {
-      return res.status(400).json({ success: false, message: 'RRN / Batch slip transaction number is required' });
+    const cleanRrn = (rrn_number || '').trim();
+    if (!cleanRrn || !/^\d{12}$/.test(cleanRrn)) {
+      return res.status(400).json({ success: false, message: 'RRN number must be exactly 12 digits (12-digit numeric code from EDC slip)' });
     }
 
     // Find User

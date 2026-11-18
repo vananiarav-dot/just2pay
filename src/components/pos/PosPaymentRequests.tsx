@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   CreditCard, Plus, CheckCircle2, XCircle, Clock, AlertCircle, 
   Search, RefreshCw, Eye, ArrowRight, ShieldCheck, Download, 
-  Sparkles, Filter, ChevronRight, FileText, Check, DollarSign, Calendar
+  Sparkles, Filter, ChevronRight, FileText, Check, DollarSign, Calendar,
+  Upload, Camera, Trash2
 } from 'lucide-react';
 import { posApi } from '../../services/api';
 import type { PosPaymentRequest, PosMachine, PosSettlementType } from '../../types/pos';
@@ -34,9 +35,10 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
   const [amount, setAmount] = useState('');
   const [rrnNumber, setRrnNumber] = useState('');
   const [cardLast4, setCardLast4] = useState('');
-  const [cardNetwork, setCardNetwork] = useState('Visa');
   const [approvalCode, setApprovalCode] = useState('');
   const [slipUrl, setSlipUrl] = useState('');
+  const [slipPreview, setSlipPreview] = useState<string | null>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
 
   // Admin Action State
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -53,6 +55,71 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
   const isT0Allowed = userAllowedSettlement === 'BOTH' || userAllowedSettlement === 'T0_ONLY';
   const isT1Allowed = userAllowedSettlement === 'BOTH' || userAllowedSettlement === 'T1_ONLY';
 
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const maxDimension = 1200;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height && width > maxDimension) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else if (height > maxDimension) {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(event.target?.result as string);
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL('image/jpeg', 0.75);
+          resolve(compressed);
+        };
+        img.onerror = () => resolve(event.target?.result as string);
+        img.src = event.target?.result as string;
+      };
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleSlipUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        setSubmitError('Please select a valid image file (JPG, PNG).');
+        return;
+      }
+      setIsCompressing(true);
+      try {
+        const compressedBase64 = await compressImage(file);
+        setSlipPreview(compressedBase64);
+        setSlipUrl(compressedBase64);
+        setSubmitError(null);
+      } catch (err) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const res = reader.result as string;
+          setSlipPreview(res);
+          setSlipUrl(res);
+        };
+        reader.readAsDataURL(file);
+      } finally {
+        setIsCompressing(false);
+      }
+    }
+  };
+
   const handleOpenSubmitModal = () => {
     if (isT0Allowed) {
       setSettlementType('T0');
@@ -60,6 +127,11 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
       setSettlementType('T1');
     }
     setSubmitError(null);
+    setAmount('');
+    setRrnNumber('');
+    setCardLast4('');
+    setSlipUrl('');
+    setSlipPreview(null);
     setShowSubmitModal(true);
   };
 
@@ -114,8 +186,13 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
       setSubmitError('Please enter a valid amount greater than ₹0');
       return;
     }
-    if (!rrnNumber.trim()) {
-      setSubmitError('RRN number is required from the POS swipe receipt slip');
+    const cleanRrn = rrnNumber.trim();
+    if (!cleanRrn || cleanRrn.length !== 12 || !/^\d{12}$/.test(cleanRrn)) {
+      setSubmitError('RRN નંબર બરાબર ૧૨ આંકડા (12 Digits) નો જ હોવો જોઈએ (e.g. 432109876543).');
+      return;
+    }
+    if (!slipUrl) {
+      setSubmitError('કૃપા કરીને POS સ્વાઇપ સ્લિપનો ફોટો (Slip Photo) અપલોડ કરો.');
       return;
     }
 
@@ -127,10 +204,10 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
         pos_machine_id: selectedMachineId || undefined,
         settlement_type: settlementType,
         amount: numAmount,
-        rrn_number: rrnNumber.trim(),
+        rrn_number: cleanRrn,
         approval_code: approvalCode.trim() || undefined,
         card_last4: cardLast4.trim() || undefined,
-        card_network: cardNetwork || undefined,
+        card_network: 'Card',
         slip_url: slipUrl.trim() || undefined
       });
 
@@ -142,6 +219,7 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
         setCardLast4('');
         setApprovalCode('');
         setSlipUrl('');
+        setSlipPreview(null);
         loadData();
         if (onRefreshUser) onRefreshUser();
         setTimeout(() => setSubmitSuccess(null), 5000);
@@ -794,55 +872,106 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
               {/* RRN and Card Details */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    RRN / Ref Transaction Number *
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700">
+                      RRN / Ref Transaction Number (12 Digits) *
+                    </label>
+                    <span className={`text-[10px] font-mono font-bold ${
+                      rrnNumber.length === 12 ? 'text-emerald-600' : 'text-slate-400'
+                    }`}>
+                      {rrnNumber.length}/12 Digits
+                    </span>
+                  </div>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. 432109876543 (From EDC receipt)"
+                    maxLength={12}
+                    placeholder="Enter 12-digit RRN number from EDC slip"
                     value={rrnNumber}
-                    onChange={(e) => setRrnNumber(e.target.value)}
-                    className="w-full px-3.5 py-2 text-xs font-mono font-bold rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    onChange={(e) => setRrnNumber(e.target.value.replace(/\D/g, '').slice(0, 12))}
+                    className="w-full px-3.5 py-2 text-xs font-mono font-bold rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 tracking-wider"
                   />
                 </div>
 
-                <div>
+                <div className="col-span-2">
                   <label className="block text-xs font-bold text-slate-700 mb-1">Card Last 4 Digits</label>
                   <input
                     type="text"
                     maxLength={4}
                     placeholder="e.g. 5432"
                     value={cardLast4}
-                    onChange={(e) => setCardLast4(e.target.value.replace(/\D/g, ''))}
-                    className="w-full px-3.5 py-2 text-xs font-mono rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    onChange={(e) => setCardLast4(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    className="w-full px-3.5 py-2 text-xs font-mono font-bold rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Card Network</label>
-                  <select
-                    value={cardNetwork}
-                    onChange={(e) => setCardNetwork(e.target.value)}
-                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-semibold"
-                  >
-                    <option value="Visa">Visa</option>
-                    <option value="Mastercard">Mastercard</option>
-                    <option value="RuPay">RuPay</option>
-                    <option value="Amex">American Express</option>
-                    <option value="Diners">Diners Club</option>
-                  </select>
-                </div>
-
+                {/* Slip Photo Upload */}
                 <div className="col-span-2">
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Receipt Slip URL / Photo Link (Optional)</label>
-                  <input
-                    type="url"
-                    placeholder="https://... (or cloud photo link)"
-                    value={slipUrl}
-                    onChange={(e) => setSlipUrl(e.target.value)}
-                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    POS Swipe Slip Photo *
+                  </label>
+                  
+                  {slipPreview ? (
+                    <div className="relative rounded-2xl border-2 border-emerald-400 overflow-hidden bg-slate-900 group">
+                      <img 
+                        src={slipPreview} 
+                        alt="Slip Receipt" 
+                        className="w-full h-44 object-contain bg-slate-950"
+                      />
+                      <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                        <label className="px-3 py-1.5 rounded-xl bg-white/90 text-slate-900 text-xs font-bold hover:bg-white transition cursor-pointer flex items-center gap-1.5 shadow-md">
+                          <Camera className="w-3.5 h-3.5" />
+                          <span>Change Photo</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            onChange={handleSlipUpload}
+                            className="hidden"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSlipPreview(null);
+                            setSlipUrl('');
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-rose-600 text-white text-xs font-bold hover:bg-rose-500 transition cursor-pointer flex items-center gap-1.5 shadow-md"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Remove</span>
+                        </button>
+                      </div>
+                      <div className="absolute bottom-2 left-2 px-2.5 py-1 rounded-lg bg-emerald-600/90 text-white text-[10px] font-bold flex items-center gap-1 shadow-xs">
+                        <CheckCircle2 className="w-3 h-3" />
+                        <span>Slip Photo Attached</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <label className={`w-full p-4 rounded-2xl border-2 border-dashed border-slate-300 hover:border-emerald-500 bg-slate-50/70 hover:bg-emerald-50/30 transition flex flex-col items-center justify-center gap-2 cursor-pointer text-center ${
+                      isCompressing ? 'opacity-50 cursor-wait' : ''
+                    }`}>
+                      <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                        <Camera className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-800">
+                          {isCompressing ? 'Compressing Slip Photo...' : 'Click to Upload or Capture Slip Photo'}
+                        </p>
+                        <p className="text-[10px] text-slate-500 mt-0.5">
+                          Supports Camera capture, JPG, PNG from mobile or computer
+                        </p>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        disabled={isCompressing}
+                        onChange={handleSlipUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
                 </div>
               </div>
 
