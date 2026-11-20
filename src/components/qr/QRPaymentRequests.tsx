@@ -176,10 +176,29 @@ export const QRPaymentRequests: React.FC = () => {
 
   useEffect(() => {
     fetchData(true);
+
+    // Supabase Realtime Channel: Instant Push on DB changes (0 KB continuous egress)
+    const channel = supabase
+      .channel('realtime_qr_payment_requests')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'qr_payment_requests' },
+        (payload) => {
+          console.log('⚡ Realtime QR change event received:', payload.eventType);
+          fetchData(false);
+        }
+      )
+      .subscribe();
+
+    // Fallback safety interval: 60s (was 3s / 12s)
     const interval = setInterval(() => {
       fetchData(false);
-    }, 12000);
-    return () => clearInterval(interval);
+    }, 60000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(interval);
+    };
   }, [isAdmin]);
 
   const handleCopyUpi = (upi?: string) => {
@@ -290,11 +309,44 @@ export const QRPaymentRequests: React.FC = () => {
 
     setSubmitting(true);
     try {
+      let finalScreenshotUrl = screenshotUrl;
+
+      // Direct Upload to Supabase Storage Bucket 'qr-receipts' (Zero DB image bloat)
+      if (screenshotUrl && screenshotUrl.startsWith('data:image')) {
+        try {
+          const parts = screenshotUrl.split(';base64,');
+          const contentType = parts[0].split(':')[1] || 'image/jpeg';
+          const raw = window.atob(parts[1]);
+          const uInt8Array = new Uint8Array(raw.length);
+          for (let i = 0; i < raw.length; ++i) {
+            uInt8Array[i] = raw.charCodeAt(i);
+          }
+          const blob = new Blob([uInt8Array], { type: contentType });
+          const ext = contentType.includes('png') ? 'png' : 'jpg';
+          const fileName = `${user?.id || 'usr'}_${cleanUtr}_${Date.now()}.${ext}`;
+
+          const { data: uploadData, error: uploadErr } = await supabase.storage
+            .from('qr-receipts')
+            .upload(fileName, blob, { contentType, upsert: true });
+
+          if (!uploadErr && uploadData) {
+            const { data: urlData } = supabase.storage
+              .from('qr-receipts')
+              .getPublicUrl(fileName);
+            if (urlData?.publicUrl) {
+              finalScreenshotUrl = urlData.publicUrl;
+            }
+          }
+        } catch (storageErr) {
+          console.warn('Frontend storage upload fallback to backend:', storageErr);
+        }
+      }
+
       const res = await qrApi.submitPaymentRequest({
         amount: numAmount,
         utr_number: cleanUtr,
         mobile_number: cleanMobile,
-        screenshot_url: screenshotUrl,
+        screenshot_url: finalScreenshotUrl,
         qr_master_id: activeQr?.id
       });
 

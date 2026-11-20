@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
 import { qrApi, userApi, billRequestApi, b2bApi, payoutApi } from '../../services/api';
 import type { QrPaymentRequest } from '../../types/qr';
 import type { UserProfile } from '../../types/auth';
@@ -101,10 +102,28 @@ export const AdminOverviewDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchData(true);
+
+    // Realtime listener for live updates with 0 continuous polling egress
+    const channel = supabase
+      .channel('realtime_admin_dashboard_qr')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'qr_payment_requests' },
+        () => {
+          fetchData(false);
+        }
+      )
+      .subscribe();
+
+    // Safety fallback interval: 60s
     const interval = setInterval(() => {
       fetchData(false);
-    }, 20000);
-    return () => clearInterval(interval);
+    }, 60000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(interval);
+    };
   }, []);
 
   // Helper to check if a record matches the selected date filter

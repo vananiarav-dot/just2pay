@@ -5,8 +5,10 @@ import { verifyToken, requireRoles } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Memory throttle cache for QR request list
-let lastQrRequestsFetch = 0;
+// Smart In-Memory State Cache for QR Payment Requests (Zero Egress Polling)
+let isQrCacheInitialized = false;
+let lastQrDbSyncTime = 0;
+const QR_CACHE_TTL = 5 * 60 * 1000; // 5-minute periodic background refresh
 
 // Helper to calculate QR status
 const computeQrStatus = (qr) => {
@@ -670,6 +672,33 @@ router.post('/request/submit', verifyToken, async (req, res) => {
       created_at: new Date().toISOString()
     };
 
+    // If screenshot is base64, upload to Supabase Storage bucket 'qr-receipts'
+    if (supabase && screenshot_url && screenshot_url.startsWith('data:image')) {
+      try {
+        const mimeMatch = screenshot_url.match(/^data:(image\/\w+);base64,/);
+        const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+        const ext = mimeType.split('/')[1] || 'jpg';
+        const base64Data = screenshot_url.replace(/^data:image\/\w+;base64,/, '');
+        const buffer = Buffer.from(base64Data, 'base64');
+        const fileName = `${user.id}_${cleanUtr}_${Date.now()}.${ext}`;
+
+        const { data: upData, error: upErr } = await supabase.storage
+          .from('qr-receipts')
+          .upload(fileName, buffer, { contentType: mimeType, upsert: true });
+
+        if (!upErr && upData) {
+          const { data: pubData } = supabase.storage.from('qr-receipts').getPublicUrl(fileName);
+          if (pubData?.publicUrl) {
+            newRequest.screenshot_url = pubData.publicUrl;
+          }
+        } else if (upErr) {
+          console.warn('[QR Submit] Storage upload warning:', upErr.message);
+        }
+      } catch (storageErr) {
+        console.warn('[QR Submit] Storage upload fallback notice:', storageErr.message);
+      }
+    }
+
     // Insert to Supabase first with strict error verification
     if (supabase) {
       try {
@@ -716,7 +745,7 @@ router.post('/request/submit', verifyToken, async (req, res) => {
 
     // Only unshift after database persistence is guaranteed
     db.qr_payment_requests.unshift(newRequest);
-    lastQrRequestsFetch = 0;
+    lastQrDbSyncTime = Date.now();
 
     return res.status(201).json({
       success: true,
@@ -741,7 +770,10 @@ router.post('/submit-payment-utr', verifyToken, async (req, res) => {
 router.get('/request/list', verifyToken, async (req, res) => {
   try {
     const user = req.user;
-    const shouldFetchFromDb = (Date.now() - lastQrRequestsFetch > 5000) || !db.qr_payment_requests || db.qr_payment_requests.length === 0;
+    const shouldFetchFromDb = !isQrCacheInitialized 
+      || (Date.now() - lastQrDbSyncTime > QR_CACHE_TTL) 
+      || !db.qr_payment_requests 
+      || db.qr_payment_requests.length === 0;
 
     if (supabase && shouldFetchFromDb) {
       try {
@@ -759,7 +791,8 @@ router.get('/request/list', verifyToken, async (req, res) => {
           .order('created_at', { ascending: false });
 
         if (!error && data) {
-          lastQrRequestsFetch = Date.now();
+          isQrCacheInitialized = true;
+          lastQrDbSyncTime = Date.now();
           const fetchedIds = new Set(data.map(r => r.id));
           const localPending = (db.qr_payment_requests || []).filter(r => !fetchedIds.has(r.id) && r.status === 'pending');
 
@@ -830,10 +863,21 @@ router.get('/request/list', verifyToken, async (req, res) => {
       list = list.filter(r => r.user_id === user.id);
     }
 
+    // Limit & Pagination: default 30 records to keep payloads under 15KB
+    const limitParam = req.query.limit ? parseInt(req.query.limit, 10) : (req.query.all === 'true' ? 0 : 30);
+    const pageParam = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const totalCount = list.length;
+    let paginatedList = list;
+    if (limitParam > 0) {
+      const offset = (pageParam - 1) * limitParam;
+      paginatedList = list.slice(offset, offset + limitParam);
+    }
+
     return res.status(200).json({
       success: true,
-      count: list.length,
-      payment_requests: list.map(r => ({ ...r, screenshot_url: null }))
+      count: paginatedList.length,
+      total_count: totalCount,
+      payment_requests: paginatedList.map(r => ({ ...r, screenshot_url: null }))
     });
   } catch (error) {
     console.error('Fetch Payment Requests Error:', error);
