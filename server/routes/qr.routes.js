@@ -5,6 +5,9 @@ import { verifyToken, requireRoles } from '../middleware/auth.js';
 
 const router = express.Router();
 
+// Memory throttle cache for QR request list
+let lastQrRequestsFetch = 0;
+
 // Helper to calculate QR status
 const computeQrStatus = (qr) => {
   if (!qr.is_active) return 'Inactive';
@@ -713,6 +716,7 @@ router.post('/request/submit', verifyToken, async (req, res) => {
 
     // Only unshift after database persistence is guaranteed
     db.qr_payment_requests.unshift(newRequest);
+    lastQrRequestsFetch = 0;
 
     return res.status(201).json({
       success: true,
@@ -737,8 +741,9 @@ router.post('/submit-payment-utr', verifyToken, async (req, res) => {
 router.get('/request/list', verifyToken, async (req, res) => {
   try {
     const user = req.user;
+    const shouldFetchFromDb = (Date.now() - lastQrRequestsFetch > 5000) || !db.qr_payment_requests || db.qr_payment_requests.length === 0;
 
-    if (supabase) {
+    if (supabase && shouldFetchFromDb) {
       try {
         if (!db.users || db.users.length === 0) {
           const { data: uData } = await supabase.from('users_profiles').select('*');
@@ -747,12 +752,14 @@ router.get('/request/list', verifyToken, async (req, res) => {
           }
         }
 
+        // Lightweight selection: Exclude screenshot_url base64 to prevent 12MB+ payloads and Supabase egress spike
         const { data, error } = await supabase
           .from('qr_payment_requests')
-          .select('*')
+          .select('id, user_id, qr_master_id, amount, utr_number, mobile_number, status, charge_percent, charge_amount, net_amount, distributor_commission, super_distributor_commission, rejection_reason, processed_at, processed_by, created_at, admin_commission, reverted_at, reverted_by, revert_reason, admin_note')
           .order('created_at', { ascending: false });
 
         if (!error && data) {
+          lastQrRequestsFetch = Date.now();
           const fetchedIds = new Set(data.map(r => r.id));
           const localPending = (db.qr_payment_requests || []).filter(r => !fetchedIds.has(r.id) && r.status === 'pending');
 
@@ -766,6 +773,8 @@ router.get('/request/list', verifyToken, async (req, res) => {
 
             return {
               ...r,
+              screenshot_url: null, // Excluded from listing; loaded on-demand via /api/qr/request/:id/screenshot
+              has_screenshot: true,
               utr_number: originalUtrMatch || r.utr_number,
               original_utr_number: originalUtrMatch || r.utr_number,
               status: isReverted ? 'reverted' : r.status,
@@ -824,7 +833,7 @@ router.get('/request/list', verifyToken, async (req, res) => {
     return res.status(200).json({
       success: true,
       count: list.length,
-      payment_requests: list
+      payment_requests: list.map(r => ({ ...r, screenshot_url: null }))
     });
   } catch (error) {
     console.error('Fetch Payment Requests Error:', error);
@@ -843,7 +852,10 @@ router.get('/request/:id/screenshot', verifyToken, async (req, res) => {
       screenshot_url = memoryReq.screenshot_url;
     } else if (supabase) {
       const { data } = await supabase.from('qr_payment_requests').select('screenshot_url').eq('id', reqId).maybeSingle();
-      if (data) screenshot_url = data.screenshot_url;
+      if (data && data.screenshot_url) {
+        screenshot_url = data.screenshot_url;
+        if (memoryReq) memoryReq.screenshot_url = data.screenshot_url;
+      }
     }
 
     return res.status(200).json({ success: true, screenshot_url });
@@ -882,7 +894,7 @@ router.get('/gallery/summary', verifyToken, requireRoles(['admin']), async (req,
 
         const { data: approvedData, error } = await supabase
           .from('qr_payment_requests')
-          .select('id, user_id, qr_master_id, amount, utr_number, mobile_number, status, processed_at, created_at, screenshot_url')
+          .select('id, user_id, qr_master_id, amount, utr_number, mobile_number, status, processed_at, created_at')
           .eq('status', 'approved')
           .order('created_at', { ascending: false });
 
@@ -924,7 +936,9 @@ router.get('/gallery/summary', verifyToken, requireRoles(['admin']), async (req,
       dayObj.total_approved_amount += amt;
       dayObj.total_approved_count += 1;
 
-      const hasScreenshot = Boolean(reqItem.screenshot_url && String(reqItem.screenshot_url).trim().length > 0);
+      const hasScreenshot = reqItem.screenshot_url !== undefined && reqItem.screenshot_url !== null
+        ? Boolean(String(reqItem.screenshot_url).trim().length > 0)
+        : true;
       if (hasScreenshot) {
         dayObj.total_screenshots += 1;
       }
@@ -1237,6 +1251,7 @@ router.post('/request/:id/process', verifyToken, requireRoles(['admin']), async 
       }
     }
 
+    lastQrRequestsFetch = 0;
     return res.status(200).json({
       success: true,
       message: `Payment Approved! ₹${netCreditAmt.toFixed(2)} credited to ${user.name}'s wallet (Charge: ${chargePct}% = ₹${chargeAmt.toFixed(2)}).`,
@@ -1443,6 +1458,7 @@ router.post('/request/:id/revert', verifyToken, requireRoles(['admin']), async (
       }
     }
 
+    lastQrRequestsFetch = 0;
     return res.status(200).json({
       success: true,
       message: `Request Reverted! ₹${netCreditAmt.toFixed(2)} deducted from ${user.name}'s wallet. New wallet balance: ₹${newWalletBalance.toFixed(2)}.`,
@@ -1507,6 +1523,7 @@ router.patch('/request/:id/note', verifyToken, requireRoles(['admin']), async (r
       }
     }
 
+    lastQrRequestsFetch = 0;
     return res.status(200).json({
       success: true,
       message: 'Admin note updated successfully.',

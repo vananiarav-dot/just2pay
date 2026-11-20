@@ -74,7 +74,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     };
 
     fetchBadgeCounts();
-    const interval = setInterval(fetchBadgeCounts, 3000);
+    const interval = setInterval(fetchBadgeCounts, 15000);
     return () => clearInterval(interval);
   }, [user?.role]);
 

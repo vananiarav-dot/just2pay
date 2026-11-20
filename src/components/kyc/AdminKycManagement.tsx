@@ -41,7 +41,7 @@ export const AdminKycManagement: React.FC = () => {
     fetchRequests(true);
     const interval = setInterval(() => {
       fetchRequests(false);
-    }, 6000);
+    }, 15000);
     return () => clearInterval(interval);
   }, []);
 

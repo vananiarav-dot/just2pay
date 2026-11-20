@@ -91,10 +91,18 @@ router.get('/me', verifyToken, async (req, res) => {
 
 // GET /api/user/admin-badge-counts
 // Live pending counts for QR payment requests, CC bill requests, and KYC verifications
+let cachedBadgeCounts = null;
+let lastBadgeCountsFetch = 0;
+
 router.get('/admin-badge-counts', verifyToken, async (req, res) => {
   try {
     if (req.user.role !== 'admin') {
       return res.json({ success: true, counts: { qr_requests: 0, admin_bill_requests: 0, admin_kyc: 0, total: 0 } });
+    }
+
+    // Serve from 5-second cache to avoid hammering Supabase with head count queries
+    if (cachedBadgeCounts && (Date.now() - lastBadgeCountsFetch < 5000)) {
+      return res.json(cachedBadgeCounts);
     }
 
     let qrPendingCount = 0;
@@ -137,7 +145,7 @@ router.get('/admin-badge-counts', verifyToken, async (req, res) => {
       fundPendingCount = (db.api_fund_requests || []).filter(f => f.status === 'pending').length;
     }
 
-    return res.json({
+    cachedBadgeCounts = {
       success: true,
       counts: {
         qr_requests: qrPendingCount,
@@ -147,7 +155,10 @@ router.get('/admin-badge-counts', verifyToken, async (req, res) => {
         api_fund_request: fundPendingCount,
         total: qrPendingCount + ccBillPendingCount + kycPendingCount + payoutPendingCount + fundPendingCount
       }
-    });
+    };
+    lastBadgeCountsFetch = Date.now();
+
+    return res.json(cachedBadgeCounts);
   } catch (err) {
     console.error('Fetch Admin Badge Counts Error:', err);
     return res.status(500).json({ success: false, message: 'Failed to fetch badge counts' });

@@ -215,7 +215,7 @@ export default function App() {
       }
     };
     fetchBadgeCounts();
-    const interval = setInterval(fetchBadgeCounts, 3000);
+    const interval = setInterval(fetchBadgeCounts, 15000);
     return () => clearInterval(interval);
   }, [isAuthenticated, user?.role, checkBadgeCountIncrease]);
 
@@ -235,7 +235,7 @@ export default function App() {
     };
 
     syncProfile();
-    const interval = setInterval(syncProfile, 3000);
+    const interval = setInterval(syncProfile, 15000);
     return () => clearInterval(interval);
   }, [isAuthenticated, updateUser]);
 
@@ -243,7 +243,7 @@ export default function App() {
   useEffect(() => {
     if (!isAuthenticated) return;
     fetchSettings();
-    const interval = setInterval(fetchSettings, 5000);
+    const interval = setInterval(fetchSettings, 30000);
     return () => clearInterval(interval);
   }, [isAuthenticated, fetchSettings]);
 

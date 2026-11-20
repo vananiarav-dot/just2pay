@@ -206,7 +206,7 @@ export const AdminLiveBillPayHistory: React.FC = () => {
     fetchApiSlabs();
     const interval = setInterval(() => {
       fetchAdminHistory(false);
-    }, 4000);
+    }, 15000);
     return () => clearInterval(interval);
   }, [fetchLiveBillSettings]);
 

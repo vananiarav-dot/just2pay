@@ -287,7 +287,7 @@ export const UserPayoutTransfer: React.FC = () => {
       fetchHistory(true);
       const interval = setInterval(() => {
         fetchHistory(false);
-      }, 3500);
+      }, 15000);
       return () => clearInterval(interval);
     } else if (activeSubTab === 'beneficiaries') {
       fetchBeneficiaries();

@@ -178,7 +178,7 @@ export const QRPaymentRequests: React.FC = () => {
     fetchData(true);
     const interval = setInterval(() => {
       fetchData(false);
-    }, 3000);
+    }, 12000);
     return () => clearInterval(interval);
   }, [isAdmin]);
 

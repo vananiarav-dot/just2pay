@@ -112,11 +112,11 @@ export const AdminFundRequestManagement: React.FC = () => {
     loadHistory(true);
   }, []);
 
-  // Real-time Background Polling for Pending Requests (every 5 seconds)
+  // Real-time Background Polling for Pending Requests (every 15 seconds)
   useEffect(() => {
     const interval = setInterval(() => {
       loadHistory(false);
-    }, 5000);
+    }, 15000);
     return () => clearInterval(interval);
   }, []);
 

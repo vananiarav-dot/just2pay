@@ -366,13 +366,13 @@ export const AdminPayoutManagement: React.FC = () => {
       fetchTransactions(false);
       const interval = setInterval(() => {
         fetchTransactions(false);
-      }, 3500);
+      }, 15000);
       return () => clearInterval(interval);
     } else if (activeTab === 'verifications') {
       fetchVerifications(false);
       const interval = setInterval(() => {
         fetchVerifications(false);
-      }, 4000);
+      }, 15000);
       return () => clearInterval(interval);
     }
   }, [activeTab]);

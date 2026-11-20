@@ -94,7 +94,7 @@ export const BillSubmissionsManagement: React.FC = () => {
 
     const interval = setInterval(() => {
       fetchBills(true);
-    }, 8000);
+    }, 15000);
 
     return () => {
       if (channel) supabase.removeChannel(channel);

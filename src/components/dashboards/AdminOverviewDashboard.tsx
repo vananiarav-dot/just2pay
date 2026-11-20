@@ -103,7 +103,7 @@ export const AdminOverviewDashboard: React.FC = () => {
     fetchData(true);
     const interval = setInterval(() => {
       fetchData(false);
-    }, 3500);
+    }, 20000);
     return () => clearInterval(interval);
   }, []);
 

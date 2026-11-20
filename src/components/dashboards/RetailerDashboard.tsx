@@ -102,7 +102,7 @@ export const RetailerDashboard: React.FC = () => {
     fetchUserData(true);
     const interval = setInterval(() => {
       fetchUserData(false);
-    }, 3500);
+    }, 20000);
     return () => clearInterval(interval);
   }, []);
 

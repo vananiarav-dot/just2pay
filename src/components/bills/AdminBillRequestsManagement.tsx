@@ -93,7 +93,7 @@ export const AdminBillRequestsManagement: React.FC = () => {
     loadData(true);
     const interval = setInterval(() => {
       loadData(false);
-    }, 3000);
+    }, 15000);
     return () => clearInterval(interval);
   }, []);
 
