@@ -863,8 +863,8 @@ router.get('/request/list', verifyToken, async (req, res) => {
       list = list.filter(r => r.user_id === user.id);
     }
 
-    // Limit & Pagination: default 30 records to keep payloads under 15KB
-    const limitParam = req.query.limit ? parseInt(req.query.limit, 10) : (req.query.all === 'true' ? 0 : 30);
+    // Optional Limit & Pagination (returns all requests unless limit is explicitly requested)
+    const limitParam = req.query.limit ? parseInt(req.query.limit, 10) : 0;
     const pageParam = Math.max(1, parseInt(req.query.page, 10) || 1);
     const totalCount = list.length;
     let paginatedList = list;
