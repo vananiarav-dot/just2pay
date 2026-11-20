@@ -1607,7 +1607,7 @@ router.post('/pay-bill', verifyToken, async (req, res) => {
 
     const response = await axios.post(`${baseUrl}/pay-bill`, payload, {
       headers: getAuthHeaders(),
-      timeout: 20000
+      timeout: 45000
     });
 
     console.log('[UsePay Pay-Bill Response]:', JSON.stringify(response.data, null, 2));
@@ -1669,11 +1669,119 @@ router.post('/pay-bill', verifyToken, async (req, res) => {
   } catch (err) {
     console.error('[UsePay Pay-Bill Error]:', err.response?.data || err.message);
 
+    const isTimeout = err.code === 'ECONNABORTED' 
+      || String(err.message || '').toLowerCase().includes('timeout') 
+      || err.code === 'ETIMEDOUT'
+      || (!err.response && (err.code === 'ENOTFOUND' || err.code === 'ECONNRESET'));
+
+    if (isTimeout) {
+      // -----------------------------------------------------------------------
+      // TIMEOUT / NETWORK UNKNOWN STATE GUARD:
+      // Request was dispatched to upstream gateway. Do NOT auto-refund yet!
+      // Keep in PENDING state and trigger background status checks to reconcile.
+      // -------------------------------------------------------------
+      const pendingMsg = 'Payment submitted to biller gateway. Awaiting bank confirmation (Network Timeout).';
+      newTxnEntry.status = 'pending';
+      newTxnEntry.status_message = pendingMsg;
+      newTxnEntry.refunded = false;
+      newTxnEntry.refunded_amount = 0;
+
+      if (supabase) {
+        try {
+          const pendingPayload = {
+            status: 'pending',
+            status_message: pendingMsg,
+            refunded: false,
+            refunded_amount: 0,
+            updated_at: new Date().toISOString()
+          };
+          await supabase
+            .from('bbps_bill_payments')
+            .update(pendingPayload)
+            .eq('client_transaction_id', generatedClientTxnId);
+        } catch (e) {
+          console.warn('[BBPS DB Pending Update Warning]:', e.message);
+        }
+      }
+
+      // Schedule background status checks (at 15s and 45s) to reconcile with UsePay
+      const scheduleBgCheck = (delayMs, attempt) => {
+        setTimeout(async () => {
+          try {
+            console.log(`[BBPS Background Check]: Checking status for ${generatedClientTxnId} (Attempt ${attempt})...`);
+            const statusUrl = `${baseUrl}/status/${encodeURIComponent(generatedClientTxnId)}`;
+            const statRes = await axios.get(statusUrl, {
+              headers: getAuthHeaders(),
+              timeout: 15000
+            });
+            if (statRes.data) {
+              const liveData = statRes.data.data || {};
+              const liveStat = (liveData.current_status || liveData.status || statRes.data.status || '').toLowerCase();
+              if (liveStat === 'success' || liveStat === 'approved') {
+                console.log(`[BBPS Background Check]: Txn ${generatedClientTxnId} confirmed SUCCESS!`);
+                newTxnEntry.status = 'success';
+                newTxnEntry.status_message = liveData.message || 'Bill paid successfully (Confirmed by Biller)';
+                newTxnEntry.api_transaction_id = liveData.transaction_id || newTxnEntry.api_transaction_id;
+                newTxnEntry.bbps_txn_ref_id = liveData.bbps_txn_ref_id || newTxnEntry.bbps_txn_ref_id;
+                if (supabase) {
+                  await supabase.from('bbps_bill_payments').update({
+                    status: 'success',
+                    status_message: newTxnEntry.status_message,
+                    api_transaction_id: newTxnEntry.api_transaction_id,
+                    bbps_txn_ref_id: newTxnEntry.bbps_txn_ref_id,
+                    updated_at: new Date().toISOString()
+                  }).eq('client_transaction_id', generatedClientTxnId);
+                }
+                return;
+              } else if (liveStat === 'failed' || liveStat === 'rejected') {
+                console.log(`[BBPS Background Check]: Txn ${generatedClientTxnId} confirmed FAILED. Triggering refund.`);
+                newTxnEntry.status = 'failed';
+                newTxnEntry.status_message = liveData.message || 'Payment failed at gateway';
+                await refundUserWallet(liveData.message || 'Payment failed at gateway');
+                if (supabase) {
+                  await supabase.from('bbps_bill_payments').update({
+                    status: 'failed',
+                    status_message: newTxnEntry.status_message,
+                    refunded: true,
+                    refunded_amount: totalDeduction,
+                    updated_at: new Date().toISOString()
+                  }).eq('client_transaction_id', generatedClientTxnId);
+                }
+                return;
+              }
+            }
+          } catch (pollErr) {
+            console.warn(`[BBPS Background Check Error Attempt ${attempt}]:`, pollErr.response?.data || pollErr.message);
+          }
+          if (attempt === 1) {
+            scheduleBgCheck(30000, 2);
+          }
+        }, delayMs);
+      };
+
+      scheduleBgCheck(15000, 1);
+
+      return res.status(202).json({
+        status: 'pending',
+        payment_status: 'pending',
+        message: 'Payment has been submitted to the biller network. Confirmation is pending from the bank. Your wallet deduction is held; please check Live Bill History in 1-2 minutes.',
+        customer_name: customerName,
+        customer_mobile: mobile || '9876543210',
+        biller_name: targetBiller.biller_name || billerId,
+        card_last4: cardLast4,
+        amount: numAmount,
+        service_charge: serviceCharge,
+        total_deducted: totalDeduction,
+        refunded: false,
+        refunded_amount: 0
+      });
+    }
+
     const errMsg = err.response?.data?.message || err.message || 'Payment API call failed';
     newTxnEntry.status = 'failed';
     newTxnEntry.status_message = errMsg;
 
-    // AUTO REFUND WALLET ON EXCEPTION / TIMEOUT / HTTP ERROR
+    // AUTO REFUND WALLET ON DEFINITIVE GATEWAY FAILURE ONLY
     await refundUserWallet(errMsg);
 
     if (supabase) {
@@ -1681,6 +1789,8 @@ router.post('/pay-bill', verifyToken, async (req, res) => {
         const failPayload = {
           status: 'failed',
           status_message: errMsg,
+          refunded: true,
+          refunded_amount: totalDeduction,
           updated_at: new Date().toISOString()
         };
         const { error: failErr } = await supabase
@@ -1853,52 +1963,7 @@ router.get('/status/:transaction_id', verifyToken, requireRoles(['admin']), asyn
     return res.status(400).json({ status: 'error', message: 'transaction_id is required.' });
   }
 
-  // 1. Try Live UsePay Gateway API Status Check
-  try {
-    const response = await axios.get(`${baseUrl}/status/${encodeURIComponent(transaction_id)}`, {
-      headers: getAuthHeaders(),
-      timeout: 10000
-    });
-
-    if (response.data) {
-      const liveData = response.data.data || {};
-      const liveStatus = (liveData.current_status || liveData.status || response.data.status || 'pending').toLowerCase();
-      const isSuccess = liveStatus === 'success' || liveStatus === 'approved';
-      const isFailed = liveStatus === 'failed' || liveStatus === 'rejected';
-
-      const updatedStatus = isSuccess ? 'success' : isFailed ? 'failed' : 'pending';
-
-      // Update database status
-      if (supabase) {
-        try {
-          await supabase.from('bbps_bill_payments').update({
-            status: updatedStatus,
-            bbps_txn_ref_id: liveData.bbps_txn_ref_id || undefined,
-            api_transaction_id: liveData.transaction_id || undefined,
-            status_message: liveData.message || (isSuccess ? 'Confirmed by Biller' : 'Live status checked'),
-            updated_at: new Date().toISOString()
-          }).or(`client_transaction_id.eq.${transaction_id},id.eq.${transaction_id},api_transaction_id.eq.${transaction_id}`);
-        } catch (dbErr) {
-          console.warn('[Status Sync DB Error]:', dbErr.message);
-        }
-      }
-
-      if (Array.isArray(db.bill_payments)) {
-        const match = db.bill_payments.find(p => p.client_transaction_id === transaction_id || p.id === transaction_id || p.api_transaction_id === transaction_id);
-        if (match) {
-          match.status = updatedStatus;
-          match.bbps_txn_ref_id = liveData.bbps_txn_ref_id || match.bbps_txn_ref_id;
-          match.status_message = liveData.message || match.status_message;
-        }
-      }
-
-      return res.status(response.status).json(response.data);
-    }
-  } catch (err) {
-    console.warn('[UsePay Live Status Warning]: Serving local status check:', err.response?.data || err.message);
-  }
-
-  // 2. Query Local DB / Memory Record
+  // 1. Query Local DB / Memory Record Upfront
   let localRecord = null;
   if (supabase) {
     try {
@@ -1916,6 +1981,86 @@ router.get('/status/:transaction_id', verifyToken, requireRoles(['admin']), asyn
 
   if (!localRecord && Array.isArray(db.bill_payments)) {
     localRecord = db.bill_payments.find(p => p.client_transaction_id === transaction_id || p.id === transaction_id || p.api_transaction_id === transaction_id);
+  }
+
+  // 2. Try Live UsePay Gateway API Status Check
+  try {
+    const response = await axios.get(`${baseUrl}/status/${encodeURIComponent(transaction_id)}`, {
+      headers: getAuthHeaders(),
+      timeout: 15000
+    });
+
+    if (response.data) {
+      const liveData = response.data.data || {};
+      const liveStatus = (liveData.current_status || liveData.status || response.data.status || 'pending').toLowerCase();
+      const isSuccess = liveStatus === 'success' || liveStatus === 'approved';
+      const isFailed = liveStatus === 'failed' || liveStatus === 'rejected';
+
+      const updatedStatus = isSuccess ? 'success' : isFailed ? 'failed' : 'pending';
+
+      // Auto-Refund guard if previously pending/unrefunded and now confirmed failed by live gateway
+      if (isFailed && localRecord && !localRecord.refunded && localRecord.status === 'pending') {
+        const refundAmt = Number(localRecord.total_deducted || localRecord.amount || 0);
+        if (refundAmt > 0 && localRecord.user_id) {
+          try {
+            const { data: usr } = await supabase
+              .from('users_profiles')
+              .select('wallet_balance, pos_balance')
+              .eq('id', localRecord.user_id)
+              .single();
+            if (usr) {
+              const isPos = localRecord.debit_wallet_type === 'pos';
+              const curBal = Number(isPos ? usr.pos_balance : usr.wallet_balance || 0);
+              const newBal = Number((curBal + refundAmt).toFixed(2));
+              const upObj = isPos ? { pos_balance: newBal, updated_at: new Date().toISOString() } : { wallet_balance: newBal, updated_at: new Date().toISOString() };
+              await supabase.from('users_profiles').update(upObj).eq('id', localRecord.user_id);
+              localRecord.refunded = true;
+              localRecord.refunded_amount = refundAmt;
+              console.log(`[Status Sync Auto-Refund]: Successfully refunded ₹${refundAmt} to User ${localRecord.user_id} on confirmed failure.`);
+            }
+          } catch (rErr) {
+            console.warn('[Status Sync Auto-Refund Warning]:', rErr.message);
+          }
+        }
+      }
+
+      // Update database status
+      if (supabase) {
+        try {
+          const updatePayload = {
+            status: updatedStatus,
+            bbps_txn_ref_id: liveData.bbps_txn_ref_id || undefined,
+            api_transaction_id: liveData.transaction_id || undefined,
+            status_message: liveData.message || (isSuccess ? 'Confirmed by Biller' : 'Live status checked'),
+            updated_at: new Date().toISOString()
+          };
+          if (isFailed && localRecord?.refunded) {
+            updatePayload.refunded = true;
+            updatePayload.refunded_amount = localRecord.refunded_amount;
+          }
+          await supabase.from('bbps_bill_payments').update(updatePayload).or(`client_transaction_id.eq.${transaction_id},id.eq.${transaction_id},api_transaction_id.eq.${transaction_id}`);
+        } catch (dbErr) {
+          console.warn('[Status Sync DB Error]:', dbErr.message);
+        }
+      }
+
+      if (Array.isArray(db.bill_payments)) {
+        const match = db.bill_payments.find(p => p.client_transaction_id === transaction_id || p.id === transaction_id || p.api_transaction_id === transaction_id);
+        if (match) {
+          match.status = updatedStatus;
+          match.bbps_txn_ref_id = liveData.bbps_txn_ref_id || match.bbps_txn_ref_id;
+          match.status_message = liveData.message || match.status_message;
+          if (isFailed && localRecord?.refunded) {
+            match.refunded = true;
+            match.refunded_amount = localRecord.refunded_amount;
+          }
+        }
+      }
+
+      return res.status(response.status).json(response.data);
+    }
+  } catch (err) {
+    console.warn('[UsePay Live Status Warning]: Serving local status check:', err.response?.data || err.message);
   }
 
   const currentStat = (localRecord?.status || 'pending').toLowerCase();
