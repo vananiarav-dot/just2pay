@@ -763,6 +763,11 @@ export const posApi = {
     return response.data;
   },
 
+  getSettlementStatus: async () => {
+    const response = await apiClient.get('/pos/settlement-status');
+    return response.data;
+  },
+
   // POS Ledger / Statement
   getStatement: async (params?: any) => {
     const response = await apiClient.get('/pos/statement', { params });

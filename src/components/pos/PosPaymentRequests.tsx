@@ -383,7 +383,7 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
   };
 
   const handleSettleAllT1 = async () => {
-    if (!window.confirm('⚡ 1-Click T+1 Settlement: This will clear all pending T+1 Overnight Clearing balances across all users and transfer the funds directly into their spendable POS Wallets. Proceed?')) return;
+    if (!window.confirm('⚡ T+1 Settle: ગઈકાલે રાત્રે ૧૨:૦૦ વાગ્યા સુધીની Approved T+1 રિક્વેસ્ટ્સનું સેટલમેન્ટ મર્ચન્ટના POS વોલેટમાં જમા કરવું છે? (Auto Settle દરરોજ સવારે ૧૧:૦૦ વાગ્યે આપોઆપ થઈ જાય છે). Proceed?')) return;
 
     try {
       setSettlingT1(true);
@@ -449,15 +449,19 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-purple-50 border border-purple-200 text-purple-800 text-xs font-bold shadow-2xs">
+                <Clock className="w-3.5 h-3.5 text-purple-600" />
+                <span>Auto Settle: Daily 11:00 AM IST (Midnight Cut-off)</span>
+              </div>
               <button
                 onClick={handleSettleAllT1}
                 disabled={settlingT1}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md shadow-purple-600/20 transition cursor-pointer disabled:opacity-50 whitespace-nowrap"
-                title="Clears all users T+1 overnight balances into spendable POS Wallet"
+                title="Manually force settle approved T+1 slips from yesterday night cut-off"
               >
                 <Sparkles className={`w-4 h-4 ${settlingT1 ? 'animate-spin' : ''}`} />
-                <span>{settlingT1 ? 'Settling T+1...' : '⚡ 1-Click Settle T+1'}</span>
+                <span>{settlingT1 ? 'Settling T+1...' : '⚡ Settle Now (Manual Force)'}</span>
               </button>
               <button
                 onClick={loadData}

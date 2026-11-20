@@ -662,81 +662,266 @@ router.post('/requests/:id/reject', verifyToken, requireRoles(['admin']), async 
   }
 });
 
-// POST /api/pos/settle-t1 - Settle All Next-Day T+1 Balances into Usable POS T+0 Wallets (Admin 1-Click / Cron)
-router.post('/settle-t1', verifyToken, requireRoles(['admin']), async (req, res) => {
-  try {
-    initPosStore();
-    let settledUsersCount = 0;
-    let totalSettledAmount = 0;
+// =============================================================================
+// AUTOMATED T+1 OVERNIGHT SETTLEMENT ENGINE (Daily 11:00 AM IST Cut-Off)
+// =============================================================================
 
-    // Fetch all users
-    let usersList = db.users || [];
-    if (supabase) {
-      const { data } = await supabase.from('users_profiles').select('*');
-      if (data && data.length > 0) usersList = data;
+// Store last auto-settlement IST date and stats
+let lastAutoSettledIstDate = null;
+let lastSettlementStats = null;
+
+// Helper: Calculate today's start in IST (Asia/Kolkata)
+export const getTodayIstStart = () => {
+  const now = new Date();
+  const istDateString = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(now);
+  return new Date(`${istDateString}T00:00:00+05:30`);
+};
+
+export const getNowIstDateString = () => {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+};
+
+export const getNowIstHourMinute = () => {
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat('en-IN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'Asia/Kolkata'
+  }).formatToParts(now);
+  const hour = parseInt(parts.find(p => p.type === 'hour')?.value || '0', 10);
+  const minute = parseInt(parts.find(p => p.type === 'minute')?.value || '0', 10);
+  return { hour, minute };
+};
+
+// Core settlement execution function
+export const executeT1OvernightSettlement = async (isManual = false) => {
+  initPosStore();
+
+  // Cut-off rule: Requests created BEFORE today's 00:00:00 IST (Yesterday night 12:00 AM midnight cut-off)
+  const todayStartIst = getTodayIstStart();
+
+  // Ensure requests are loaded
+  if (supabase && (!db.pos_payment_requests || db.pos_payment_requests.length === 0)) {
+    try {
+      const { data } = await supabase.from('pos_payment_requests').select('*');
+      if (data && data.length > 0) db.pos_payment_requests = data;
+    } catch (e) {
+      console.warn('Supabase pos_payment_requests fetch error:', e.message);
+    }
+  }
+
+  const allRequests = db.pos_payment_requests || [];
+
+  // Filter eligible T+1 requests:
+  // 1. settlement_type === 'T1'
+  // 2. status === 'approved'
+  // 3. created_at < todayStartIst (Created before midnight cut-off)
+  // 4. !settled_at (Not already settled)
+  const eligibleRequests = allRequests.filter(r => {
+    if ((r.settlement_type || '').toUpperCase() !== 'T1') return false;
+    if (r.status !== 'approved') return false;
+    if (r.settled_at) return false;
+    const reqTime = new Date(r.created_at || r.processed_at || 0);
+    return reqTime < todayStartIst;
+  });
+
+  if (eligibleRequests.length === 0) {
+    console.log(`ℹ️ [POS T+1 Settlement] No pending approved T+1 requests prior to midnight cut-off (${todayStartIst.toISOString()})`);
+    return {
+      success: true,
+      message: `No approved T+1 requests prior to yesterday midnight cut-off (${todayStartIst.toLocaleDateString('en-IN')}) waiting for settlement.`,
+      settledUsersCount: 0,
+      totalSettledAmount: 0,
+      settledRequestsCount: 0,
+      cut_off_time: todayStartIst.toISOString()
+    };
+  }
+
+  // Group by user_id
+  const userRequestsMap = new Map();
+  eligibleRequests.forEach(r => {
+    const uid = r.user_id;
+    if (!userRequestsMap.has(uid)) userRequestsMap.set(uid, []);
+    userRequestsMap.get(uid).push(r);
+  });
+
+  // Load all users
+  let usersList = db.users || [];
+  if (supabase) {
+    const { data: supaUsers } = await supabase.from('users_profiles').select('*');
+    if (supaUsers && supaUsers.length > 0) usersList = supaUsers;
+  }
+  const userMap = new Map();
+  usersList.forEach(u => userMap.set(u.id, u));
+
+  let settledUsersCount = 0;
+  let totalSettledAmount = 0;
+  const settlementTimestamp = new Date().toISOString();
+  const settledReqIds = [];
+
+  for (const [uid, userReqs] of userRequestsMap.entries()) {
+    const user = userMap.get(uid) || (db.users || []).find(u => u.id === uid);
+    if (!user) continue;
+
+    const userSum = userReqs.reduce((sum, r) => sum + parseFloat(r.net_amount || 0), 0);
+    if (userSum <= 0) continue;
+
+    const oldPosBal = parseFloat(user.pos_balance || 0);
+    const newPosBal = parseFloat((oldPosBal + userSum).toFixed(2));
+    const oldT1Bal = parseFloat(user.pos_t1_pending_balance || 0);
+    const newT1Bal = Math.max(0, parseFloat((oldT1Bal - userSum).toFixed(2)));
+
+    user.pos_balance = newPosBal;
+    user.pos_t1_pending_balance = newT1Bal;
+
+    // Update in-memory user
+    const memIdx = (db.users || []).findIndex(x => x.id === uid);
+    if (memIdx !== -1) {
+      db.users[memIdx].pos_balance = newPosBal;
+      db.users[memIdx].pos_t1_pending_balance = newT1Bal;
     }
 
-    for (const u of usersList) {
-      const t1Amt = parseFloat(u.pos_t1_pending_balance || 0);
-      if (t1Amt > 0) {
-        const oldPosBal = parseFloat(u.pos_balance || 0);
-        const newPosBal = parseFloat((oldPosBal + t1Amt).toFixed(2));
+    // Ledger Entry
+    const ledgerEntry = {
+      id: `pos_led_set_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+      user_id: user.id,
+      user_name: user.name,
+      firm_name: user.firm_name,
+      user_mobile: user.mobile_number,
+      type: 'CREDIT',
+      wallet_type: 'T0',
+      category: 'T1_SETTLEMENT_CREDIT',
+      amount: userSum,
+      charge_amount: 0,
+      opening_balance: oldPosBal,
+      closing_balance: newPosBal,
+      reference_id: `SETTLE_T1_${Date.now()}`,
+      description: isManual 
+        ? `Manual T+1 Overnight Settle (${userReqs.length} slips, Midnight Cut-off) -> Credited to Spendable POS Wallet`
+        : `Automated 11:00 AM T+1 Overnight Settle (${userReqs.length} slips, Midnight Cut-off) -> Credited to Spendable POS Wallet`,
+      created_at: settlementTimestamp
+    };
+    db.pos_wallet_ledger.unshift(ledgerEntry);
 
-        u.pos_balance = newPosBal;
-        u.pos_t1_pending_balance = 0;
+    // Mark requests settled
+    userReqs.forEach(r => {
+      r.settled_at = settlementTimestamp;
+      r.updated_at = settlementTimestamp;
+      settledReqIds.push(r.id);
+      const memReqIdx = (db.pos_payment_requests || []).findIndex(x => x.id === r.id);
+      if (memReqIdx !== -1) db.pos_payment_requests[memReqIdx] = { ...r };
+    });
 
-        // Write ledger entry
-        const ledgerEntry = {
-          id: `pos_led_set_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
-          user_id: u.id,
-          user_name: u.name,
-          firm_name: u.firm_name,
-          user_mobile: u.mobile_number,
-          type: 'CREDIT',
-          wallet_type: 'T0',
-          category: 'T1_SETTLEMENT_CREDIT',
-          amount: t1Amt,
-          charge_amount: 0,
-          opening_balance: oldPosBal,
-          closing_balance: newPosBal,
-          reference_id: `SETTLE_T1_${Date.now()}`,
-          description: `T+1 Overnight Clearing Settle -> Credited to Spendable POS Wallet`,
-          created_at: new Date().toISOString()
-        };
-        db.pos_wallet_ledger.unshift(ledgerEntry);
+    if (supabase) {
+      try {
+        await supabase.from('users_profiles').update({
+          pos_balance: newPosBal,
+          pos_t1_pending_balance: newT1Bal,
+          updated_at: settlementTimestamp
+        }).eq('id', user.id);
 
-        // Update in-memory user
-        const memIdx = (db.users || []).findIndex(x => x.id === u.id);
-        if (memIdx !== -1) {
-          db.users[memIdx].pos_balance = newPosBal;
-          db.users[memIdx].pos_t1_pending_balance = 0;
-        }
-
-        if (supabase) {
-          try {
-            await supabase.from('users_profiles').update({
-              pos_balance: newPosBal,
-              pos_t1_pending_balance: 0
-            }).eq('id', u.id);
-            await supabase.from('pos_wallet_ledger').insert([ledgerEntry]);
-          } catch (e) {
-            console.warn('Supabase settle T1 user update error:', e.message);
-          }
-        }
-
-        settledUsersCount++;
-        totalSettledAmount += t1Amt;
+        await supabase.from('pos_wallet_ledger').insert([ledgerEntry]);
+      } catch (e) {
+        console.warn('Supabase user profile & ledger update warning:', e.message);
       }
     }
 
-    savePersistentPosData();
+    settledUsersCount++;
+    totalSettledAmount += userSum;
+  }
+
+  // Update settled_at for all settled requests in Supabase
+  if (supabase && settledReqIds.length > 0) {
+    try {
+      await supabase.from('pos_payment_requests').update({
+        settled_at: settlementTimestamp,
+        updated_at: settlementTimestamp
+      }).in('id', settledReqIds);
+    } catch (e) {
+      console.warn('Supabase mark settled_at warning:', e.message);
+    }
+  }
+
+  savePersistentPosData();
+
+  console.log(`✅ [POS T+1 Settlement Complete]: Settled ₹${totalSettledAmount.toFixed(2)} for ${settledUsersCount} users (${eligibleRequests.length} slips).`);
+
+  return {
+    success: true,
+    message: `Successfully settled ₹${totalSettledAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })} for ${settledUsersCount} users (${eligibleRequests.length} slips from yesterday night cut-off) into spendable POS Wallet!`,
+    settledUsersCount,
+    totalSettledAmount,
+    settledRequestsCount: eligibleRequests.length,
+    cut_off_time: todayStartIst.toISOString()
+  };
+};
+
+// Background Auto-Settlement Scheduler (Checks every 30s)
+const checkAndRunAutoSettlement = async () => {
+  try {
+    const todayIst = getNowIstDateString();
+    const { hour, minute } = getNowIstHourMinute();
+
+    // Trigger condition: IST time is >= 11:00 AM AND settlement has not run yet for today's IST date
+    if (hour >= 11 && lastAutoSettledIstDate !== todayIst) {
+      console.log(`⏰ [POS T+1 Auto-Settlement] Triggering daily 11:00 AM settlement for IST date ${todayIst} at ${hour}:${String(minute).padStart(2, '0')} IST...`);
+      lastAutoSettledIstDate = todayIst;
+      const stats = await executeT1OvernightSettlement(false);
+      lastSettlementStats = {
+        ...stats,
+        settled_at: new Date().toISOString(),
+        ist_date: todayIst
+      };
+    }
+  } catch (err) {
+    console.error('❌ [POS T+1 Auto-Settlement Interval Error]:', err.message);
+  }
+};
+
+// Start background scheduler interval (every 30 seconds)
+setInterval(checkAndRunAutoSettlement, 30 * 1000);
+// Also run check 5 seconds after server startup (in case restarted after 11 AM)
+setTimeout(checkAndRunAutoSettlement, 5000);
+
+// GET /api/pos/settlement-status - Check next/last settlement status (Admin Only)
+router.get('/settlement-status', verifyToken, requireRoles(['admin']), async (req, res) => {
+  try {
+    initPosStore();
+    const todayStartIst = getTodayIstStart();
+    const allRequests = db.pos_payment_requests || [];
+    
+    // Count overnight requests waiting for settlement
+    const pendingOvernightReqs = allRequests.filter(r => {
+      if ((r.settlement_type || '').toUpperCase() !== 'T1') return false;
+      if (r.status !== 'approved') return false;
+      if (r.settled_at) return false;
+      return new Date(r.created_at || 0) < todayStartIst;
+    });
+
+    const pendingOvernightAmount = pendingOvernightReqs.reduce((sum, r) => sum + parseFloat(r.net_amount || 0), 0);
+    const { hour } = getNowIstHourMinute();
+    const nextSettlementTime = hour < 11 ? 'Today at 11:00 AM IST' : 'Tomorrow at 11:00 AM IST';
 
     return res.status(200).json({
       success: true,
-      message: `Successfully settled ₹${totalSettledAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })} for ${settledUsersCount} users into spendable POS Wallet!`,
-      settledUsersCount,
-      totalSettledAmount
+      last_settled_date: lastAutoSettledIstDate,
+      last_stats: lastSettlementStats,
+      next_settlement: nextSettlementTime,
+      pending_overnight_slips: pendingOvernightReqs.length,
+      pending_overnight_amount: pendingOvernightAmount,
+      cut_off_time: todayStartIst.toISOString()
     });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Failed to fetch settlement status' });
+  }
+});
+
+// POST /api/pos/settle-t1 - Settle All Next-Day T+1 Balances into Usable POS T+0 Wallets (Admin 1-Click / Force)
+router.post('/settle-t1', verifyToken, requireRoles(['admin']), async (req, res) => {
+  try {
+    const result = await executeT1OvernightSettlement(true);
+    return res.status(200).json(result);
   } catch (err) {
     console.error('Settle T1 error:', err);
     return res.status(500).json({ success: false, message: 'Failed to settle T+1 balances' });
