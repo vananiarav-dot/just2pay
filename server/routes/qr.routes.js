@@ -22,6 +22,8 @@ const toIstDateString = (dateVal) => {
   }
 };
 
+
+
 const formatIstTime = (isoString) => {
   try {
     const d = new Date(isoString);
@@ -1084,17 +1086,7 @@ router.get('/request/:id/screenshot', verifyToken, async (req, res) => {
   }
 });
 
-// Helper: Format ISO date string into IST (Asia/Kolkata) "YYYY-MM-DD"
-const toIstDateString = (dateVal) => {
-  if (!dateVal) return new Date().toISOString().substring(0, 10);
-  try {
-    const d = new Date(dateVal);
-    if (isNaN(d.getTime())) return String(dateVal).substring(0, 10);
-    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(d);
-  } catch {
-    return String(dateVal).substring(0, 10);
-  }
-};
+
 
 // -----------------------------------------------------------------------------
 // GET /api/qr/gallery/summary (Admin Approved Screenshot Gallery Summary - Date & QR Wise)
