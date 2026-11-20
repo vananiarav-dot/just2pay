@@ -10,6 +10,19 @@ import {
   ZoomIn, ZoomOut, RotateCw, ExternalLink, Move, Pencil
 } from 'lucide-react';
 
+interface QrActiveHistorySlot {
+  uniqueKey: string;
+  qr_master_id: string;
+  qr_name: string;
+  upi_id: string;
+  date: string;
+  relative_day: string;
+  formatted_time: string;
+  is_current_active: boolean;
+  transaction_count: number;
+  sort_time: number;
+}
+
 export const QRPaymentRequests: React.FC = () => {
   const { user } = useAuthStore();
   const isAdmin = user?.role === 'admin';
@@ -59,11 +72,12 @@ export const QRPaymentRequests: React.FC = () => {
   const [rotation, setRotation] = useState<number>(0);
   const [copiedModalUtr, setCopiedModalUtr] = useState<boolean>(false);
 
-  // Re-assign QR Master State (Admin Only)
-  const [allQrMasters, setAllQrMasters] = useState<QrMaster[]>([]);
-  const [editingQrRequest, setEditingQrRequest] = useState<QrPaymentRequest | null>(null);
-  const [selectedNewQrId, setSelectedNewQrId] = useState<string>('');
-  const [updatingQr, setUpdatingQr] = useState<boolean>(false);
+  // Re-assign QR Master State (Admin Only - Inline Auto-Searchable Dropdown)
+  const [qrActiveHistory, setQrActiveHistory] = useState<QrActiveHistorySlot[]>([]);
+  const [activeDropdownRowId, setActiveDropdownRowId] = useState<string | null>(null);
+  const [qrSearchQuery, setQrSearchQuery] = useState<string>('');
+  const [updatingRowId, setUpdatingRowId] = useState<string | null>(null);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
 
   // Filter State
   const [searchTerm, setSearchTerm] = useState('');
@@ -207,79 +221,81 @@ export const QRPaymentRequests: React.FC = () => {
     };
   }, [isAdmin]);
 
-  // Fetch QR Masters list for Admin re-assignment dropdown
+  // Fetch QR active history (last 5 days) for Admin inline dropdown
   useEffect(() => {
     if (isAdmin) {
-      qrApi.getQrList().then(res => {
-        if (res.success && res.qr_masters) {
-          setAllQrMasters(res.qr_masters);
+      qrApi.getActiveQrHistory().then(res => {
+        if (res.success && res.history) {
+          setQrActiveHistory(res.history);
         }
-      }).catch(err => console.warn('Failed to load QR masters:', err));
+      }).catch(err => console.warn('Failed to load QR active history:', err));
     }
   }, [isAdmin]);
 
-  const formatQrActiveTime = (dateStr?: string) => {
-    if (!dateStr) return 'N/A';
-    try {
-      const d = new Date(dateStr);
-      return new Intl.DateTimeFormat('en-IN', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-        timeZone: 'Asia/Kolkata'
-      }).format(d);
-    } catch {
-      return dateStr;
+  // Click-outside and Escape key listener for inline dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setActiveDropdownRowId(null);
+        setQrSearchQuery('');
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setActiveDropdownRowId(null);
+        setQrSearchQuery('');
+      }
+    };
+    if (activeDropdownRowId) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
     }
-  };
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [activeDropdownRowId]);
 
-  const handleOpenEditQr = (req: QrPaymentRequest) => {
-    setEditingQrRequest(req);
-    const initialQrId = req.qr_master_id || allQrMasters.find(q => q.is_selected || q.is_active)?.id || '';
-    setSelectedNewQrId(initialQrId);
-  };
-
-  const handleSaveReassignedQr = async () => {
-    if (!editingQrRequest || !selectedNewQrId) return;
-    setUpdatingQr(true);
+  const handleSelectSlotForRequest = async (req: QrPaymentRequest, slot: QrActiveHistorySlot) => {
+    if (req.qr_master_id === slot.qr_master_id) {
+      setActiveDropdownRowId(null);
+      setQrSearchQuery('');
+      return;
+    }
+    setUpdatingRowId(req.id);
     try {
-      const res = await qrApi.updateRequestQrMaster(editingQrRequest.id, selectedNewQrId);
+      const res = await qrApi.updateRequestQrMaster(req.id, slot.qr_master_id);
       if (res.success) {
-        setSuccessMessage(res.message);
-        const updatedTarget = allQrMasters.find(q => q.id === selectedNewQrId);
-        const newName = updatedTarget ? updatedTarget.name : res.qr_name || 'Primary QR';
-
+        setSuccessMessage(`QR સફળતાપૂર્વક બદલાઈ ગયો: "${slot.qr_name}"`);
         setRequestsList(prev => prev.map(item => {
-          if (item.id === editingQrRequest.id) {
+          if (item.id === req.id) {
             return {
               ...item,
-              qr_master_id: selectedNewQrId,
-              qr_name: newName,
-              upi_id: updatedTarget?.upi_id || item.upi_id
+              qr_master_id: slot.qr_master_id,
+              qr_name: slot.qr_name,
+              upi_id: slot.upi_id
             };
           }
           return item;
         }));
 
-        if (previewRequest?.id === editingQrRequest.id) {
+        if (previewRequest?.id === req.id) {
           setPreviewRequest(prev => prev ? {
             ...prev,
-            qr_master_id: selectedNewQrId,
-            qr_name: newName
+            qr_master_id: slot.qr_master_id,
+            qr_name: slot.qr_name
           } : null);
         }
 
-        setEditingQrRequest(null);
+        setActiveDropdownRowId(null);
+        setQrSearchQuery('');
       } else {
         alert(res.message || 'Failed to update QR master.');
       }
     } catch (err: any) {
       alert(err.response?.data?.message || 'Error updating QR master.');
     } finally {
-      setUpdatingQr(false);
+      setUpdatingRowId(null);
     }
   };
 
@@ -618,6 +634,19 @@ export const QRPaymentRequests: React.FC = () => {
       if (r.status !== statusFilter) return false;
     }
     return true;
+  });
+
+  // Auto-search filtered history slots for the last 5 days
+  const filteredHistorySlots = qrActiveHistory.filter(slot => {
+    if (!qrSearchQuery.trim()) return true;
+    const q = qrSearchQuery.trim().toLowerCase();
+    return (
+      (slot.qr_name || '').toLowerCase().includes(q) ||
+      (slot.upi_id || '').toLowerCase().includes(q) ||
+      (slot.relative_day || '').toLowerCase().includes(q) ||
+      (slot.formatted_time || '').toLowerCase().includes(q) ||
+      (slot.date || '').toLowerCase().includes(q)
+    );
   });
 
   // Summary Metrics calculated dynamically from filtered range
@@ -1272,7 +1301,7 @@ export const QRPaymentRequests: React.FC = () => {
         </div>
 
         {/* TABLE CONTENT */}
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto min-h-[420px]">
           <table className="w-full text-left text-xs text-slate-600">
             <thead className="bg-slate-50 text-slate-600 uppercase font-bold text-[10px] border-b border-slate-200">
               <tr>
@@ -1310,7 +1339,7 @@ export const QRPaymentRequests: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                filteredRequests.map((r) => (
+                filteredRequests.map((r, rIdx) => (
                   <tr key={r.id} className="hover:bg-slate-50 transition">
                     
                     {/* DATE & TIME (1ST COLUMN) */}
@@ -1352,7 +1381,7 @@ export const QRPaymentRequests: React.FC = () => {
                     </td>
 
                     {/* QR NAME */}
-                    <td className="p-4">
+                    <td className="p-4 relative">
                       <div className="flex items-center gap-1.5">
                         <span className="px-2.5 py-1 rounded-xl bg-purple-50 border border-purple-200 text-purple-700 font-bold text-xs inline-block tracking-wide">
                           {r.qr_name || activeQr?.name || 'Primary QR'}
@@ -1360,14 +1389,154 @@ export const QRPaymentRequests: React.FC = () => {
                         {isAdmin && (
                           <button
                             type="button"
-                            onClick={() => handleOpenEditQr(r)}
-                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-purple-100 text-slate-500 hover:text-purple-700 border border-slate-200 hover:border-purple-300 transition-all shadow-xs cursor-pointer"
-                            title="Edit / Change Assigned QR"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (activeDropdownRowId === r.id) {
+                                setActiveDropdownRowId(null);
+                                setQrSearchQuery('');
+                              } else {
+                                setActiveDropdownRowId(r.id);
+                                setQrSearchQuery('');
+                                qrApi.getActiveQrHistory().then(res => {
+                                  if (res.success && res.history) setQrActiveHistory(res.history);
+                                }).catch(() => {});
+                              }
+                            }}
+                            className={`p-1.5 rounded-lg border transition-all shadow-xs cursor-pointer ${
+                              activeDropdownRowId === r.id
+                                ? 'bg-purple-600 text-white border-purple-600 ring-2 ring-purple-300'
+                                : 'bg-slate-100 hover:bg-purple-100 text-slate-500 hover:text-purple-700 border-slate-200 hover:border-purple-300'
+                            }`}
+                            title="Edit / Change Assigned QR (Last 5 Days Active History)"
                           >
                             <Pencil className="w-3 h-3" />
                           </button>
                         )}
                       </div>
+
+                      {/* INLINE AUTO-SEARCHABLE DROPDOWN POPOVER */}
+                      {isAdmin && activeDropdownRowId === r.id && (
+                        <div
+                          ref={dropdownRef}
+                          onClick={(e) => e.stopPropagation()}
+                          className={`absolute left-2 z-50 w-80 max-w-[340px] bg-white rounded-2xl shadow-2xl border border-purple-200 p-3 text-slate-800 animate-in fade-in zoom-in-95 duration-150 ${
+                            rIdx >= filteredRequests.length - 2 && filteredRequests.length > 2
+                              ? 'bottom-full mb-2'
+                              : 'top-full mt-2'
+                          }`}
+                        >
+                          {/* Dropdown Header */}
+                          <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+                            <div className="flex items-center gap-1.5">
+                              <QrCode className="w-4 h-4 text-purple-600 shrink-0" />
+                              <span className="text-xs font-black text-slate-900">
+                                Select Active QR (Last 5 Days)
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveDropdownRowId(null);
+                                setQrSearchQuery('');
+                              }}
+                              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          {/* Search Input (Auto-Searchable) */}
+                          <div className="relative mb-2.5">
+                            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <input
+                              type="text"
+                              autoFocus
+                              value={qrSearchQuery}
+                              onChange={(e) => setQrSearchQuery(e.target.value)}
+                              placeholder="Search QR, UPI or Date..."
+                              className="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-purple-500 focus:bg-white text-slate-800 placeholder-slate-400 font-medium transition-all"
+                            />
+                            {qrSearchQuery && (
+                              <button
+                                type="button"
+                                onClick={() => setQrSearchQuery('')}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded text-slate-400 hover:text-slate-600 cursor-pointer"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+
+                          {/* 5-Day Active QR List */}
+                          <div className="max-h-60 overflow-y-auto space-y-1.5 pr-0.5">
+                            {filteredHistorySlots.length === 0 ? (
+                              <div className="py-6 text-center text-xs text-slate-400">
+                                No active QR found for &ldquo;{qrSearchQuery}&rdquo;
+                              </div>
+                            ) : (
+                              filteredHistorySlots.map(slot => {
+                                const isCurrentOfRow = r.qr_master_id === slot.qr_master_id;
+                                const isBusy = updatingRowId === r.id;
+
+                                return (
+                                  <button
+                                    key={slot.uniqueKey}
+                                    type="button"
+                                    disabled={isBusy}
+                                    onClick={() => handleSelectSlotForRequest(r, slot)}
+                                    className={`w-full text-left p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 ${
+                                      isCurrentOfRow
+                                        ? 'bg-purple-50/90 border-purple-300 ring-1 ring-purple-300 text-purple-950'
+                                        : 'bg-white hover:bg-slate-50 border-slate-100 hover:border-purple-200 text-slate-700'
+                                    }`}
+                                  >
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="font-extrabold text-xs text-slate-900 truncate">
+                                          {slot.qr_name}
+                                        </span>
+                                        {slot.is_current_active ? (
+                                          <span className="px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[9px] font-bold tracking-wider shrink-0 uppercase">
+                                            Live Today
+                                          </span>
+                                        ) : (
+                                          <span className="px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[9px] font-bold tracking-wider shrink-0">
+                                            {slot.relative_day}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <p className="text-[10px] text-slate-400 font-mono truncate">
+                                        {slot.upi_id}
+                                      </p>
+                                      <div className="flex items-center gap-1 mt-0.5 text-[10px] text-purple-700 font-medium">
+                                        <Clock className="w-2.5 h-2.5 shrink-0 text-purple-500" />
+                                        <span>{slot.formatted_time}</span>
+                                        {slot.transaction_count > 0 && (
+                                          <span className="text-slate-400 text-[9px]">
+                                            ({slot.transaction_count} txns)
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    <div className="shrink-0 flex items-center justify-center">
+                                      {isBusy ? (
+                                        <RefreshCw className="w-4 h-4 text-purple-600 animate-spin" />
+                                      ) : isCurrentOfRow ? (
+                                        <CheckCircle className="w-4 h-4 text-purple-600" />
+                                      ) : (
+                                        <span className="text-[10px] font-bold text-slate-400 hover:text-purple-600">
+                                          Select
+                                        </span>
+                                      )}
+                                    </div>
+                                  </button>
+                                );
+                              })
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </td>
 
                     {/* UTR NUMBER */}
@@ -1552,122 +1721,7 @@ export const QRPaymentRequests: React.FC = () => {
 
       </div>
 
-      {/* CHANGE QR MASTER MODAL (Admin Only, z-[60]) */}
-      {editingQrRequest && (
-        <div className="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-                <QrCode className="w-5 h-5 text-purple-600" /> Change QR Master Assignment
-              </h3>
-              <button
-                type="button"
-                onClick={() => setEditingQrRequest(null)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
 
-            {/* Transaction Brief */}
-            <div className="p-3.5 bg-purple-50/50 border border-purple-100 rounded-2xl text-xs space-y-1.5">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Retailer User:</span>
-                <span className="font-bold text-slate-900">{editingQrRequest.user_name} ({editingQrRequest.firm_name || 'N/A'})</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">12-Digit UTR:</span>
-                <span className="font-mono font-bold text-purple-700">{editingQrRequest.utr_number}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Amount:</span>
-                <span className="font-bold text-slate-900">₹{Number(editingQrRequest.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Currently Shown QR:</span>
-                <span className="font-extrabold text-purple-700">{editingQrRequest.qr_name || 'None'}</span>
-              </div>
-            </div>
-
-            {/* Select Target QR */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                Select Correct QR Master:
-              </label>
-              <select
-                value={selectedNewQrId}
-                onChange={(e) => setSelectedNewQrId(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-semibold text-slate-900 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
-              >
-                <option value="" disabled>-- Select QR Code --</option>
-                {allQrMasters.map((qm) => {
-                  const activeTime = formatQrActiveTime(qm.updated_at || qm.created_at);
-                  const isLive = qm.is_selected || qm.is_active;
-                  return (
-                    <option key={qm.id} value={qm.id}>
-                      {qm.name} ({qm.upi_id}) • Active since: {activeTime} {isLive ? '★ [CURRENT ACTIVE]' : ''}
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-
-            {/* Selected QR Card Preview */}
-            {selectedNewQrId && (() => {
-              const selectedQm = allQrMasters.find(q => q.id === selectedNewQrId);
-              if (!selectedQm) return null;
-              const activeTime = formatQrActiveTime(selectedQm.updated_at || selectedQm.created_at);
-              const isLive = selectedQm.is_selected || selectedQm.is_active;
-
-              return (
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-black text-slate-800">{selectedQm.name}</span>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isLive ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'}`}>
-                      {isLive ? 'Currently Active' : 'Inactive'}
-                    </span>
-                  </div>
-                  <div className="text-[11px] text-slate-500 font-mono">UPI: {selectedQm.upi_id}</div>
-                  <div className="text-[11px] text-slate-500 flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-slate-400" />
-                    <span>Active / Updated Date: <strong className="text-slate-700">{activeTime}</strong></span>
-                  </div>
-                </div>
-              );
-            })()}
-
-            <p className="text-[11px] text-slate-500 leading-relaxed">
-              💡 આ QR બદલવાથી આ એન્ટ્રી પસંદ કરેલા QR ના ખાતામાં અને QR Tracking History / Proof Gallery માં પણ તે જ QR નીચે ગણાશે.
-            </p>
-
-            <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setEditingQrRequest(null)}
-                className="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={updatingQr || !selectedNewQrId || selectedNewQrId === editingQrRequest.qr_master_id}
-                onClick={handleSaveReassignedQr}
-                className="w-1/2 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
-              >
-                {updatingQr ? (
-                  <>
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Updating...
-                  </>
-                ) : (
-                  <>
-                    <Check className="w-3.5 h-3.5" /> Save & Update QR
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* REJECTION REASON MODAL (z-[60] so it appears on top of preview modal) */}
       {rejectingReq && (

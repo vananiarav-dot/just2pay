@@ -235,6 +235,25 @@ export const qrApi = {
     return response.data;
   },
 
+  getActiveQrHistory: async (): Promise<{
+    success: boolean;
+    history: Array<{
+      uniqueKey: string;
+      qr_master_id: string;
+      qr_name: string;
+      upi_id: string;
+      date: string;
+      relative_day: string;
+      formatted_time: string;
+      is_current_active: boolean;
+      transaction_count: number;
+      sort_time: number;
+    }>;
+  }> => {
+    const response = await apiClient.get('/qr/master/active-history');
+    return response.data;
+  },
+
   getGallerySummary: async () => {
     const response = await apiClient.get('/qr/gallery/summary');
     return response.data;

@@ -10,11 +10,154 @@ let isQrCacheInitialized = false;
 let lastQrDbSyncTime = 0;
 const QR_CACHE_TTL = 5 * 60 * 1000; // 5-minute periodic background refresh
 
+// Helper: Format ISO date string into IST (Asia/Kolkata) "YYYY-MM-DD"
+const toIstDateString = (dateVal) => {
+  if (!dateVal) return new Date().toISOString().substring(0, 10);
+  try {
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return String(dateVal).substring(0, 10);
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(d);
+  } catch {
+    return String(dateVal).substring(0, 10);
+  }
+};
+
+const formatIstTime = (isoString) => {
+  try {
+    const d = new Date(isoString);
+    return new Intl.DateTimeFormat('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: 'Asia/Kolkata'
+    }).format(d);
+  } catch {
+    return '';
+  }
+};
+
+const formatRelativeDate = (dateStr) => {
+  const today = toIstDateString(new Date());
+  const yesterday = toIstDateString(new Date(Date.now() - 24 * 60 * 60 * 1000));
+  if (dateStr === today) return 'Today';
+  if (dateStr === yesterday) return 'Yesterday';
+  try {
+    const d = new Date(dateStr + 'T12:00:00Z');
+    return new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short' }).format(d);
+  } catch {
+    return dateStr;
+  }
+};
+
 // Helper to calculate QR status
 const computeQrStatus = (qr) => {
   if (!qr.is_active) return 'Inactive';
   return 'Active';
 };
+
+// -----------------------------------------------------------------------------
+// GET /api/qr/master/active-history (Returns QR Masters with last 5 days active sessions)
+// -----------------------------------------------------------------------------
+router.get('/master/active-history', verifyToken, requireRoles(['admin']), async (req, res) => {
+  try {
+    // 1. Ensure qr_masters is loaded
+    if (supabase && (!db.qr_masters || db.qr_masters.length === 0)) {
+      const { data: qData } = await supabase.from('qr_masters').select('id, name, upi_id, is_active, is_selected, created_at, updated_at').order('created_at', { ascending: false });
+      if (qData) db.qr_masters = qData;
+    }
+
+    const masters = db.qr_masters || [];
+    const masterMap = new Map();
+    masters.forEach(m => masterMap.set(m.id, m));
+
+    // 2. Scan qr_payment_requests to detect active usage sessions per QR per day over the last 5 days
+    const reqList = db.qr_payment_requests || [];
+    const now = new Date();
+    const fiveDaysAgo = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000);
+
+    const sessionMap = new Map();
+
+    reqList.forEach(r => {
+      if (!r.created_at) return;
+      const d = new Date(r.created_at);
+      if (d < fiveDaysAgo) return;
+
+      const istDate = toIstDateString(r.created_at);
+      const qId = r.qr_master_id;
+      if (!qId) return;
+
+      const key = `${qId}_${istDate}`;
+      if (!sessionMap.has(key)) {
+        sessionMap.set(key, {
+          qr_master_id: qId,
+          date: istDate,
+          first_seen: r.created_at,
+          last_seen: r.created_at,
+          count: 0
+        });
+      }
+      const entry = sessionMap.get(key);
+      entry.count += 1;
+      if (new Date(r.created_at) < new Date(entry.first_seen)) entry.first_seen = r.created_at;
+      if (new Date(r.created_at) > new Date(entry.last_seen)) entry.last_seen = r.created_at;
+    });
+
+    const historyItems = [];
+
+    // Add session history items (each active QR on each of the last 5 days with time)
+    Array.from(sessionMap.values()).forEach(s => {
+      const m = masterMap.get(s.qr_master_id);
+      if (!m) return;
+      const isLive = (m.is_selected || m.is_active) && s.date === toIstDateString(new Date());
+
+      historyItems.push({
+        uniqueKey: `${s.qr_master_id}_${s.date}`,
+        qr_master_id: s.qr_master_id,
+        qr_name: m.name,
+        upi_id: m.upi_id,
+        date: s.date,
+        relative_day: formatRelativeDate(s.date),
+        formatted_time: `${formatRelativeDate(s.date)} • ${formatIstTime(s.last_seen)}`,
+        is_current_active: isLive,
+        transaction_count: s.count,
+        sort_time: new Date(s.last_seen).getTime()
+      });
+    });
+
+    // Also include any master from qr_masters that has no requests yet or newly activated
+    masters.forEach(m => {
+      const isLive = m.is_selected || m.is_active;
+      const actDate = m.updated_at ? toIstDateString(m.updated_at) : toIstDateString(m.created_at);
+      const key = `${m.id}_${actDate}`;
+
+      if (!sessionMap.has(key)) {
+        historyItems.push({
+          uniqueKey: key,
+          qr_master_id: m.id,
+          qr_name: m.name,
+          upi_id: m.upi_id,
+          date: actDate,
+          relative_day: formatRelativeDate(actDate),
+          formatted_time: `${formatRelativeDate(actDate)} • ${formatIstTime(m.updated_at || m.created_at)}`,
+          is_current_active: isLive,
+          transaction_count: 0,
+          sort_time: new Date(m.updated_at || m.created_at || 0).getTime()
+        });
+      }
+    });
+
+    // Sort newest first
+    historyItems.sort((a, b) => b.sort_time - a.sort_time);
+
+    return res.status(200).json({
+      success: true,
+      history: historyItems
+    });
+  } catch (err) {
+    console.error('Fetch QR Active History Error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to fetch QR active history.' });
+  }
+});
 
 // -----------------------------------------------------------------------------
 // GET /api/qr/master/list (Direct Supabase Database Query)
