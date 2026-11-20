@@ -19,6 +19,36 @@ let usepayConfig = {
   secretKey: process.env.USEPAY_SECRET_KEY || ''
 };
 
+// Persistent local file store for API Fund Requests (Guarantees records survive server restarts)
+const fundRequestsDataFile = path.resolve(__dirname, '../db/fund_requests_data.json');
+const loadLocalFundRequests = () => {
+  try {
+    if (fs.existsSync(fundRequestsDataFile)) {
+      const content = fs.readFileSync(fundRequestsDataFile, 'utf8');
+      const data = JSON.parse(content);
+      if (Array.isArray(data)) return data;
+    }
+  } catch (e) {
+    console.warn('[Fund Requests Local DB Read Error]:', e.message);
+  }
+  return [];
+};
+
+const saveLocalFundRequests = (requests) => {
+  try {
+    const dbDir = path.dirname(fundRequestsDataFile);
+    if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
+    fs.writeFileSync(fundRequestsDataFile, JSON.stringify(requests, null, 2), 'utf8');
+  } catch (e) {
+    console.warn('[Fund Requests Local DB Write Error]:', e.message);
+  }
+};
+
+// Initialize db.api_fund_requests from local file store upfront
+if (!db.api_fund_requests || db.api_fund_requests.length === 0) {
+  db.api_fund_requests = loadLocalFundRequests();
+}
+
 /**
  * GET /api/b2b/usepay-balance (Admin only)
  * Fetches real-time agent balances from UsePay B2B API (https://www.usepay.in/api/v1/b2b/balance)
@@ -455,10 +485,16 @@ router.post('/fund-request', verifyToken, requireRoles(['admin']), async (req, r
 
     if (!db.api_fund_requests) db.api_fund_requests = [];
     db.api_fund_requests.unshift(newRecord);
+    saveLocalFundRequests(db.api_fund_requests);
 
     if (supabase) {
       try {
-        await supabase.from('api_fund_requests').insert([newRecord]);
+        const { error: insertErr } = await supabase.from('api_fund_requests').insert([newRecord]);
+        if (insertErr) {
+          console.error('[Supabase api_fund_requests Insert Error]:', insertErr);
+        } else {
+          console.log(`[Supabase api_fund_requests Insert Success]: Stored request ${newRecord.request_id}`);
+        }
       } catch (sbErr) {
         console.warn('[Supabase api_fund_requests Insert Warning]:', sbErr.message);
       }
@@ -487,14 +523,19 @@ router.post('/fund-request', verifyToken, requireRoles(['admin']), async (req, r
  */
 router.get('/fund-request/history', verifyToken, requireRoles(['admin']), async (req, res) => {
   try {
+    if (!db.api_fund_requests || db.api_fund_requests.length === 0) {
+      db.api_fund_requests = loadLocalFundRequests();
+    }
+
     if (supabase) {
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('api_fund_requests')
           .select('*')
           .order('submitted_at', { ascending: false });
-        if (data && Array.isArray(data)) {
+        if (!error && data && Array.isArray(data) && data.length > 0) {
           db.api_fund_requests = data;
+          saveLocalFundRequests(data);
         }
       } catch (sbErr) {
         console.warn('[Supabase api_fund_requests History Warning]:', sbErr.message);
@@ -548,11 +589,12 @@ router.get('/fund-request/status/:request_id', verifyToken, requireRoles(['admin
     }
   }
 
-  // Update status in local memory
+  // Update status in local memory and file
   const reqItem = (db.api_fund_requests || []).find(r => r.request_id === request_id || r.id === request_id);
   if (reqItem) {
     reqItem.status = liveStatus;
     reqItem.updated_at = new Date().toISOString();
+    saveLocalFundRequests(db.api_fund_requests);
   }
 
   if (supabase) {
