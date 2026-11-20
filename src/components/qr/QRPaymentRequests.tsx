@@ -78,6 +78,9 @@ export const QRPaymentRequests: React.FC = () => {
   const [qrSearchQuery, setQrSearchQuery] = useState<string>('');
   const [updatingRowId, setUpdatingRowId] = useState<string | null>(null);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
+  const [modalQrDropdownOpen, setModalQrDropdownOpen] = useState<boolean>(false);
+  const [modalQrSearchQuery, setModalQrSearchQuery] = useState<string>('');
+  const modalDropdownRef = React.useRef<HTMLDivElement>(null);
 
   // Filter State
   const [searchTerm, setSearchTerm] = useState('');
@@ -166,6 +169,8 @@ export const QRPaymentRequests: React.FC = () => {
   const handleCloseModal = () => {
     setPreviewScreenshot(null);
     setPreviewRequest(null);
+    setModalQrDropdownOpen(false);
+    setModalQrSearchQuery('');
     handleResetZoom();
   };
 
@@ -239,14 +244,20 @@ export const QRPaymentRequests: React.FC = () => {
         setActiveDropdownRowId(null);
         setQrSearchQuery('');
       }
+      if (modalDropdownRef.current && !modalDropdownRef.current.contains(event.target as Node)) {
+        setModalQrDropdownOpen(false);
+        setModalQrSearchQuery('');
+      }
     };
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setActiveDropdownRowId(null);
         setQrSearchQuery('');
+        setModalQrDropdownOpen(false);
+        setModalQrSearchQuery('');
       }
     };
-    if (activeDropdownRowId) {
+    if (activeDropdownRowId || modalQrDropdownOpen) {
       document.addEventListener('mousedown', handleClickOutside);
       document.addEventListener('keydown', handleKeyDown);
     }
@@ -254,12 +265,14 @@ export const QRPaymentRequests: React.FC = () => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [activeDropdownRowId]);
+  }, [activeDropdownRowId, modalQrDropdownOpen]);
 
   const handleSelectSlotForRequest = async (req: QrPaymentRequest, slot: QrActiveHistorySlot) => {
     if (req.qr_master_id === slot.qr_master_id) {
       setActiveDropdownRowId(null);
       setQrSearchQuery('');
+      setModalQrDropdownOpen(false);
+      setModalQrSearchQuery('');
       return;
     }
     setUpdatingRowId(req.id);
@@ -283,12 +296,15 @@ export const QRPaymentRequests: React.FC = () => {
           setPreviewRequest(prev => prev ? {
             ...prev,
             qr_master_id: slot.qr_master_id,
-            qr_name: slot.qr_name
+            qr_name: slot.qr_name,
+            upi_id: slot.upi_id
           } : null);
         }
 
         setActiveDropdownRowId(null);
         setQrSearchQuery('');
+        setModalQrDropdownOpen(false);
+        setModalQrSearchQuery('');
       } else {
         alert(res.message || 'Failed to update QR master.');
       }
@@ -640,6 +656,19 @@ export const QRPaymentRequests: React.FC = () => {
   const filteredHistorySlots = qrActiveHistory.filter(slot => {
     if (!qrSearchQuery.trim()) return true;
     const q = qrSearchQuery.trim().toLowerCase();
+    return (
+      (slot.qr_name || '').toLowerCase().includes(q) ||
+      (slot.upi_id || '').toLowerCase().includes(q) ||
+      (slot.relative_day || '').toLowerCase().includes(q) ||
+      (slot.formatted_time || '').toLowerCase().includes(q) ||
+      (slot.date || '').toLowerCase().includes(q)
+    );
+  });
+
+  // Modal auto-search filtered history slots
+  const filteredModalHistorySlots = qrActiveHistory.filter(slot => {
+    if (!modalQrSearchQuery.trim()) return true;
+    const q = modalQrSearchQuery.trim().toLowerCase();
     return (
       (slot.qr_name || '').toLowerCase().includes(q) ||
       (slot.upi_id || '').toLowerCase().includes(q) ||
@@ -2184,9 +2213,159 @@ export const QRPaymentRequests: React.FC = () => {
                         </button>
                       </div>
 
-                      <div className="flex justify-between py-1 border-b border-slate-200/80">
-                        <span className="text-slate-500">Assigned QR:</span>
-                        <span className="font-bold text-slate-900">{previewRequest.qr_name || 'Primary QR'}</span>
+                      <div className="relative flex items-center justify-between py-1 border-b border-slate-200/80">
+                        <span className="text-slate-500 font-medium">Assigned QR:</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-slate-900 px-2 py-0.5 rounded-lg bg-purple-50 text-purple-700 border border-purple-200 text-xs">
+                            {previewRequest.qr_name || 'Primary QR'}
+                          </span>
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (modalQrDropdownOpen) {
+                                  setModalQrDropdownOpen(false);
+                                  setModalQrSearchQuery('');
+                                } else {
+                                  setModalQrDropdownOpen(true);
+                                  setModalQrSearchQuery('');
+                                  qrApi.getActiveQrHistory().then(res => {
+                                    if (res.success && res.history) setQrActiveHistory(res.history);
+                                  }).catch(() => {});
+                                }
+                              }}
+                              className={`p-1 rounded-lg border transition-all shadow-xs cursor-pointer ${
+                                modalQrDropdownOpen
+                                  ? 'bg-purple-600 text-white border-purple-600 ring-2 ring-purple-300'
+                                  : 'bg-white hover:bg-purple-100 text-slate-500 hover:text-purple-700 border-slate-200 hover:border-purple-300'
+                              }`}
+                              title="Edit / Change Assigned QR (Last 5 Days Active History)"
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+
+                        {/* MODAL INLINE AUTO-SEARCHABLE DROPDOWN POPOVER */}
+                        {isAdmin && modalQrDropdownOpen && (
+                          <div
+                            ref={modalDropdownRef}
+                            onClick={(e) => e.stopPropagation()}
+                            className="absolute right-0 top-full mt-2 z-50 w-80 max-w-[340px] bg-white rounded-2xl shadow-2xl border border-purple-200 p-3 text-slate-800 animate-in fade-in zoom-in-95 duration-150"
+                          >
+                            {/* Dropdown Header */}
+                            <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+                              <div className="flex items-center gap-1.5">
+                                <QrCode className="w-4 h-4 text-purple-600 shrink-0" />
+                                <span className="text-xs font-black text-slate-900">
+                                  Select Active QR (Last 5 Days)
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setModalQrDropdownOpen(false);
+                                  setModalQrSearchQuery('');
+                                }}
+                                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+
+                            {/* Search Input (Auto-Searchable) */}
+                            <div className="relative mb-2.5">
+                              <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                              <input
+                                type="text"
+                                autoFocus
+                                value={modalQrSearchQuery}
+                                onChange={(e) => setModalQrSearchQuery(e.target.value)}
+                                placeholder="Search QR, UPI or Date..."
+                                className="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-purple-500 focus:bg-white text-slate-800 placeholder-slate-400 font-medium transition-all"
+                              />
+                              {modalQrSearchQuery && (
+                                <button
+                                  type="button"
+                                  onClick={() => setModalQrSearchQuery('')}
+                                  className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded text-slate-400 hover:text-slate-600 cursor-pointer"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              )}
+                            </div>
+
+                            {/* 5-Day Active QR List */}
+                            <div className="max-h-60 overflow-y-auto space-y-1.5 pr-0.5">
+                              {filteredModalHistorySlots.length === 0 ? (
+                                <div className="py-6 text-center text-xs text-slate-400">
+                                  No active QR found for &ldquo;{modalQrSearchQuery}&rdquo;
+                                </div>
+                              ) : (
+                                filteredModalHistorySlots.map(slot => {
+                                  const isCurrentOfModal = previewRequest.qr_master_id === slot.qr_master_id;
+                                  const isBusy = updatingRowId === previewRequest.id;
+
+                                  return (
+                                    <button
+                                      key={slot.uniqueKey}
+                                      type="button"
+                                      disabled={isBusy}
+                                      onClick={() => handleSelectSlotForRequest(previewRequest, slot)}
+                                      className={`w-full text-left p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 ${
+                                        isCurrentOfModal
+                                          ? 'bg-purple-50/90 border-purple-300 ring-1 ring-purple-300 text-purple-950'
+                                          : 'bg-white hover:bg-slate-50 border-slate-100 hover:border-purple-200 text-slate-700'
+                                      }`}
+                                    >
+                                      <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                          <span className="font-extrabold text-xs text-slate-900 truncate">
+                                            {slot.qr_name}
+                                          </span>
+                                          {slot.is_current_active ? (
+                                            <span className="px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[9px] font-bold tracking-wider shrink-0 uppercase">
+                                              Live Today
+                                            </span>
+                                          ) : (
+                                            <span className="px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[9px] font-bold tracking-wider shrink-0">
+                                              {slot.relative_day}
+                                            </span>
+                                          )}
+                                        </div>
+                                        <p className="text-[10px] text-slate-400 font-mono truncate">
+                                          {slot.upi_id}
+                                        </p>
+                                        <div className="flex items-center gap-1 mt-0.5 text-[10px] text-purple-700 font-medium">
+                                          <Clock className="w-2.5 h-2.5 shrink-0 text-purple-500" />
+                                          <span>{slot.formatted_time}</span>
+                                          {slot.transaction_count > 0 && (
+                                            <span className="text-slate-400 text-[9px]">
+                                              ({slot.transaction_count} txns)
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      <div className="shrink-0 flex items-center justify-center">
+                                        {isBusy ? (
+                                          <RefreshCw className="w-4 h-4 text-purple-600 animate-spin" />
+                                        ) : isCurrentOfModal ? (
+                                          <CheckCircle className="w-4 h-4 text-purple-600" />
+                                        ) : (
+                                          <span className="text-[10px] font-bold text-slate-400 hover:text-purple-600">
+                                            Select
+                                          </span>
+                                        )}
+                                      </div>
+                                    </button>
+                                  );
+                                })
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                       {previewRequest.upi_id && (
                         <div className="flex justify-between py-1 border-b border-slate-200/80">
