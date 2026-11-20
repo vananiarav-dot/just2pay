@@ -1,0 +1,60 @@
+{
+  "pos_machines": [
+    {
+      "id": "pos_m_01",
+      "machine_name": "HDFC SmartHub Android POS",
+      "terminal_id": "HDFC_TID_8841",
+      "serial_number": "SN-PAX-A910-001",
+      "model": "Pax A910 4G Android",
+      "bank_name": "HDFC Bank",
+      "default_t0_charge_percent": 1.2,
+      "default_t1_charge_percent": 0.8,
+      "is_active": true,
+      "created_at": "2026-11-19T00:00:00.000Z"
+    },
+    {
+      "id": "pos_m_02",
+      "machine_name": "ICICI Merchant Swipe POS",
+      "terminal_id": "ICICI_TID_9923",
+      "serial_number": "SN-VERIFONE-V200T",
+      "model": "Verifone V200T High-Speed",
+      "bank_name": "ICICI Bank",
+      "default_t0_charge_percent": 1.2,
+      "default_t1_charge_percent": 0.8,
+      "is_active": true,
+      "created_at": "2026-11-19T00:00:00.000Z"
+    }
+  ],
+  "pos_payment_requests": [
+    {
+      "id": "pos_req_1795039920000_og01",
+      "user_id": "just2pay_003",
+      "user_name": "HARSH . VORA",
+      "firm_name": "OG ENTERPRISES",
+      "user_mobile": "9274755100",
+      "pos_machine_id": "pos_m_01",
+      "settlement_type": "T0",
+      "amount": 10000,
+      "charge_percent": 1.8,
+      "charge_amount": 180,
+      "net_amount": 9820,
+      "rrn_number": "191191919191",
+      "approval_code": "",
+      "card_last4": "0005",
+      "card_network": "Card",
+      "slip_url": "",
+      "status": "rejected",
+      "rejection_reason": "qlyt!",
+      "processed_by": "admin",
+      "processed_at": "2026-11-19T03:52:00.000Z",
+      "settled_at": null,
+      "admin_commission": 180,
+      "distributor_commission": 0,
+      "super_distributor_commission": 0,
+      "created_at": "2026-11-19T03:52:00.000Z",
+      "updated_at": "2026-11-19T03:52:00.000Z"
+    }
+  ],
+  "pos_wallet_ledger": [],
+  "updated_at": "2026-11-20T12:00:00.000Z"
+}

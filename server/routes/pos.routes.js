@@ -1,9 +1,14 @@
 import express from 'express';
+import fs from 'fs';
+import path from 'path';
 import { db } from '../db/store.js';
 import { supabase } from '../db/supabase.js';
 import { verifyToken, requireRoles } from '../middleware/auth.js';
 
 const router = express.Router();
+
+// Local file storage path to ensure ZERO DATA LOSS across server restarts & deployments
+const POS_DATA_FILE = path.join(process.cwd(), 'server/db/pos_data.json');
 
 // Default seed machines
 const DEFAULT_POS_MACHINES = [
@@ -33,13 +38,56 @@ const DEFAULT_POS_MACHINES = [
   }
 ];
 
-// Helper to ensure in-memory store initialized
+// Helper to load persistent POS data from local JSON file
+const loadPersistentPosData = () => {
+  try {
+    if (fs.existsSync(POS_DATA_FILE)) {
+      const raw = fs.readFileSync(POS_DATA_FILE, 'utf8');
+      const data = JSON.parse(raw);
+      if (data) {
+        if (Array.isArray(data.pos_payment_requests) && data.pos_payment_requests.length > 0) {
+          db.pos_payment_requests = data.pos_payment_requests;
+        }
+        if (Array.isArray(data.pos_machines) && data.pos_machines.length > 0) {
+          db.pos_machines = data.pos_machines;
+        }
+        if (Array.isArray(data.pos_wallet_ledger) && data.pos_wallet_ledger.length > 0) {
+          db.pos_wallet_ledger = data.pos_wallet_ledger;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('⚠️ Failed loading local pos_data.json:', err.message);
+  }
+};
+
+// Helper to save persistent POS data to local JSON file
+const savePersistentPosData = () => {
+  try {
+    const dir = path.dirname(POS_DATA_FILE);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    const payload = {
+      pos_machines: db.pos_machines || [],
+      pos_payment_requests: db.pos_payment_requests || [],
+      pos_wallet_ledger: db.pos_wallet_ledger || [],
+      updated_at: new Date().toISOString()
+    };
+    fs.writeFileSync(POS_DATA_FILE, JSON.stringify(payload, null, 2), 'utf8');
+  } catch (err) {
+    console.error('❌ Failed saving local pos_data.json:', err.message);
+  }
+};
+
+// Helper to ensure in-memory store initialized & loaded from disk
 const initPosStore = () => {
   if (!db.pos_machines || db.pos_machines.length === 0) {
     db.pos_machines = [...DEFAULT_POS_MACHINES];
   }
   if (!db.pos_payment_requests) db.pos_payment_requests = [];
   if (!db.pos_wallet_ledger) db.pos_wallet_ledger = [];
+  loadPersistentPosData();
 };
 initPosStore();
 
@@ -123,6 +171,7 @@ router.post('/machines', verifyToken, requireRoles(['admin']), async (req, res) 
     };
 
     db.pos_machines.unshift(newMachine);
+    savePersistentPosData();
 
     if (supabase) {
       try {
@@ -164,6 +213,7 @@ router.put('/machines/:id', verifyToken, requireRoles(['admin']), async (req, re
       if (default_t1_charge_percent !== undefined) db.pos_machines[idx].default_t1_charge_percent = Math.max(0, parseFloat(default_t1_charge_percent) || 0);
       if (is_active !== undefined) db.pos_machines[idx].is_active = Boolean(is_active);
       db.pos_machines[idx].updated_at = new Date().toISOString();
+      savePersistentPosData();
     }
 
     if (supabase) {
@@ -330,10 +380,16 @@ router.post('/requests', verifyToken, async (req, res) => {
     };
 
     db.pos_payment_requests.unshift(newRequest);
+    savePersistentPosData();
 
     if (supabase) {
       try {
-        await supabase.from('pos_payment_requests').insert([newRequest]);
+        const { error } = await supabase.from('pos_payment_requests').insert([newRequest]);
+        if (error) {
+          console.warn('⚠️ Supabase pos_payment_requests insert warning (RLS or column):', error.message);
+        } else {
+          console.log('✅ Supabase pos_payment_requests row saved to DB:', newRequest.id);
+        }
       } catch (e) {
         console.warn('Supabase pos_payment_requests insert warning:', e.message);
       }
@@ -387,13 +443,20 @@ router.get('/requests', verifyToken, async (req, res) => {
         }
 
         const { data, error } = await query;
-        if (!error && Array.isArray(data)) {
-          requests = data.map(r => ({
+        if (!error && Array.isArray(data) && data.length > 0) {
+          const supaList = data.map(r => ({
             ...r,
             user_name: r.users_profiles?.name || r.user_name || 'Retailer',
             firm_name: r.users_profiles?.firm_name || r.firm_name || '',
             user_mobile: r.users_profiles?.mobile_number || r.user_mobile || ''
           }));
+          const supaIds = new Set(supaList.map(r => r.id));
+          const localOnly = (db.pos_payment_requests || []).filter(r => !supaIds.has(r.id));
+          requests = [...supaList, ...localOnly];
+          
+          // Keep local persistent file updated with the full merged dataset
+          db.pos_payment_requests = requests;
+          savePersistentPosData();
         }
       } catch (e) {
         console.warn('Supabase pos_payment_requests fetch warning:', e.message);
@@ -509,6 +572,7 @@ router.post('/requests/:id/approve', verifyToken, requireRoles(['admin']), async
 
     const memReqIdx = (db.pos_payment_requests || []).findIndex(r => r.id === id);
     if (memReqIdx !== -1) db.pos_payment_requests[memReqIdx] = { ...reqItem };
+    savePersistentPosData();
 
     // Supabase Updates
     if (supabase) {
@@ -571,6 +635,7 @@ router.post('/requests/:id/reject', verifyToken, requireRoles(['admin']), async 
 
     const memIdx = (db.pos_payment_requests || []).findIndex(r => r.id === id);
     if (memIdx !== -1) db.pos_payment_requests[memIdx] = { ...reqItem };
+    savePersistentPosData();
 
     if (supabase) {
       try {
@@ -663,6 +728,8 @@ router.post('/settle-t1', verifyToken, requireRoles(['admin']), async (req, res)
         totalSettledAmount += t1Amt;
       }
     }
+
+    savePersistentPosData();
 
     return res.status(200).json({
       success: true,
