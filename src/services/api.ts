@@ -230,6 +230,11 @@ export const qrApi = {
     return response.data;
   },
 
+  updateRequestQrMaster: async (id: string, qr_master_id: string): Promise<{ success: boolean; message: string; qr_master_id?: string; qr_name?: string }> => {
+    const response = await apiClient.patch(`/qr/request/${encodeURIComponent(id)}/qr-master`, { qr_master_id });
+    return response.data;
+  },
+
   getGallerySummary: async () => {
     const response = await apiClient.get('/qr/gallery/summary');
     return response.data;

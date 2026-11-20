@@ -1622,6 +1622,80 @@ router.post('/request/:id/note', verifyToken, requireRoles(['admin']), async (re
   return router.handle(req, res);
 });
 
+// -----------------------------------------------------------------------------
+// PATCH /api/qr/request/:id/qr-master - Reassign QR Master for a payment request (Admin Only)
+// -----------------------------------------------------------------------------
+router.patch('/request/:id/qr-master', verifyToken, requireRoles(['admin']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { qr_master_id } = req.body;
+
+    if (!qr_master_id) {
+      return res.status(400).json({ success: false, message: 'QR Master ID is required.' });
+    }
+
+    // Ensure qr_masters is loaded in memory
+    if (supabase && (!db.qr_masters || db.qr_masters.length === 0)) {
+      const { data: qData } = await supabase.from('qr_masters').select('id, name, upi_id, is_active, is_selected, created_at, updated_at');
+      if (qData && Array.isArray(qData)) db.qr_masters = qData;
+    }
+
+    const targetMaster = (db.qr_masters || []).find(qm => qm.id === qr_master_id || String(qm.id) === String(qr_master_id));
+    if (!targetMaster) {
+      return res.status(404).json({ success: false, message: 'Selected QR Master not found.' });
+    }
+
+    // Find and update in memory
+    const reqIndex = (db.qr_payment_requests || []).findIndex(r => r.id === id || String(r.id) === String(id));
+    let targetRequest = reqIndex !== -1 ? db.qr_payment_requests[reqIndex] : null;
+
+    if (targetRequest) {
+      targetRequest.qr_master_id = targetMaster.id;
+      targetRequest.qr_name = targetMaster.name;
+      targetRequest.upi_id = targetMaster.upi_id;
+    }
+
+    // Persist to Supabase
+    if (supabase) {
+      try {
+        const { error: sbErr } = await supabase
+          .from('qr_payment_requests')
+          .update({
+            qr_master_id: targetMaster.id
+          })
+          .eq('id', id);
+
+        if (sbErr) {
+          console.error('[PATCH /request/:id/qr-master] Supabase update error:', sbErr);
+          return res.status(500).json({ success: false, message: 'Database error updating QR master: ' + sbErr.message });
+        }
+      } catch (sbEx) {
+        console.error('[PATCH /request/:id/qr-master] Supabase exception:', sbEx);
+      }
+    }
+
+    lastQrDbSyncTime = Date.now();
+
+    return res.status(200).json({
+      success: true,
+      message: `QR code successfully reassigned to "${targetMaster.name}"!`,
+      qr_master_id: targetMaster.id,
+      qr_name: targetMaster.name,
+      upi_id: targetMaster.upi_id,
+      payment_request: targetRequest
+    });
+  } catch (err) {
+    console.error('Reassign QR Master Error:', err);
+    return res.status(500).json({ success: false, message: 'Server error updating QR Master: ' + err.message });
+  }
+});
+
+// Also support POST for /request/:id/qr-master
+router.post('/request/:id/qr-master', verifyToken, requireRoles(['admin']), async (req, res) => {
+  req.url = `/request/${encodeURIComponent(req.params.id)}/qr-master`;
+  return router.handle(req, res);
+});
+
 // GET Settings endpoint
 router.get('/settings', (req, res) => {
   return res.status(200).json({

@@ -7,7 +7,7 @@ import {
   QrCode, Copy, Check, Upload, ArrowRight, ArrowDown, ShieldCheck, 
   AlertCircle, CheckCircle2, Clock, XCircle, Search, RefreshCw, 
   CheckCircle, X, Eye, FileText, Lock, Calendar, Hash, RotateCcw, Filter, Coins, Images,
-  ZoomIn, ZoomOut, RotateCw, ExternalLink, Move
+  ZoomIn, ZoomOut, RotateCw, ExternalLink, Move, Pencil
 } from 'lucide-react';
 
 export const QRPaymentRequests: React.FC = () => {
@@ -58,6 +58,12 @@ export const QRPaymentRequests: React.FC = () => {
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [rotation, setRotation] = useState<number>(0);
   const [copiedModalUtr, setCopiedModalUtr] = useState<boolean>(false);
+
+  // Re-assign QR Master State (Admin Only)
+  const [allQrMasters, setAllQrMasters] = useState<QrMaster[]>([]);
+  const [editingQrRequest, setEditingQrRequest] = useState<QrPaymentRequest | null>(null);
+  const [selectedNewQrId, setSelectedNewQrId] = useState<string>('');
+  const [updatingQr, setUpdatingQr] = useState<boolean>(false);
 
   // Filter State
   const [searchTerm, setSearchTerm] = useState('');
@@ -200,6 +206,82 @@ export const QRPaymentRequests: React.FC = () => {
       clearInterval(interval);
     };
   }, [isAdmin]);
+
+  // Fetch QR Masters list for Admin re-assignment dropdown
+  useEffect(() => {
+    if (isAdmin) {
+      qrApi.getQrList().then(res => {
+        if (res.success && res.qr_masters) {
+          setAllQrMasters(res.qr_masters);
+        }
+      }).catch(err => console.warn('Failed to load QR masters:', err));
+    }
+  }, [isAdmin]);
+
+  const formatQrActiveTime = (dateStr?: string) => {
+    if (!dateStr) return 'N/A';
+    try {
+      const d = new Date(dateStr);
+      return new Intl.DateTimeFormat('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: 'Asia/Kolkata'
+      }).format(d);
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const handleOpenEditQr = (req: QrPaymentRequest) => {
+    setEditingQrRequest(req);
+    const initialQrId = req.qr_master_id || allQrMasters.find(q => q.is_selected || q.is_active)?.id || '';
+    setSelectedNewQrId(initialQrId);
+  };
+
+  const handleSaveReassignedQr = async () => {
+    if (!editingQrRequest || !selectedNewQrId) return;
+    setUpdatingQr(true);
+    try {
+      const res = await qrApi.updateRequestQrMaster(editingQrRequest.id, selectedNewQrId);
+      if (res.success) {
+        setSuccessMessage(res.message);
+        const updatedTarget = allQrMasters.find(q => q.id === selectedNewQrId);
+        const newName = updatedTarget ? updatedTarget.name : res.qr_name || 'Primary QR';
+
+        setRequestsList(prev => prev.map(item => {
+          if (item.id === editingQrRequest.id) {
+            return {
+              ...item,
+              qr_master_id: selectedNewQrId,
+              qr_name: newName,
+              upi_id: updatedTarget?.upi_id || item.upi_id
+            };
+          }
+          return item;
+        }));
+
+        if (previewRequest?.id === editingQrRequest.id) {
+          setPreviewRequest(prev => prev ? {
+            ...prev,
+            qr_master_id: selectedNewQrId,
+            qr_name: newName
+          } : null);
+        }
+
+        setEditingQrRequest(null);
+      } else {
+        alert(res.message || 'Failed to update QR master.');
+      }
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Error updating QR master.');
+    } finally {
+      setUpdatingQr(false);
+    }
+  };
 
   const handleCopyUpi = (upi?: string) => {
     if (!upi) return;
@@ -1271,9 +1353,21 @@ export const QRPaymentRequests: React.FC = () => {
 
                     {/* QR NAME */}
                     <td className="p-4">
-                      <span className="px-2.5 py-1 rounded-xl bg-purple-50 border border-purple-200 text-purple-700 font-bold text-xs inline-block tracking-wide">
-                        {r.qr_name || activeQr?.name || 'Primary QR'}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="px-2.5 py-1 rounded-xl bg-purple-50 border border-purple-200 text-purple-700 font-bold text-xs inline-block tracking-wide">
+                          {r.qr_name || activeQr?.name || 'Primary QR'}
+                        </span>
+                        {isAdmin && (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditQr(r)}
+                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-purple-100 text-slate-500 hover:text-purple-700 border border-slate-200 hover:border-purple-300 transition-all shadow-xs cursor-pointer"
+                            title="Edit / Change Assigned QR"
+                          >
+                            <Pencil className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
                     </td>
 
                     {/* UTR NUMBER */}
@@ -1457,6 +1551,123 @@ export const QRPaymentRequests: React.FC = () => {
         </div>
 
       </div>
+
+      {/* CHANGE QR MASTER MODAL (Admin Only, z-[60]) */}
+      {editingQrRequest && (
+        <div className="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                <QrCode className="w-5 h-5 text-purple-600" /> Change QR Master Assignment
+              </h3>
+              <button
+                type="button"
+                onClick={() => setEditingQrRequest(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Transaction Brief */}
+            <div className="p-3.5 bg-purple-50/50 border border-purple-100 rounded-2xl text-xs space-y-1.5">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Retailer User:</span>
+                <span className="font-bold text-slate-900">{editingQrRequest.user_name} ({editingQrRequest.firm_name || 'N/A'})</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">12-Digit UTR:</span>
+                <span className="font-mono font-bold text-purple-700">{editingQrRequest.utr_number}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Amount:</span>
+                <span className="font-bold text-slate-900">₹{Number(editingQrRequest.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Currently Shown QR:</span>
+                <span className="font-extrabold text-purple-700">{editingQrRequest.qr_name || 'None'}</span>
+              </div>
+            </div>
+
+            {/* Select Target QR */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                Select Correct QR Master:
+              </label>
+              <select
+                value={selectedNewQrId}
+                onChange={(e) => setSelectedNewQrId(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-semibold text-slate-900 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+              >
+                <option value="" disabled>-- Select QR Code --</option>
+                {allQrMasters.map((qm) => {
+                  const activeTime = formatQrActiveTime(qm.updated_at || qm.created_at);
+                  const isLive = qm.is_selected || qm.is_active;
+                  return (
+                    <option key={qm.id} value={qm.id}>
+                      {qm.name} ({qm.upi_id}) • Active since: {activeTime} {isLive ? '★ [CURRENT ACTIVE]' : ''}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
+            {/* Selected QR Card Preview */}
+            {selectedNewQrId && (() => {
+              const selectedQm = allQrMasters.find(q => q.id === selectedNewQrId);
+              if (!selectedQm) return null;
+              const activeTime = formatQrActiveTime(selectedQm.updated_at || selectedQm.created_at);
+              const isLive = selectedQm.is_selected || selectedQm.is_active;
+
+              return (
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-black text-slate-800">{selectedQm.name}</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isLive ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'}`}>
+                      {isLive ? 'Currently Active' : 'Inactive'}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-slate-500 font-mono">UPI: {selectedQm.upi_id}</div>
+                  <div className="text-[11px] text-slate-500 flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-slate-400" />
+                    <span>Active / Updated Date: <strong className="text-slate-700">{activeTime}</strong></span>
+                  </div>
+                </div>
+              );
+            })()}
+
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              💡 આ QR બદલવાથી આ એન્ટ્રી પસંદ કરેલા QR ના ખાતામાં અને QR Tracking History / Proof Gallery માં પણ તે જ QR નીચે ગણાશે.
+            </p>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setEditingQrRequest(null)}
+                className="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={updatingQr || !selectedNewQrId || selectedNewQrId === editingQrRequest.qr_master_id}
+                onClick={handleSaveReassignedQr}
+                className="w-1/2 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
+              >
+                {updatingQr ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Updating...
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-3.5 h-3.5" /> Save & Update QR
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* REJECTION REASON MODAL (z-[60] so it appears on top of preview modal) */}
       {rejectingReq && (
