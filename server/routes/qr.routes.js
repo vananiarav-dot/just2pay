@@ -784,6 +784,13 @@ router.get('/request/list', verifyToken, async (req, res) => {
           }
         }
 
+        if (!db.qr_masters || db.qr_masters.length === 0) {
+          const { data: qData } = await supabase.from('qr_masters').select('id, name, upi_id, is_active, is_selected');
+          if (qData && Array.isArray(qData)) {
+            db.qr_masters = qData;
+          }
+        }
+
         // Lightweight selection: Exclude screenshot_url base64 to prevent 12MB+ payloads and Supabase egress spike
         const { data, error } = await supabase
           .from('qr_payment_requests')
@@ -873,11 +880,37 @@ router.get('/request/list', verifyToken, async (req, res) => {
       paginatedList = list.slice(offset, offset + limitParam);
     }
 
+    // Ensure qr_masters is always available in memory to resolve exact QR names
+    if (supabase && (!db.qr_masters || db.qr_masters.length === 0)) {
+      try {
+        const { data: qData } = await supabase.from('qr_masters').select('id, name, upi_id, is_active, is_selected');
+        if (qData && Array.isArray(qData)) db.qr_masters = qData;
+      } catch (e) {
+        console.warn('Failed to load qr_masters for name resolution:', e.message);
+      }
+    }
+
+    const defaultQr = (db.qr_masters || []).find(qm => qm.is_selected) || (db.qr_masters || []).find(qm => qm.is_active);
+
+    const enrichedList = paginatedList.map(r => {
+      const q = (db.qr_masters || []).find(qm => qm.id === r.qr_master_id);
+      const resolvedQrName = q?.name?.trim() 
+        || (r.qr_name && r.qr_name !== 'Active QR' && r.qr_name !== 'System QR' ? r.qr_name.trim() : null)
+        || defaultQr?.name?.trim() 
+        || 'ARIHANT ENTERPRISE';
+
+      return {
+        ...r,
+        qr_name: resolvedQrName,
+        screenshot_url: null
+      };
+    });
+
     return res.status(200).json({
       success: true,
-      count: paginatedList.length,
+      count: enrichedList.length,
       total_count: totalCount,
-      payment_requests: paginatedList.map(r => ({ ...r, screenshot_url: null }))
+      payment_requests: enrichedList
     });
   } catch (error) {
     console.error('Fetch Payment Requests Error:', error);

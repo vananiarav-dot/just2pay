@@ -1271,8 +1271,8 @@ export const QRPaymentRequests: React.FC = () => {
 
                     {/* QR NAME */}
                     <td className="p-4">
-                      <span className="px-2.5 py-1 rounded-xl bg-purple-50 border border-purple-200 text-purple-700 font-bold text-xs inline-block">
-                        {r.qr_name || 'Active QR'}
+                      <span className="px-2.5 py-1 rounded-xl bg-purple-50 border border-purple-200 text-purple-700 font-bold text-xs inline-block tracking-wide">
+                        {r.qr_name || activeQr?.name || 'Primary QR'}
                       </span>
                     </td>
 
