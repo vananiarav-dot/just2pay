@@ -445,24 +445,15 @@ export const PosPaymentRequests: React.FC<PosPaymentRequestsProps> = ({ user, on
                 POS Swipe Requests & Settlements
               </h1>
               <p className="text-xs text-slate-500">
-                Review merchant POS swipe slips, approve instant T+0 or overnight T+1 requests, and execute 1-click batch settlement.
+                Review merchant POS swipe slips, approve instant T+0 or overnight T+1 requests (T+1 auto-settles daily at 11:00 AM IST).
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-purple-50 border border-purple-200 text-purple-800 text-xs font-bold shadow-2xs">
+              <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-purple-50 border border-purple-200 text-purple-800 text-xs font-bold shadow-2xs">
                 <Clock className="w-3.5 h-3.5 text-purple-600" />
-                <span>Auto Settle: Daily 11:00 AM IST (Midnight Cut-off)</span>
+                <span>⚡ Auto Settle Active: Daily 11:00 AM IST (Midnight Cut-off)</span>
               </div>
-              <button
-                onClick={handleSettleAllT1}
-                disabled={settlingT1}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md shadow-purple-600/20 transition cursor-pointer disabled:opacity-50 whitespace-nowrap"
-                title="Manually force settle approved T+1 slips from yesterday night cut-off"
-              >
-                <Sparkles className={`w-4 h-4 ${settlingT1 ? 'animate-spin' : ''}`} />
-                <span>{settlingT1 ? 'Settling T+1...' : '⚡ Settle Now (Manual Force)'}</span>
-              </button>
               <button
                 onClick={loadData}
                 disabled={loading}
